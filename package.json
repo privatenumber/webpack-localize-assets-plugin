@@ -1,8 +1,17 @@
 {
 	"name": "webpack-localize-assets-plugin",
 	"version": "0.0.0-semantic-release",
-	"description": "",
-	"keywords": [],
+	"description": "Localize your Webpack bundle with multiple locales",
+	"keywords": [
+		"webpack",
+		"plugin",
+		"localize",
+		"localization",
+		"i18n",
+		"internationalize",
+		"internationalization",
+		"multi-language"
+	],
 	"license": "MIT",
 	"repository": "privatenumber/webpack-localize-assets-plugin",
 	"funding": "https://github.com/privatenumber/webpack-localize-assets-plugin?sponsor=1",
@@ -11,7 +20,6 @@
 		"email": "hiroki.osame@gmail.com"
 	},
 	"files": [
-		"bin",
 		"dist"
 	],
 	"main": "dist/index.js",

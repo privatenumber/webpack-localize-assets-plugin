@@ -1,6 +1,6 @@
 # webpack-localize-assets-plugin <a href="https://npm.im/webpack-localize-assets-plugin"><img src="https://badgen.net/npm/v/webpack-localize-assets-plugin"></a> <a href="https://npm.im/webpack-localize-assets-plugin"><img src="https://badgen.net/npm/dm/webpack-localize-assets-plugin"></a> <a href="https://packagephobia.now.sh/result?p=webpack-localize-assets-plugin"><img src="https://packagephobia.now.sh/badge?p=webpack-localize-assets-plugin"></a>
 
-Emit localized assets from your Webpack build.
+Localize your Webpack bundle with multiple locales.
 
 ### Features
 - Create bundles with localization baked in
