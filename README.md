@@ -76,7 +76,7 @@ Example:
     ...
   },
   es: {
-    helloWorld: '¡Hola Mundo!
+    helloWorld: '¡Hola Mundo!',
     goodbyeWorld: '¡Adiós Mundo!',
     ...
   },
