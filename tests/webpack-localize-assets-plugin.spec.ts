@@ -217,8 +217,8 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			expect(buildStats.hasWarnings()).toBe(true);
 			expect(buildStats.compilation.warnings.length).toBe(2);
-			expect(buildStats.compilation.warnings[0].message).toMatch('Confusing usage of localization function "__" in /src/index.js:3:7');
-			expect(buildStats.compilation.warnings[1].message).toMatch('Confusing usage of localization function "__" in /src/index.js:4:7');
+			expect(buildStats.compilation.warnings[0].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:3:7');
+			expect(buildStats.compilation.warnings[1].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:4:7');
 		});
 	});
 

@@ -142,7 +142,7 @@ class LocalizeAssetsPlugin implements Plugin {
 				}
 				const location = callExpressionNode.loc.start;
 				const error = new WebpackError(
-					`Confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`,
+					`Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`,
 				);
 				compilation.warnings.push(error);
 			});
