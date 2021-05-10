@@ -188,6 +188,7 @@ class LocalizeAssetsPlugin implements Plugin {
 
 	generateLocalizedAssets(compilation: Compilation) {
 		const { locales } = this.options;
+		const { devtool } = compilation.compiler.options;
 
 		const generateLocalizedAssets = () => {
 			const assetsWithInfo = Object.keys(compilation.assets)
@@ -197,7 +198,7 @@ class LocalizeAssetsPlugin implements Plugin {
 			for (const asset of assetsWithInfo) {
 				const { source, map } = asset.source.sourceAndMap();
 				const sourceString = source.toString();
-				const sourceMapString = JSON.stringify(map);
+				const sourceMapString = Boolean(devtool) ? JSON.stringify(map) : undefined;
 				const localizationReplacements = this.locatePlaceholders(sourceString);
 				const localePlaceholderLocations = findSubstringLocations(
 					sourceString,
@@ -213,12 +214,12 @@ class LocalizeAssetsPlugin implements Plugin {
 					localizedAssetNames.push(newAssetName);
 
 					const localizedSource = this.localizeAsset(
+						locale,
 						newAssetName,
-						sourceString,
-						sourceMapString,
 						localizationReplacements,
 						localePlaceholderLocations,
-						locale,
+						sourceString,
+						sourceMapString,
 					);
 
 					// @ts-expect-error Outdated @type
@@ -266,15 +267,15 @@ class LocalizeAssetsPlugin implements Plugin {
 	}
 
 	localizeAsset(
+		locale: string,
 		assetName: string,
-		source: string,
-		map: string,
 		localizationReplacements: {
 			stringKey: string;
 			index: number;
 		}[],
 		localePlaceholderLocations: number[],
-		locale: string,
+		source: string,
+		map?: string,
 	) {
 		const localeData = this.options.locales[locale];
 		const magicStringInstance = new MagicString(source);
