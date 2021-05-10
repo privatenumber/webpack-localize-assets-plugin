@@ -198,7 +198,7 @@ class LocalizeAssetsPlugin implements Plugin {
 			for (const asset of assetsWithInfo) {
 				const { source, map } = asset.source.sourceAndMap();
 				const sourceString = source.toString();
-				const sourceMapString = Boolean(devtool) ? JSON.stringify(map) : undefined;
+				const sourceMapString = devtool ? JSON.stringify(map) : undefined;
 				const localizationReplacements = this.locatePlaceholders(sourceString);
 				const localePlaceholderLocations = findSubstringLocations(
 					sourceString,
