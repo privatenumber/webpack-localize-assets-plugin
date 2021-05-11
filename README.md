@@ -4,7 +4,7 @@ Localize your Webpack bundle with multiple locales.
 
 ### Features
 - Create bundles with localization baked in
-- Suports multiple locales
+- Suports single & multiple locales
 - Blazing fast!
 
 _How does it compare to [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin)?_ Answered in the [FAQ](#how-does-this-compare-to-a-href-https-github-com-webpack-contrib-i18n-webpack-plugin-i18n-webpack-plugin-a-).
@@ -95,8 +95,16 @@ The function name to use to detect localization string keys.
 const message = __('helloWorld'); // => 'Hello world!'
 ```
 #### throwOnMissing
+Type: `boolean`
+
+Default: `false`
+
 Throw an error if a string key is not found in a locale object.
 
+#### sourceMapsForLocales
+Type: `string[]`
+
+An array of locales that source-maps should be emitted for. Source-maps are enabled via [`devtool`](https://webpack.js.org/configuration/devtool/).
 
 ## 💁‍♀️ FAQ
 
