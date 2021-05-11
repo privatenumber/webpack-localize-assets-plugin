@@ -5,6 +5,24 @@ import WebpackLocalizeAssetsPlugin from '../src/index';
 import { build, assertFsWithReadFileSync } from './utils';
 import { createMemRequire } from './memfs-require';
 
+const localesEmpty = {};
+const localesSingle = {
+	en: {
+		hello: 'Hello',
+	},
+};
+const localesMulti = {
+	en: {
+		hello: 'Hello',
+	},
+	es: {
+		hello: 'Hola',
+	},
+	ja: {
+		hello: 'こんにちは',
+	},
+};
+
 describe(`Webpack ${webpack.version}`, () => {
 	describe('error-cases', () => {
 		test('no option', async () => {
@@ -42,7 +60,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					(config) => {
 						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
-								locales: {},
+								locales: localesEmpty,
 							}),
 						);
 					},
@@ -51,9 +69,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('can use string [locale] in source', async () => {
-			const locales = {
-				en: {},
-			};
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default "[locale]";',
@@ -61,7 +76,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesSingle,
 						}),
 					);
 				},
@@ -78,9 +93,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('can use string [locale] in name multiple times', async () => {
-			const locales = {
-				en: {},
-			};
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default "[locale]";',
@@ -89,7 +101,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					config.output!.filename = '[name].[locale].[locale].js';
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesSingle,
 						}),
 					);
 				},
@@ -100,12 +112,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('missing locale - warning', async () => {
-			const locales = {
-				en: {},
-				es: {},
-				ja: {},
-			};
-
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default __("bad key");',
@@ -113,7 +119,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesMulti,
 						}),
 					);
 				},
@@ -125,12 +131,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('missing locale - throwOnMissing', async () => {
-			const locales = {
-				en: {},
-				es: {},
-				ja: {},
-			};
-
 			await expect(async () => {
 				await build(
 					{
@@ -139,7 +139,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					(config) => {
 						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
-								locales,
+								locales: localesMulti,
 								throwOnMissing: true,
 							}),
 						);
@@ -149,10 +149,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('missing [locale] from filename', async () => {
-			const locales = {
-				en: {},
-			};
-
 			await expect(async () => {
 				await build(
 					{
@@ -162,7 +158,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						config.output!.filename = '[name].js';
 						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
-								locales,
+								locales: localesSingle,
 							}),
 						);
 					},
@@ -171,10 +167,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('missing [locale] from chunkFilename', async () => {
-			const locales = {
-				en: {},
-			};
-
 			await expect(async () => {
 				await build(
 					{
@@ -184,7 +176,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						config.output!.chunkFilename = '[name].js';
 						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
-								locales,
+								locales: localesSingle,
 							}),
 						);
 					},
@@ -193,10 +185,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('warn on confusing function usage', async () => {
-			const locales = {
-				en: {},
-			};
-
 			const buildStats = await build(
 				{
 					'/src/index.js': `
@@ -209,7 +197,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesSingle,
 						}),
 					);
 				},
@@ -224,29 +212,21 @@ describe(`Webpack ${webpack.version}`, () => {
 
 	describe('passing', () => {
 		test('localize assets', async () => {
-			const locales = {
-				en: {
-					helloWorld: 'Hello world!',
-				},
-				ja: {
-					helloWorld: 'こんにちは！',
-				},
-			};
 			const buildStats = await build(
 				{
-					'/src/index.js': 'export default __("helloWorld");',
+					'/src/index.js': 'export default __("hello");',
 				},
 				(config) => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesMulti,
 						}),
 					);
 				},
 			);
 
 			const { assets } = buildStats.compilation;
-			expect(Object.keys(assets).length).toBe(2);
+			expect(Object.keys(assets).length).toBe(3);
 
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
@@ -254,42 +234,38 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mRequire = createMemRequire(mfs);
 
 			const enBuild = mRequire('/dist/index.en.js');
-			expect(enBuild).toBe(locales.en.helloWorld);
+			expect(enBuild).toBe(localesMulti.en.hello);
+
+			const esBuild = mRequire('/dist/index.es.js');
+			expect(esBuild).toBe(localesMulti.es.hello);
 
 			const jaBuild = mRequire('/dist/index.ja.js');
-			expect(jaBuild).toBe(locales.ja.helloWorld);
+			expect(jaBuild).toBe(localesMulti.ja.hello);
 
 			const statsOutput = buildStats.toString();
 			expect(statsOutput).toMatch(/index\.en\.js/);
+			expect(statsOutput).toMatch(/index\.es\.js/);
 			expect(statsOutput).toMatch(/index\.ja\.js/);
 		});
 
 		test('localize assets with chunks', async () => {
-			const locales = {
-				en: {
-					helloWorld: 'Hello world!',
-				},
-				ja: {
-					helloWorld: 'こんにちは！',
-				},
-			};
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default import("./async-import").then(module => module.default);',
 					'/src/async-import.js': 'export default import("./async-import2").then(module => module.default);',
-					'/src/async-import2.js': 'export default __("helloWorld");',
+					'/src/async-import2.js': 'export default __("hello");',
 				},
 				(config) => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesMulti,
 						}),
 					);
 				},
 			);
 
 			const { assets } = buildStats.compilation;
-			expect(Object.keys(assets).length).toBe(6);
+			expect(Object.keys(assets).length).toBe(9);
 
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
@@ -297,30 +273,25 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mRequire = createMemRequire(mfs);
 
 			const enBuild = await mRequire('/dist/index.en.js');
-			expect(enBuild).toBe(locales.en.helloWorld);
+			expect(enBuild).toBe(localesMulti.en.hello);
+
+			const esBuild = await mRequire('/dist/index.es.js');
+			expect(esBuild).toBe(localesMulti.es.hello);
 
 			const jaBuild = await mRequire('/dist/index.ja.js');
-			expect(jaBuild).toBe(locales.ja.helloWorld);
+			expect(jaBuild).toBe(localesMulti.ja.hello);
 		});
 
 		test('works with minification', async () => {
-			const locales = {
-				en: {
-					helloWorld: 'Hello world!',
-				},
-				ja: {
-					helloWorld: 'こんにちは！',
-				},
-			};
 			const buildStats = await build(
 				{
-					'/src/index.js': 'export default __("helloWorld");',
+					'/src/index.js': 'export default __("hello");',
 				},
 				(config) => {
 					config.optimization!.minimize = true;
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesMulti,
 						}),
 					);
 				},
@@ -335,10 +306,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('handle CSS', async () => {
-			const locales = {
-				en: {},
-				ja: {},
-			};
 			const buildStats = await build(
 				{
 					'/src/index.js': 'import "./style.css";',
@@ -355,7 +322,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesMulti,
 						}),
 						new MiniCssExtractPlugin({
 							filename: '[name].[locale].css',
@@ -371,10 +338,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('handle CSS without localization', async () => {
-			const locales = {
-				en: {},
-				ja: {},
-			};
 			const buildStats = await build(
 				{
 					'/src/index.js': 'import "./style.css";',
@@ -391,7 +354,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesMulti,
 						}),
 						new MiniCssExtractPlugin(),
 					);
@@ -422,6 +385,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						const checkAssets = () => {
 							const assets = Object.keys(compilation.assets);
 							expect(assets.length).toBe(1);
+							expect(assets[0]).toBe('index.997717b9afdf2344d416935c7a77636a95d4030d5774d77862ca2904a2382581.js');
 						};
 
 						if (isWebpack5(webpack)) {
@@ -445,25 +409,119 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			};
 
-			const locales = {
-				en: {
-					helloWorld: 'Hello world!',
-				},
-			};
-
-			await build(
+			const buildStats = await build(
 				{
-					'/src/index.js': 'export default __("helloWorld");',
+					'/src/index.js': 'export default __("hello");',
 				},
 				(config) => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesMulti,
 						}),
 						FakeMinifier,
 					);
 				},
 			);
+
+			const assets = Object.keys(buildStats.compilation.assets);
+			expect(assets.length).toBe(3);
+		});
+
+		test('no placeholders in single locale', async () => {
+			const FakeMinifier = {
+				name: 'FakeMinfier',
+
+				apply(compiler) {
+					compiler.hooks.compilation.tap(FakeMinifier.name, (compilation) => {
+						const checkAssets = () => {
+							const assets = Object.keys(compilation.assets);
+							expect(assets.length).toBe(1);
+							expect(assets[0]).toBe('index.en.js');
+
+							const asset = compilation.getAsset('index.en.js');
+							expect(asset.source.source()).toMatch(/"Hello"/);
+						};
+
+						if (isWebpack5(webpack)) {
+							compilation.hooks.processAssets.tap(
+								{
+									name: FakeMinifier.name,
+									stage: compilation.constructor.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
+								},
+								checkAssets,
+							);
+						} else {
+							compilation.hooks.optimizeChunkAssets.tap(FakeMinifier.name, checkAssets);
+						}
+					});
+				},
+			};
+
+			await build(
+				{
+					'/src/index.js': 'export default __("hello");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+						}),
+						FakeMinifier,
+					);
+				},
+			);
+		});
+
+		test('emits source-maps', async () => {
+			const locales = {
+				en: {
+					hello: 'Hello',
+				},
+				ja: {
+					hello: 'こんにちは',
+				},
+			};
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello");',
+				},
+				(config) => {
+					config.devtool = 'source-map';
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales,
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+
+			expect(assets).toHaveProperty(['index.en.js.map']);
+			expect(assets).toHaveProperty(['index.ja.js.map']);
+			expect(Object.keys(assets).length).toBe(4);
+		});
+
+		test('only emit source-maps for specified locales', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello");',
+				},
+				(config) => {
+					config.devtool = 'source-map';
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							sourceMapsForLocales: ['en'],
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(4);
+			expect(assets).toHaveProperty(['index.en.js.map']);
+			expect(assets).not.toHaveProperty(['index.ja.js.map']);
 		});
 	});
 });

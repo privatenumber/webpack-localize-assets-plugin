@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { RawSource, SourceMapSource } from 'webpack-sources';
+import { RawSource, SourceMapSource, SourceAndMapResult } from 'webpack-sources';
+import { RawSourceMap } from 'source-map';
 import MagicString from 'magic-string';
 import hasOwnProp from 'has-own-prop';
 import WebpackError from 'webpack/lib/WebpackError.js';
@@ -8,6 +9,7 @@ import {
 	findSubstringLocations,
 	toConstantDependency,
 	isWebpack5Compilation,
+	deleteAsset,
 } from './utils';
 import {
 	Options,
@@ -19,19 +21,31 @@ import {
 } from './types';
 
 const nameTemplatePlaceholder = sha256('[locale:placeholder]');
+const nameTemplatePlaceholderPattern = new RegExp(nameTemplatePlaceholder, 'g');
 const SHA256_LENGTH = nameTemplatePlaceholder.length;
 const QUOTES_LENGTH = 2;
+const isJsFile = /\.js$/;
+const isSourceMap = /\.js\.map$/;
 
 class LocalizeAssetsPlugin implements Plugin {
 	options: Options;
 
+	localeNames: string[];
+
+	singleLocale?: string;
+
 	localePlaceholders = new Map<string, string>();
 
-	validatedLocales = new Set<string>();
+	validatedLocales = new Map<string, boolean>();
 
 	constructor(options: Options) {
 		OptionsSchema.parse(options);
 		this.options = options;
+
+		this.localeNames = Object.keys(this.options.locales);
+		if (this.localeNames.length === 1) {
+			[this.singleLocale] = this.localeNames;
+		}
 	}
 
 	apply(compiler: Compiler) {
@@ -55,18 +69,21 @@ class LocalizeAssetsPlugin implements Plugin {
 		);
 
 		// Create localized assets by swapping out placeholders with localized strings
-		compiler.hooks.make.tap(
-			LocalizeAssetsPlugin.name,
-			(compilation) => {
-				this.generateLocalizedAssets(compilation);
-			},
-		);
+		if (!this.singleLocale) {
+			compiler.hooks.make.tap(
+				LocalizeAssetsPlugin.name,
+				(compilation) => {
+					this.generateLocalizedAssets(compilation);
+				},
+			);
+		}
 	}
 
 	interpolateLocaleToFileName(compilation: Compilation) {
+		const replaceWith = this.singleLocale ?? nameTemplatePlaceholder;
 		const interpolate = (path) => {
 			if (typeof path === 'string') {
-				path = path.replace(/\[locale]/g, nameTemplatePlaceholder);
+				path = path.replace(/\[locale]/g, replaceWith);
 			}
 			return path;
 		};
@@ -90,7 +107,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		stringKey: string,
 	) {
 		if (this.validatedLocales.has(stringKey)) {
-			return;
+			return this.validatedLocales.get(stringKey);
 		}
 
 		const {
@@ -98,11 +115,14 @@ class LocalizeAssetsPlugin implements Plugin {
 			throwOnMissing,
 		} = this.options;
 
-		const missingFromLocales = Object.keys(locales).filter(
+		const missingFromLocales = this.localeNames.filter(
 			locale => !hasOwnProp(locales[locale], stringKey),
 		);
+		const isMissingFromLocales = missingFromLocales.length > 0;
 
-		if (missingFromLocales.length > 0) {
+		this.validatedLocales.set(stringKey, !isMissingFromLocales);
+
+		if (isMissingFromLocales) {
 			const error = new WebpackError(`Missing localization for key "${stringKey}" in locales: ${missingFromLocales.join(', ')}`);
 			if (throwOnMissing) {
 				throw error;
@@ -111,14 +131,17 @@ class LocalizeAssetsPlugin implements Plugin {
 			}
 		}
 
-		this.validatedLocales.add(stringKey);
+		return !isMissingFromLocales;
 	}
 
 	insertLocalePlaceholders(
 		compilation: Compilation,
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const { localePlaceholders } = this;
+		const {
+			singleLocale,
+			localePlaceholders,
+		} = this;
 		const {
 			functionName = '__',
 		} = this.options;
@@ -133,18 +156,30 @@ class LocalizeAssetsPlugin implements Plugin {
 					&& typeof firstArgumentNode.value === 'string'
 				) {
 					const stringKey = firstArgumentNode.value;
-					this.validateLocale(compilation, stringKey);
+					const isValid = this.validateLocale(compilation, stringKey);
 
-					const placeholder = JSON.stringify(LocalizeAssetsPlugin.name + sha256(stringKey));
-					localePlaceholders.set(placeholder, stringKey);
-					toConstantDependency(parser, placeholder)(callExpressionNode);
+					if (singleLocale) {
+						if (isValid) {
+							toConstantDependency(
+								parser,
+								JSON.stringify(this.options.locales[singleLocale][stringKey]),
+							)(callExpressionNode);
+						}
+					} else {
+						const placeholder = JSON.stringify(LocalizeAssetsPlugin.name + sha256(stringKey));
+						toConstantDependency(parser, placeholder)(callExpressionNode);
+						localePlaceholders.set(placeholder, stringKey);
+					}
+
 					return true;
 				}
+
 				const location = callExpressionNode.loc.start;
 				const error = new WebpackError(
 					`Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`,
 				);
-				compilation.warnings.push(error);
+
+				parser.state.module.warnings.push(error);
 			});
 		};
 
@@ -187,67 +222,67 @@ class LocalizeAssetsPlugin implements Plugin {
 	}
 
 	generateLocalizedAssets(compilation: Compilation) {
-		const { locales } = this.options;
-		const { devtool } = compilation.compiler.options;
+		const { localeNames } = this;
+		const { sourceMapsForLocales } = this.options;
 
 		const generateLocalizedAssets = () => {
-			const assetsWithInfo = Object.keys(compilation.assets)
-				.filter(assetName => assetName.includes(nameTemplatePlaceholder))
-				.map(assetName => compilation.getAsset(assetName));
+			// @ts-expect-error Outdated @type
+			const assetsWithInfo = compilation.getAssets()
+				.filter(asset => asset.name.includes(nameTemplatePlaceholder));
 
 			for (const asset of assetsWithInfo) {
-				const { source, map } = asset.source.sourceAndMap();
-				const sourceString = source.toString();
-				const sourceMapString = devtool ? JSON.stringify(map) : undefined;
-				const localizationReplacements = this.locatePlaceholders(sourceString);
-				const localePlaceholderLocations = findSubstringLocations(
-					sourceString,
-					nameTemplatePlaceholder,
-				);
+				const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
 				const localizedAssetNames: string[] = [];
 
-				for (const locale in locales) {
-					if (!hasOwnProp(locales, locale)) {
-						continue;
-					}
-					const newAssetName = asset.name.replace(new RegExp(nameTemplatePlaceholder, 'g'), locale);
-					localizedAssetNames.push(newAssetName);
-
-					const localizedSource = this.localizeAsset(
-						locale,
-						newAssetName,
-						localizationReplacements,
-						localePlaceholderLocations,
+				if (isJsFile.test(asset.name)) {
+					const sourceString = source.toString();
+					const localizationReplacements = this.locatePlaceholders(sourceString);
+					const localePlaceholderLocations = findSubstringLocations(
 						sourceString,
-						sourceMapString,
+						nameTemplatePlaceholder,
 					);
 
-					// @ts-expect-error Outdated @type
-					compilation.emitAsset(
-						newAssetName,
-						localizedSource,
-						asset.info,
-					);
+					for (const locale of localeNames) {
+						const newAssetName = asset.name.replace(nameTemplatePlaceholderPattern, locale);
+						localizedAssetNames.push(newAssetName);
+
+						const localizedSource = this.localizeAsset(
+							locale,
+							newAssetName,
+							localizationReplacements,
+							localePlaceholderLocations,
+							sourceString,
+							map,
+						);
+
+						// @ts-expect-error Outdated @type
+						compilation.emitAsset(
+							newAssetName,
+							localizedSource,
+							asset.info,
+						);
+					}
+				} else {
+					let localesToIterate = localeNames;
+					if (isSourceMap.test(asset.name) && sourceMapsForLocales) {
+						localesToIterate = sourceMapsForLocales;
+					}
+
+					for (const locale of localesToIterate) {
+						const newAssetName = asset.name.replace(nameTemplatePlaceholderPattern, locale);
+						localizedAssetNames.push(newAssetName);
+
+						// @ts-expect-error Outdated @type
+						compilation.emitAsset(
+							newAssetName,
+							asset.source,
+							asset.info,
+						);
+					}
 				}
 
 				// Delete original unlocalized asset
-				if (isWebpack5Compilation(compilation)) {
-					compilation.deleteAsset(asset.name);
-				} else {
-					delete compilation.assets[asset.name];
-
-					/**
-					 * To support terser-webpack-plugin v1.4.5 (bundled with Webpack 4)
-					 * which iterates over chunks instead of assets
-					 * https://github.com/webpack-contrib/terser-webpack-plugin/blob/v1.4.5/src/index.js#L176
-					 */
-					for (const chunk of compilation.chunks) {
-						const hasAsset = chunk.files.indexOf(asset.name);
-						if (hasAsset > -1) {
-							chunk.files.splice(hasAsset, 1, ...localizedAssetNames);
-						}
-					}
-				}
+				deleteAsset(compilation, asset.name, localizedAssetNames);
 			}
 		};
 
@@ -275,7 +310,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		}[],
 		localePlaceholderLocations: number[],
 		source: string,
-		map?: string,
+		map: RawSourceMap | null,
 	) {
 		const localeData = this.options.locales[locale];
 		const magicStringInstance = new MagicString(source);
