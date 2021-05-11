@@ -252,7 +252,11 @@ class LocalizeAssetsPlugin implements Plugin {
 							localizationReplacements,
 							localePlaceholderLocations,
 							sourceString,
-							map,
+							(
+								(!sourceMapsForLocales || sourceMapsForLocales.includes(locale))
+									? map
+									: null
+							),
 						);
 
 						// @ts-expect-error Outdated @type
