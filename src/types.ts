@@ -19,7 +19,9 @@ export const OptionsSchema = z.object({
 }).refine(options => (
 	!options.sourceMapsForLocales
 	|| options.sourceMapsForLocales.every(locale => hasOwnProp(options.locales, locale))
-));
+), {
+	message: 'sourceMapsForLocales must contain valid locales',
+});
 
 export type Options = z.infer<typeof OptionsSchema>;
 
