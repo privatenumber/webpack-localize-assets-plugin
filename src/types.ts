@@ -16,6 +16,7 @@ export const OptionsSchema = z.object({
 	functionName: z.string().optional(),
 	throwOnMissing: z.boolean().optional(),
 	sourceMapsForLocales: z.string().array().optional(),
+	warnOnUnusedString: z.boolean().optional(),
 }).refine(options => (
 	!options.sourceMapsForLocales
 	|| options.sourceMapsForLocales.every(locale => hasOwnProp(options.locales, locale))

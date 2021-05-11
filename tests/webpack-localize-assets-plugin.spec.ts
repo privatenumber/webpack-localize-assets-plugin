@@ -541,5 +541,25 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assets).toHaveProperty(['index.en.js.map']);
 			expect(assets).not.toHaveProperty(['index.ja.js.map']);
 		});
+
+		test('warn on warnOnUnusedString', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default true',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							warnOnUnusedString: true,
+						}),
+					);
+				},
+			);
+
+			expect(buildStats.hasWarnings()).toBe(true);
+			expect(buildStats.compilation.warnings.length).toBe(1);
+			expect(buildStats.compilation.warnings[0].message).toMatch('Unused string key "hello"');
+		});
 	});
 });
