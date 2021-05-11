@@ -38,13 +38,23 @@ class LocalizeAssetsPlugin implements Plugin {
 
 	validatedLocales = new Map<string, boolean>();
 
+	trackStringKeys = new Set<string>();
+
 	constructor(options: Options) {
 		OptionsSchema.parse(options);
 		this.options = options;
 
-		this.localeNames = Object.keys(this.options.locales);
+		this.localeNames = Object.keys(options.locales);
 		if (this.localeNames.length === 1) {
 			[this.singleLocale] = this.localeNames;
+		}
+
+		if (options.warnOnUnusedString) {
+			for (const locale of this.localeNames) {
+				for (const stringKey of Object.keys(options.locales[locale])) {
+					this.trackStringKeys.add(stringKey);
+				}
+			}
 		}
 	}
 
@@ -68,15 +78,22 @@ class LocalizeAssetsPlugin implements Plugin {
 			},
 		);
 
-		// Create localized assets by swapping out placeholders with localized strings
-		if (!this.singleLocale) {
-			compiler.hooks.make.tap(
-				LocalizeAssetsPlugin.name,
-				(compilation) => {
+		compiler.hooks.make.tap(
+			LocalizeAssetsPlugin.name,
+			(compilation) => {
+				if (!this.singleLocale) {
+					// Create localized assets by swapping out placeholders with localized strings
 					this.generateLocalizedAssets(compilation);
-				},
-			);
-		}
+				}
+
+				if (this.options.warnOnUnusedString && this.trackStringKeys.size > 0) {
+					for (const unusedStringKey of this.trackStringKeys) {
+						const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Unused string key "${unusedStringKey}"`);
+						compilation.warnings.push(error);
+					}
+				}
+			},
+		);
 	}
 
 	interpolateLocaleToFileName(compilation: Compilation) {
@@ -123,7 +140,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		this.validatedLocales.set(stringKey, !isMissingFromLocales);
 
 		if (isMissingFromLocales) {
-			const error = new WebpackError(`Missing localization for key "${stringKey}" in locales: ${missingFromLocales.join(', ')}`);
+			const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Missing localization for key "${stringKey}" in locales: ${missingFromLocales.join(', ')}`);
 			if (throwOnMissing) {
 				throw error;
 			} else {
@@ -158,6 +175,10 @@ class LocalizeAssetsPlugin implements Plugin {
 					const stringKey = firstArgumentNode.value;
 					const isValid = this.validateLocale(compilation, stringKey);
 
+					if (this.options.warnOnUnusedString) {
+						this.trackStringKeys.delete(stringKey);
+					}
+
 					if (singleLocale) {
 						if (isValid) {
 							toConstantDependency(
@@ -176,7 +197,7 @@ class LocalizeAssetsPlugin implements Plugin {
 
 				const location = callExpressionNode.loc.start;
 				const error = new WebpackError(
-					`Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`,
+					`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`,
 				);
 
 				parser.state.module.warnings.push(error);

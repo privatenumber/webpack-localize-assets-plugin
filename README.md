@@ -106,6 +106,13 @@ Type: `string[]`
 
 An array of locales that source-maps should be emitted for. Source-maps are enabled via [`devtool`](https://webpack.js.org/configuration/devtool/).
 
+#### warnOnUnusedString
+Type: `boolean`
+
+Default: `false`
+
+Enable to see warnings when unused string keys are found.
+
 ## 💁‍♀️ FAQ
 
 ### How does this compare to [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin)?
