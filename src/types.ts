@@ -1,6 +1,7 @@
 import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
 import * as z from 'zod';
+import hasOwnProp from 'has-own-prop';
 
 const LocaleSchema = z.record(z.string());
 const LocalesSchema = z.record(LocaleSchema).refine(
@@ -14,6 +15,13 @@ export const OptionsSchema = z.object({
 	locales: LocalesSchema,
 	functionName: z.string().optional(),
 	throwOnMissing: z.boolean().optional(),
+	sourceMapsForLocales: z.string().array().optional(),
+	warnOnUnusedString: z.boolean().optional(),
+}).refine(options => (
+	!options.sourceMapsForLocales
+	|| options.sourceMapsForLocales.every(locale => hasOwnProp(options.locales, locale))
+), {
+	message: 'sourceMapsForLocales must contain valid locales',
 });
 
 export type Options = z.infer<typeof OptionsSchema>;
