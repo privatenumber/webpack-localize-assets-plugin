@@ -37,7 +37,7 @@ class LocalizeAssetsPlugin implements Plugin {
 
 	localePlaceholders = new Map<string, string>();
 
-	validatedLocales = new Map<string, boolean>();
+	validatedLocales = new Set<string>();
 
 	trackStringKeys = new Set<string>();
 
@@ -125,7 +125,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		stringKey: string,
 	) {
 		if (this.validatedLocales.has(stringKey)) {
-			return this.validatedLocales.get(stringKey);
+			return;
 		}
 
 		const {
@@ -138,7 +138,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		);
 		const isMissingFromLocales = missingFromLocales.length > 0;
 
-		this.validatedLocales.set(stringKey, !isMissingFromLocales);
+		this.validatedLocales.add(stringKey);
 
 		if (isMissingFromLocales) {
 			const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Missing localization for key "${stringKey}" in locales: ${missingFromLocales.join(', ')}`);
@@ -148,8 +148,6 @@ class LocalizeAssetsPlugin implements Plugin {
 				compilation.warnings.push(error);
 			}
 		}
-
-		return !isMissingFromLocales;
 	}
 
 	insertLocalePlaceholders(
@@ -174,19 +172,17 @@ class LocalizeAssetsPlugin implements Plugin {
 					&& typeof firstArgumentNode.value === 'string'
 				) {
 					const stringKey = firstArgumentNode.value;
-					const isValid = this.validateLocale(compilation, stringKey);
+					this.validateLocale(compilation, stringKey);
 
 					if (this.options.warnOnUnusedString) {
 						this.trackStringKeys.delete(stringKey);
 					}
 
 					if (singleLocale) {
-						if (isValid) {
-							toConstantDependency(
-								parser,
-								JSON.stringify(this.options.locales[singleLocale][stringKey]),
-							)(callExpressionNode);
-						}
+						toConstantDependency(
+							parser,
+							JSON.stringify(this.options.locales[singleLocale][stringKey] || stringKey),
+						)(callExpressionNode);
 					} else {
 						const placeholder = JSON.stringify(LocalizeAssetsPlugin.name + sha256(stringKey));
 						toConstantDependency(parser, placeholder)(callExpressionNode);

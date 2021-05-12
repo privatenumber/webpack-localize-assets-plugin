@@ -112,7 +112,33 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assets).toHaveProperty(['index.en.en.js']);
 		});
 
-		test('missing locale - warning', async () => {
+		test('missing locale - warning - single locale', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("bad key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+						}),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createMemRequire(mfs);
+
+			expect(mRequire('/dist/index.en.js')).toBe('bad key');
+
+			expect(buildStats.hasWarnings()).toBe(true);
+			expect(buildStats.compilation.warnings.length).toBe(1);
+			expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" in locales: en');
+		});
+
+		test('missing locale - warning - multi locale', async () => {
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default __("bad key");',
