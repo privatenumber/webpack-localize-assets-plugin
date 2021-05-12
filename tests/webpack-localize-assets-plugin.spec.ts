@@ -567,7 +567,6 @@ describe(`Webpack ${webpack.version}`, () => {
 						new MiniCssExtractPlugin(),
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
-							warnOnUnusedString: true,
 						}),
 						...localeNames.map(locale => new WebpackManifestPlugin({
 							fileName: `manifest.${locale}.json`,
@@ -599,6 +598,49 @@ describe(`Webpack ${webpack.version}`, () => {
 				'index.css': 'index.css',
 				'index.js': 'index.ja.js',
 			});
+		});
+
+		test('works with Webpack 5 cache', async () => {
+			const volume = {
+				'/src/index.js': 'export default __("hello");',
+				'/cache/empty': '',
+			};
+			const configure = (config) => {
+				config.cache = {
+					type: 'filesystem',
+				};
+
+				config.plugins!.push(
+					new WebpackLocalizeAssetsPlugin({
+						locales: localesMulti,
+					}),
+				);
+			};
+
+			const buildAStats = await build(
+				volume,
+				configure,
+			);
+
+			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfsA);
+
+			const mRequireA = createMemRequire(mfsA);
+			const indexEnA = mRequireA('/dist/index.en.js');
+			expect(indexEnA).toBe('Hello');
+
+			const buildBStats = await build(
+				volume,
+				configure,
+			);
+
+			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfsB);
+
+			const mRequireB = createMemRequire(mfsB);
+			const indexEnB = mRequireB('/dist/index.en.js');
+
+			expect(indexEnB).toBe(indexEnA);
 		});
 	});
 });

@@ -6,6 +6,7 @@ import hasOwnProp from 'has-own-prop';
 import WebpackError from 'webpack/lib/WebpackError.js';
 import {
 	sha256,
+	base64,
 	findSubstringLocations,
 	toConstantDependency,
 	isWebpack5Compilation,
@@ -21,11 +22,19 @@ import {
 	WP5,
 } from './types';
 
-const nameTemplatePlaceholder = sha256('[locale:placeholder]');
-const nameTemplatePlaceholderPattern = new RegExp(nameTemplatePlaceholder, 'g');
-const SHA256_LENGTH = nameTemplatePlaceholder.length;
+const fileNameTemplatePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
+const fileNameTemplatePlaceholderPattern = new RegExp(fileNameTemplatePlaceholder.replace(/[[\]]/g, '\\$&'), 'g');
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
+
+const placeholderPrefix = sha256('localize-assets-plugin-placeholder-prefix').slice(0, 8);
+const placeholderSuffix = '|';
+
+type PlaceholderLocations = {
+	stringKey: string;
+	index: number;
+	endIndex: number;
+}[];
 
 class LocalizeAssetsPlugin implements Plugin {
 	options: Options;
@@ -33,8 +42,6 @@ class LocalizeAssetsPlugin implements Plugin {
 	localeNames: string[];
 
 	singleLocale?: string;
-
-	localePlaceholders = new Map<string, string>();
 
 	validatedLocales = new Set<string>();
 
@@ -97,7 +104,7 @@ class LocalizeAssetsPlugin implements Plugin {
 	}
 
 	interpolateLocaleToFileName(compilation: Compilation) {
-		const replaceWith = this.singleLocale ?? nameTemplatePlaceholder;
+		const replaceWith = this.singleLocale ?? fileNameTemplatePlaceholder;
 		const interpolate = (path) => {
 			if (typeof path === 'string') {
 				path = path.replace(/\[locale]/g, replaceWith);
@@ -153,13 +160,8 @@ class LocalizeAssetsPlugin implements Plugin {
 		compilation: Compilation,
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const {
-			singleLocale,
-			localePlaceholders,
-		} = this;
-		const {
-			functionName = '__',
-		} = this.options;
+		const { singleLocale } = this;
+		const { functionName = '__' } = this.options;
 
 		const handler = (parser) => {
 			parser.hooks.call.for(functionName).tap(LocalizeAssetsPlugin.name, (callExpressionNode) => {
@@ -183,9 +185,8 @@ class LocalizeAssetsPlugin implements Plugin {
 							JSON.stringify(this.options.locales[singleLocale][stringKey] || stringKey),
 						)(callExpressionNode);
 					} else {
-						const placeholder = LocalizeAssetsPlugin.name + sha256(stringKey);
+						const placeholder = placeholderPrefix + base64.encode(stringKey) + placeholderSuffix;
 						toConstantDependency(parser, JSON.stringify(placeholder))(callExpressionNode);
-						localePlaceholders.set(placeholder, stringKey);
 					}
 
 					return true;
@@ -216,30 +217,33 @@ class LocalizeAssetsPlugin implements Plugin {
 	}
 
 	locatePlaceholders(sourceString: string) {
-		const { localePlaceholders } = this;
+		const placeholderLocations: PlaceholderLocations = [];
 
-		const localizationReplacements: {
-			stringKey: string;
-			index: number;
-		}[] = [];
-
-		const possibleLocations = findSubstringLocations(sourceString, LocalizeAssetsPlugin.name);
+		const possibleLocations = findSubstringLocations(sourceString, placeholderPrefix);
 		for (const placeholderIndex of possibleLocations) {
+			const placeholderStartIndex = placeholderIndex + placeholderPrefix.length;
+			const placeholderSuffixIndex = sourceString.indexOf(placeholderSuffix, placeholderStartIndex);
+
+			if (placeholderSuffixIndex === -1) {
+				continue;
+			}
+
 			const placeholder = sourceString.slice(
-				placeholderIndex,
-				placeholderIndex + LocalizeAssetsPlugin.name.length + SHA256_LENGTH,
+				placeholderStartIndex,
+				placeholderSuffixIndex,
 			);
 
-			const stringKey = localePlaceholders.get(placeholder);
+			const stringKey = base64.decode(placeholder);
 			if (stringKey) {
-				localizationReplacements.push({
+				placeholderLocations.push({
 					stringKey,
 					index: placeholderIndex,
+					endIndex: placeholderSuffixIndex + placeholderSuffix.length,
 				});
 			}
 		}
 
-		return localizationReplacements;
+		return placeholderLocations;
 	}
 
 	generateLocalizedAssets(compilation: Compilation) {
@@ -249,7 +253,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		const generateLocalizedAssets = async () => {
 			// @ts-expect-error Outdated @type
 			const assetsWithInfo = compilation.getAssets()
-				.filter(asset => asset.name.includes(nameTemplatePlaceholder));
+				.filter(asset => asset.name.includes(fileNameTemplatePlaceholder));
 
 			await Promise.all(assetsWithInfo.map(async (asset) => {
 				const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
@@ -257,21 +261,21 @@ class LocalizeAssetsPlugin implements Plugin {
 
 				if (isJsFile.test(asset.name)) {
 					const sourceString = source.toString();
-					const localizationReplacements = this.locatePlaceholders(sourceString);
-					const localePlaceholderLocations = findSubstringLocations(
+					const placeholderLocations = this.locatePlaceholders(sourceString);
+					const fileNamePlaceholderLocations = findSubstringLocations(
 						sourceString,
-						nameTemplatePlaceholder,
+						fileNameTemplatePlaceholder,
 					);
 
 					await Promise.all(localeNames.map(async (locale) => {
-						const newAssetName = asset.name.replace(nameTemplatePlaceholderPattern, locale);
+						const newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
 						localizedAssetNames.push(newAssetName);
 
 						const localizedSource = this.localizeAsset(
 							locale,
 							newAssetName,
-							localizationReplacements,
-							localePlaceholderLocations,
+							placeholderLocations,
+							fileNamePlaceholderLocations,
 							sourceString,
 							(
 								(!sourceMapsForLocales || sourceMapsForLocales.includes(locale))
@@ -297,7 +301,7 @@ class LocalizeAssetsPlugin implements Plugin {
 					}
 
 					await Promise.all(localesToIterate.map(async (locale) => {
-						const newAssetName = asset.name.replace(nameTemplatePlaceholderPattern, locale);
+						const newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
 						localizedAssetNames.push(newAssetName);
 
 						// @ts-expect-error Outdated @type
@@ -337,11 +341,8 @@ class LocalizeAssetsPlugin implements Plugin {
 	localizeAsset(
 		locale: string,
 		assetName: string,
-		localizationReplacements: {
-			stringKey: string;
-			index: number;
-		}[],
-		localePlaceholderLocations: number[],
+		placeholderLocations: PlaceholderLocations,
+		fileNamePlaceholderLocations: number[],
 		source: string,
 		map: RawSourceMap | null,
 	) {
@@ -349,21 +350,21 @@ class LocalizeAssetsPlugin implements Plugin {
 		const magicStringInstance = new MagicString(source);
 
 		// Localze strings
-		for (const { stringKey, index } of localizationReplacements) {
+		for (const { stringKey, index, endIndex } of placeholderLocations) {
 			const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
 
 			magicStringInstance.overwrite(
 				index,
-				index + LocalizeAssetsPlugin.name.length + SHA256_LENGTH,
+				endIndex,
 				localizedString,
 			);
 		}
 
 		// Localize chunk requests
-		for (const location of localePlaceholderLocations) {
+		for (const location of fileNamePlaceholderLocations) {
 			magicStringInstance.overwrite(
 				location,
-				location + nameTemplatePlaceholder.length,
+				location + fileNameTemplatePlaceholder.length,
 				locale,
 			);
 		}

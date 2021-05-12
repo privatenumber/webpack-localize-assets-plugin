@@ -8,6 +8,11 @@ import {
 
 export const sha256 = (input: string) => crypto.createHash('sha256').update(input).digest('hex');
 
+export const base64 = {
+	encode: (ascii: string) => Buffer.from(ascii).toString('base64'),
+	decode: (base64Encoded: string) => Buffer.from(base64Encoded, 'base64').toString('ascii'),
+};
+
 export function findSubstringLocations(
 	string: string,
 	substring: string,
