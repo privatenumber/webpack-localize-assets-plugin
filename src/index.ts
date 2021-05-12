@@ -284,7 +284,10 @@ class LocalizeAssetsPlugin implements Plugin {
 						compilation.emitAsset(
 							newAssetName,
 							localizedSource,
-							asset.info,
+							{
+								...asset.info,
+								locale,
+							},
 						);
 					}
 				} else {
@@ -314,12 +317,17 @@ class LocalizeAssetsPlugin implements Plugin {
 		// Apply after minification since we don't want to
 		// duplicate the costs of that for each asset
 		if (isWebpack5Compilation(compilation)) {
-			compilation.hooks.afterProcessAssets.tap(
-				LocalizeAssetsPlugin.name,
+			// Happens after PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE
+			compilation.hooks.processAssets.tap(
+				{
+					name: LocalizeAssetsPlugin.name,
+					stage: compilation.constructor.PROCESS_ASSETS_STAGE_ANALYSE,
+				},
 				generateLocalizedAssets,
 			);
 		} else {
-			compilation.hooks.afterOptimizeChunkAssets.tap(
+			// Triggered after minification, which usually happens in optimizeChunkAssets
+			compilation.hooks.optimizeAssets.tap(
 				LocalizeAssetsPlugin.name,
 				generateLocalizedAssets,
 			);

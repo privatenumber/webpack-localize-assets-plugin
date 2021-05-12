@@ -15,15 +15,27 @@ export interface FileSystem {
 export const createMemRequire = <T extends FileSystem>(mfs: T) => {
 	function makeRequire(module) {
 		function require(modulePath) {
-			if (isFilePath.test(modulePath) && !hasExtension.test(modulePath)) {
+			const pathExtension = modulePath.match(hasExtension)?.[0];
+			if (isFilePath.test(modulePath) && !pathExtension) {
 				modulePath += '.js';
 			}
+
 			const filename = path.resolve(path.dirname(module.filename), modulePath);
 			const newModule = new Module(filename, module);
 			newModule.filename = filename;
 
-			const sourceCode = Module.wrap(mfs.readFileSync(filename).toString());
-			vm.runInNewContext(sourceCode)(newModule.exports, makeRequire(newModule), newModule);
+			const sourceCode = mfs.readFileSync(filename).toString();
+			switch(pathExtension) {
+				case '.js':
+					const moduleWrappedSourceCode = Module.wrap(sourceCode);
+					vm.runInNewContext(moduleWrappedSourceCode)(newModule.exports, makeRequire(newModule), newModule);
+					break;
+
+				case '.json':
+					newModule.exports = JSON.parse(sourceCode);
+					break;
+			}
+
 			return newModule.exports;
 		}
 

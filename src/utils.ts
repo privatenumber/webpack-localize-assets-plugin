@@ -45,7 +45,22 @@ export const deleteAsset = (
 ) => {
 	// Delete original unlocalized asset
 	if (isWebpack5Compilation(compilation)) {
+
+		for (const chunk of compilation.chunks) {
+			if (chunk.files.has(assetName)) {
+				newAssetNames.forEach(newAssetName => {
+					chunk.files.add(newAssetName);
+				});
+			}
+			if (chunk.auxiliaryFiles.has(assetName)) {
+				newAssetNames.forEach(newAssetName => {
+					chunk.auxiliaryFiles.add(newAssetName);
+				});
+			}
+		}
+
 		compilation.deleteAsset(assetName);
+
 	} else {
 		delete compilation.assets[assetName];
 
