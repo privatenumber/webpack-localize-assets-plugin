@@ -1,5 +1,6 @@
 import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import { isWebpack5 } from '../src/utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
 import { build, assertFsWithReadFileSync } from './utils';
@@ -384,67 +385,6 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assets).toHaveProperty(['index.css']);
 		});
 
-		/**
-		 * Important to localize after minification so that minification
-		 * doesn't get applied to new assets.
-		 *
-		 * (Although it might still with `additionalAssets: true` in processAssets)
-		 */
-		test('localize after minification', async () => {
-			/**
-			 * Mocked hooks after terser-webpack-plugin v4.2.3
-			 * https://github.com/webpack-contrib/terser-webpack-plugin/blob/v4.2.3/src/index.js#L664
-			 */
-			const FakeMinifier = {
-				name: 'FakeMinfier',
-
-				apply(compiler) {
-					compiler.hooks.compilation.tap(FakeMinifier.name, (compilation) => {
-						const checkAssets = () => {
-							const assets = Object.keys(compilation.assets);
-							expect(assets.length).toBe(1);
-							expect(assets[0]).toBe('index.997717b9afdf2344d416935c7a77636a95d4030d5774d77862ca2904a2382581.js');
-						};
-
-						if (isWebpack5(webpack)) {
-							compilation.hooks.processAssets.tap(
-								{
-									name: FakeMinifier.name,
-									stage: compilation.constructor.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
-									/**
-									 * Added in v5.1.0 to minifiy assets added in later stages.
-									 * It should not apply to the localized assets.
-									 * https://github.com/webpack-contrib/terser-webpack-plugin/blob/v5.1.0/src/index.js#L637
-									 */
-									additionalAssets: true,
-								},
-								checkAssets,
-							);
-						} else {
-							compilation.hooks.optimizeChunkAssets.tap(FakeMinifier.name, checkAssets);
-						}
-					});
-				},
-			};
-
-			const buildStats = await build(
-				{
-					'/src/index.js': 'export default __("hello");',
-				},
-				(config) => {
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesMulti,
-						}),
-						FakeMinifier,
-					);
-				},
-			);
-
-			const assets = Object.keys(buildStats.compilation.assets);
-			expect(assets.length).toBe(3);
-		});
-
 		test('no placeholders in single locale', async () => {
 			const FakeMinifier = {
 				name: 'FakeMinfier',
@@ -560,6 +500,63 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(buildStats.hasWarnings()).toBe(true);
 			expect(buildStats.compilation.warnings.length).toBe(1);
 			expect(buildStats.compilation.warnings[0].message).toMatch('Unused string key "hello"');
+		});
+
+		test('works with WebpackManifestPlugin', async () => {
+			const hasLocale = /\.(en|es|ja)\.\w{2}(\.map)?$/;
+			const localeNames = Object.keys(localesMulti);
+			const buildStats = await build(
+				{
+					'/src/index.js': 'import "./style.css";',
+					'/src/style.css': 'body { color: red; }',
+				},
+				(config) => {
+					config.devtool = 'source-map';
+
+					config.module!.rules.push({
+						test: /\.css$/,
+						use: [
+							MiniCssExtractPlugin.loader,
+							'css-loader',
+						],
+					});
+
+					config.plugins!.push(
+						new MiniCssExtractPlugin(),
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							warnOnUnusedString: true,
+						}),
+						...localeNames.map(locale => new WebpackManifestPlugin({
+							fileName: `manifest.${locale}.json`,
+							filter: file => !file.isAsset && (!hasLocale.test(file.path) || file.path.match(`.${locale}.`)),
+						})),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createMemRequire(mfs);
+			const manifestEn = mRequire('/dist/manifest.en.json');
+
+			expect(manifestEn).toMatchObject({
+				'index.css': 'index.css',
+				'index.js': 'index.en.js',
+			});
+
+			const manifestEs = mRequire('/dist/manifest.es.json');
+			expect(manifestEs).toMatchObject({
+				'index.css': 'index.css',
+				'index.js': 'index.es.js',
+			});
+
+			const manifestJa = mRequire('/dist/manifest.ja.json');
+			expect(manifestJa).toMatchObject({
+				'index.css': 'index.css',
+				'index.js': 'index.ja.js',
+			});
 		});
 	});
 });
