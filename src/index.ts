@@ -18,6 +18,7 @@ import {
 	Compiler,
 	Compilation,
 	NormalModuleFactory,
+	WP5,
 } from './types';
 
 const nameTemplatePlaceholder = sha256('[locale:placeholder]');
@@ -246,12 +247,12 @@ class LocalizeAssetsPlugin implements Plugin {
 		const { localeNames } = this;
 		const { sourceMapsForLocales } = this.options;
 
-		const generateLocalizedAssets = () => {
+		const generateLocalizedAssets = async () => {
 			// @ts-expect-error Outdated @type
 			const assetsWithInfo = compilation.getAssets()
 				.filter(asset => asset.name.includes(nameTemplatePlaceholder));
 
-			for (const asset of assetsWithInfo) {
+			await Promise.all(assetsWithInfo.map(async (asset) => {
 				const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
 				const localizedAssetNames: string[] = [];
 
@@ -263,7 +264,7 @@ class LocalizeAssetsPlugin implements Plugin {
 						nameTemplatePlaceholder,
 					);
 
-					for (const locale of localeNames) {
+					await Promise.all(localeNames.map(async (locale) => {
 						const newAssetName = asset.name.replace(nameTemplatePlaceholderPattern, locale);
 						localizedAssetNames.push(newAssetName);
 
@@ -284,16 +285,19 @@ class LocalizeAssetsPlugin implements Plugin {
 						compilation.emitAsset(
 							newAssetName,
 							localizedSource,
-							asset.info,
+							{
+								...asset.info,
+								locale,
+							},
 						);
-					}
+					}));
 				} else {
 					let localesToIterate = localeNames;
 					if (isSourceMap.test(asset.name) && sourceMapsForLocales) {
 						localesToIterate = sourceMapsForLocales;
 					}
 
-					for (const locale of localesToIterate) {
+					await Promise.all(localesToIterate.map(async (locale) => {
 						const newAssetName = asset.name.replace(nameTemplatePlaceholderPattern, locale);
 						localizedAssetNames.push(newAssetName);
 
@@ -303,23 +307,28 @@ class LocalizeAssetsPlugin implements Plugin {
 							asset.source,
 							asset.info,
 						);
-					}
+					}));
 				}
 
 				// Delete original unlocalized asset
 				deleteAsset(compilation, asset.name, localizedAssetNames);
-			}
+			}));
 		};
 
 		// Apply after minification since we don't want to
 		// duplicate the costs of that for each asset
 		if (isWebpack5Compilation(compilation)) {
-			compilation.hooks.afterProcessAssets.tap(
-				LocalizeAssetsPlugin.name,
+			// Happens after PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE
+			compilation.hooks.processAssets.tapPromise(
+				{
+					name: LocalizeAssetsPlugin.name,
+					stage: (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_ANALYSE,
+				},
 				generateLocalizedAssets,
 			);
 		} else {
-			compilation.hooks.afterOptimizeChunkAssets.tap(
+			// Triggered after minification, which usually happens in optimizeChunkAssets
+			compilation.hooks.optimizeAssets.tapPromise(
 				LocalizeAssetsPlugin.name,
 				generateLocalizedAssets,
 			);
