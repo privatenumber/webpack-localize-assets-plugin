@@ -24,7 +24,6 @@ import {
 const nameTemplatePlaceholder = sha256('[locale:placeholder]');
 const nameTemplatePlaceholderPattern = new RegExp(nameTemplatePlaceholder, 'g');
 const SHA256_LENGTH = nameTemplatePlaceholder.length;
-const QUOTES_LENGTH = 2;
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
@@ -184,8 +183,8 @@ class LocalizeAssetsPlugin implements Plugin {
 							JSON.stringify(this.options.locales[singleLocale][stringKey] || stringKey),
 						)(callExpressionNode);
 					} else {
-						const placeholder = JSON.stringify(LocalizeAssetsPlugin.name + sha256(stringKey));
-						toConstantDependency(parser, placeholder)(callExpressionNode);
+						const placeholder = LocalizeAssetsPlugin.name + sha256(stringKey);
+						toConstantDependency(parser, JSON.stringify(placeholder))(callExpressionNode);
 						localePlaceholders.set(placeholder, stringKey);
 					}
 
@@ -197,7 +196,11 @@ class LocalizeAssetsPlugin implements Plugin {
 					`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`,
 				);
 
-				parser.state.module.warnings.push(error);
+				if (parser.state.module.addWarning) {
+					parser.state.module.addWarning(error);
+				} else {
+					parser.state.module.warnings.push(error);
+				}
 			});
 		};
 
@@ -220,11 +223,11 @@ class LocalizeAssetsPlugin implements Plugin {
 			index: number;
 		}[] = [];
 
-		const possibleLocations = findSubstringLocations(sourceString, `"${LocalizeAssetsPlugin.name}`);
+		const possibleLocations = findSubstringLocations(sourceString, LocalizeAssetsPlugin.name);
 		for (const placeholderIndex of possibleLocations) {
 			const placeholder = sourceString.slice(
 				placeholderIndex,
-				placeholderIndex + LocalizeAssetsPlugin.name.length + SHA256_LENGTH + QUOTES_LENGTH,
+				placeholderIndex + LocalizeAssetsPlugin.name.length + SHA256_LENGTH,
 			);
 
 			const stringKey = localePlaceholders.get(placeholder);
@@ -347,11 +350,11 @@ class LocalizeAssetsPlugin implements Plugin {
 
 		// Localze strings
 		for (const { stringKey, index } of localizationReplacements) {
-			const localizedString = JSON.stringify(localeData[stringKey] || stringKey);
+			const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
 
 			magicStringInstance.overwrite(
 				index,
-				index + LocalizeAssetsPlugin.name.length + SHA256_LENGTH + QUOTES_LENGTH,
+				index + LocalizeAssetsPlugin.name.length + SHA256_LENGTH,
 				localizedString,
 			);
 		}

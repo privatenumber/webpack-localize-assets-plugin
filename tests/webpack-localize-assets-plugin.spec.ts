@@ -15,12 +15,15 @@ const localesSingle = {
 const localesMulti = {
 	en: {
 		hello: 'Hello',
+		stringWithQuotes: '"quotes"',
 	},
 	es: {
 		hello: 'Hola',
+		stringWithQuotes: '"quotes"',
 	},
 	ja: {
 		hello: 'こんにちは',
+		stringWithQuotes: '"quotes"',
 	},
 };
 
@@ -334,10 +337,10 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(jaBuild).toBe(localesMulti.ja.hello);
 		});
 
-		test('works with minification', async () => {
+		test('works with minification (string concatenation)', async () => {
 			const buildStats = await build(
 				{
-					'/src/index.js': 'export default __("hello");',
+					'/src/index.js': 'export default __("hello") + " world and " + __("stringWithQuotes");',
 				},
 				(config) => {
 					config.optimization!.minimize = true;
@@ -351,6 +354,11 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createMemRequire(mfs);
+
+			const enBuild = await mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(`${localesMulti.en.hello} world and "quotes"`);
 
 			// Assert that asset is minified
 			expect(mfs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
@@ -531,8 +539,9 @@ describe(`Webpack ${webpack.version}`, () => {
 			);
 
 			expect(buildStats.hasWarnings()).toBe(true);
-			expect(buildStats.compilation.warnings.length).toBe(1);
+			expect(buildStats.compilation.warnings.length).toBe(2);
 			expect(buildStats.compilation.warnings[0].message).toMatch('Unused string key "hello"');
+			expect(buildStats.compilation.warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
 		});
 
 		test('works with WebpackManifestPlugin', async () => {
