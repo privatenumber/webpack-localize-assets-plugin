@@ -126,6 +126,13 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createMemRequire(mfs);
+
+			expect(mRequire('/dist/index.en.js')).toBe('bad key');
+
 			expect(buildStats.hasWarnings()).toBe(true);
 			expect(buildStats.compilation.warnings.length).toBe(1);
 			expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" in locales: en, es, ja');
