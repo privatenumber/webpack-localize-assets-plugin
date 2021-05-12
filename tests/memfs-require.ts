@@ -15,9 +15,10 @@ export interface FileSystem {
 export const createMemRequire = <T extends FileSystem>(mfs: T) => {
 	function makeRequire(module) {
 		function require(modulePath) {
-			const pathExtension = modulePath.match(hasExtension)?.[0];
+			let pathExtension = modulePath.match(hasExtension)?.[0];
 			if (isFilePath.test(modulePath) && !pathExtension) {
-				modulePath += '.js';
+				pathExtension = '.js';
+				modulePath += pathExtension;
 			}
 
 			const filename = path.resolve(path.dirname(module.filename), modulePath);
@@ -25,15 +26,23 @@ export const createMemRequire = <T extends FileSystem>(mfs: T) => {
 			newModule.filename = filename;
 
 			const sourceCode = mfs.readFileSync(filename).toString();
-			switch(pathExtension) {
-				case '.js':
+			switch (pathExtension) {
+				case '.js': {
 					const moduleWrappedSourceCode = Module.wrap(sourceCode);
-					vm.runInNewContext(moduleWrappedSourceCode)(newModule.exports, makeRequire(newModule), newModule);
+					vm.runInNewContext(moduleWrappedSourceCode)(
+						newModule.exports,
+						makeRequire(newModule),
+						newModule,
+					);
 					break;
+				}
 
-				case '.json':
+				case '.json': {
 					newModule.exports = JSON.parse(sourceCode);
 					break;
+				}
+				default:
+					throw new Error(`Unsupported exntension ${pathExtension}`);
 			}
 
 			return newModule.exports;

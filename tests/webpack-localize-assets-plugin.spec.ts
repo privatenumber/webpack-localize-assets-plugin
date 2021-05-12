@@ -385,7 +385,6 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assets).toHaveProperty(['index.css']);
 		});
 
-
 		test('no placeholders in single locale', async () => {
 			const FakeMinifier = {
 				name: 'FakeMinfier',
@@ -513,7 +512,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 				(config) => {
 					config.devtool = 'source-map';
-		
+
 					config.module!.rules.push({
 						test: /\.css$/,
 						use: [
@@ -521,7 +520,7 @@ describe(`Webpack ${webpack.version}`, () => {
 							'css-loader',
 						],
 					});
-		
+
 					config.plugins!.push(
 						new MiniCssExtractPlugin(),
 						new WebpackLocalizeAssetsPlugin({
@@ -530,29 +529,29 @@ describe(`Webpack ${webpack.version}`, () => {
 						}),
 						...localeNames.map(locale => new WebpackManifestPlugin({
 							fileName: `manifest.${locale}.json`,
-							filter: (file) => !file.isAsset && (!hasLocale.test(file.path) || file.path.match(`.${locale}.`)),
+							filter: file => !file.isAsset && (!hasLocale.test(file.path) || file.path.match(`.${locale}.`)),
 						})),
 					);
 				},
 			);
-		
+
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
-		
+
 			const mRequire = createMemRequire(mfs);
 			const manifestEn = mRequire('/dist/manifest.en.json');
-		
+
 			expect(manifestEn).toMatchObject({
 				'index.css': 'index.css',
 				'index.js': 'index.en.js',
 			});
-		
+
 			const manifestEs = mRequire('/dist/manifest.es.json');
 			expect(manifestEs).toMatchObject({
 				'index.css': 'index.css',
 				'index.js': 'index.es.js',
 			});
-		
+
 			const manifestJa = mRequire('/dist/manifest.ja.json');
 			expect(manifestJa).toMatchObject({
 				'index.css': 'index.css',
