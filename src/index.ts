@@ -18,6 +18,7 @@ import {
 	Compiler,
 	Compilation,
 	NormalModuleFactory,
+	WP5,
 } from './types';
 
 const nameTemplatePlaceholder = sha256('[locale:placeholder]');
@@ -321,7 +322,7 @@ class LocalizeAssetsPlugin implements Plugin {
 			compilation.hooks.processAssets.tap(
 				{
 					name: LocalizeAssetsPlugin.name,
-					stage: compilation.constructor.PROCESS_ASSETS_STAGE_ANALYSE,
+					stage: (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_ANALYSE,
 				},
 				generateLocalizedAssets,
 			);
