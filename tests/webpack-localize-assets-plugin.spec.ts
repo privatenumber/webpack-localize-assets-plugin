@@ -1,6 +1,7 @@
 import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
+import tempy from 'tempy';
 import { isWebpack5 } from '../src/utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
 import { build, assertFsWithReadFileSync } from './utils';
@@ -604,9 +605,11 @@ describe(`Webpack ${webpack.version}`, () => {
 			const volume = {
 				'/src/index.js': 'export default __("hello");',
 			};
+			const cacheDirectory = tempy.directory();
 			const configure = (config) => {
 				config.cache = {
 					type: 'filesystem',
+					cacheDirectory,
 				};
 
 				config.plugins!.push(
