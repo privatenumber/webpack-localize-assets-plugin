@@ -15,6 +15,7 @@ import {
 import {
 	Options,
 	OptionsSchema,
+	PlaceholderLocations,
 	Plugin,
 	Compiler,
 	Compilation,
@@ -30,22 +31,16 @@ const isSourceMap = /\.js\.map$/;
 const placeholderPrefix = sha256('localize-assets-plugin-placeholder-prefix').slice(0, 8);
 const placeholderSuffix = '|';
 
-type PlaceholderLocations = {
-	stringKey: string;
-	index: number;
-	endIndex: number;
-}[];
-
 class LocalizeAssetsPlugin implements Plugin {
-	options: Options;
+	private readonly options: Options;
 
-	localeNames: string[];
+	private readonly localeNames: string[];
 
-	singleLocale?: string;
+	private readonly singleLocale?: string;
 
-	validatedLocales = new Set<string>();
+	private readonly validatedLocales = new Set<string>();
 
-	trackStringKeys = new Set<string>();
+	private readonly trackStringKeys = new Set<string>();
 
 	constructor(options: Options) {
 		OptionsSchema.parse(options);
@@ -92,15 +87,22 @@ class LocalizeAssetsPlugin implements Plugin {
 					// Create localized assets by swapping out placeholders with localized strings
 					this.generateLocalizedAssets(compilation);
 				}
-
-				if (this.options.warnOnUnusedString && this.trackStringKeys.size > 0) {
-					for (const unusedStringKey of this.trackStringKeys) {
-						const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Unused string key "${unusedStringKey}"`);
-						compilation.warnings.push(error);
-					}
-				}
 			},
 		);
+
+		if (this.options.warnOnUnusedString) {
+			compiler.hooks.done.tap(
+				LocalizeAssetsPlugin.name,
+				({ compilation }) => {
+					if (this.trackStringKeys.size > 0) {
+						for (const unusedStringKey of this.trackStringKeys) {
+							const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Unused string key "${unusedStringKey}"`);
+							compilation.warnings.push(error);
+						}
+					}
+				},
+			);
+		}
 	}
 
 	interpolateLocaleToFileName(compilation: Compilation) {
@@ -174,10 +176,6 @@ class LocalizeAssetsPlugin implements Plugin {
 				) {
 					const stringKey = firstArgumentNode.value;
 					this.validateLocale(compilation, stringKey);
-
-					if (this.options.warnOnUnusedString) {
-						this.trackStringKeys.delete(stringKey);
-					}
 
 					if (singleLocale) {
 						toConstantDependency(
@@ -352,6 +350,10 @@ class LocalizeAssetsPlugin implements Plugin {
 		// Localze strings
 		for (const { stringKey, index, endIndex } of placeholderLocations) {
 			const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
+
+			if (this.options.warnOnUnusedString) {
+				this.trackStringKeys.delete(stringKey);
+			}
 
 			magicStringInstance.overwrite(
 				index,

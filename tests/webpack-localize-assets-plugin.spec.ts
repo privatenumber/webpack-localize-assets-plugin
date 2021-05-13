@@ -1,6 +1,7 @@
 import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
+import tempy from 'tempy';
 import { isWebpack5 } from '../src/utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
 import { build, assertFsWithReadFileSync } from './utils';
@@ -603,11 +604,12 @@ describe(`Webpack ${webpack.version}`, () => {
 		test('works with Webpack 5 cache', async () => {
 			const volume = {
 				'/src/index.js': 'export default __("hello");',
-				'/cache/empty': '',
 			};
+			const cacheDirectory = tempy.directory();
 			const configure = (config) => {
 				config.cache = {
 					type: 'filesystem',
+					cacheDirectory,
 				};
 
 				config.plugins!.push(
@@ -642,5 +644,41 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			expect(indexEnB).toBe(indexEnA);
 		});
+	});
+
+	test('warnOnUnusedString works with Webpack 5 cache', async () => {
+		const volume = {
+			'/src/index.js': 'export default __("hello");',
+		};
+		const configure = (config) => {
+			config.cache = {
+				type: 'filesystem',
+			};
+
+			config.plugins!.push(
+				new WebpackLocalizeAssetsPlugin({
+					locales: localesMulti,
+					warnOnUnusedString: true,
+				}),
+			);
+		};
+
+		const buildAStats = await build(
+			volume,
+			configure,
+		);
+
+		expect(buildAStats.hasWarnings()).toBe(true);
+		expect(buildAStats.compilation.warnings.length).toBe(1);
+		expect(buildAStats.compilation.warnings[0].message).toMatch('Unused string key "stringWithQuotes"');
+
+		const buildBStats = await build(
+			volume,
+			configure,
+		);
+
+		expect(buildBStats.hasWarnings()).toBe(true);
+		expect(buildBStats.compilation.warnings.length).toBe(1);
+		expect(buildBStats.compilation.warnings[0].message).toMatch('Unused string key "stringWithQuotes"');
 	});
 });
