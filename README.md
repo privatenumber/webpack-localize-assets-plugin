@@ -43,7 +43,7 @@ In `webpack.config.js`:
    },
 
     plugins: [
-	  ...,
+      ...,
 +     new LocalizeAssetsPlugin({
 +       locales
 +     })
