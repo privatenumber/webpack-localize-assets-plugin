@@ -37,15 +37,15 @@ type PlaceholderLocations = {
 }[];
 
 class LocalizeAssetsPlugin implements Plugin {
-	options: Options;
+	private readonly options: Options;
 
-	localeNames: string[];
+	private readonly localeNames: string[];
 
-	singleLocale?: string;
+	private readonly singleLocale?: string;
 
-	validatedLocales = new Set<string>();
+	private readonly validatedLocales = new Set<string>();
 
-	trackStringKeys = new Set<string>();
+	private readonly trackStringKeys = new Set<string>();
 
 	constructor(options: Options) {
 		OptionsSchema.parse(options);
