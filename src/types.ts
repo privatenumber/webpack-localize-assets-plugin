@@ -26,6 +26,12 @@ export const OptionsSchema = z.object({
 
 export type Options = z.infer<typeof OptionsSchema>;
 
+export type PlaceholderLocations = {
+	stringKey: string;
+	index: number;
+	endIndex: number;
+}[];
+
 export { WP4, WP5 };
 export type Webpack = typeof WP4 | typeof WP5;
 export type Plugin = WP4.Plugin;

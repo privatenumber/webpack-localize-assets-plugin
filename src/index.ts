@@ -15,6 +15,7 @@ import {
 import {
 	Options,
 	OptionsSchema,
+	PlaceholderLocations,
 	Plugin,
 	Compiler,
 	Compilation,
@@ -29,12 +30,6 @@ const isSourceMap = /\.js\.map$/;
 
 const placeholderPrefix = sha256('localize-assets-plugin-placeholder-prefix').slice(0, 8);
 const placeholderSuffix = '|';
-
-type PlaceholderLocations = {
-	stringKey: string;
-	index: number;
-	endIndex: number;
-}[];
 
 class LocalizeAssetsPlugin implements Plugin {
 	private readonly options: Options;
