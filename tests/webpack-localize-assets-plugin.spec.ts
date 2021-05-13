@@ -15,12 +15,15 @@ const localesSingle = {
 const localesMulti = {
 	en: {
 		hello: 'Hello',
+		stringWithQuotes: '"quotes"',
 	},
 	es: {
 		hello: 'Hola',
+		stringWithQuotes: '"quotes"',
 	},
 	ja: {
 		hello: 'こんにちは',
+		stringWithQuotes: '"quotes"',
 	},
 };
 
@@ -112,7 +115,33 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assets).toHaveProperty(['index.en.en.js']);
 		});
 
-		test('missing locale - warning', async () => {
+		test('missing locale - warning - single locale', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("bad key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+						}),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createMemRequire(mfs);
+
+			expect(mRequire('/dist/index.en.js')).toBe('bad key');
+
+			expect(buildStats.hasWarnings()).toBe(true);
+			expect(buildStats.compilation.warnings.length).toBe(1);
+			expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" in locales: en');
+		});
+
+		test('missing locale - warning - multi locale', async () => {
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default __("bad key");',
@@ -125,6 +154,13 @@ describe(`Webpack ${webpack.version}`, () => {
 					);
 				},
 			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createMemRequire(mfs);
+
+			expect(mRequire('/dist/index.en.js')).toBe('bad key');
 
 			expect(buildStats.hasWarnings()).toBe(true);
 			expect(buildStats.compilation.warnings.length).toBe(1);
@@ -301,10 +337,10 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(jaBuild).toBe(localesMulti.ja.hello);
 		});
 
-		test('works with minification', async () => {
+		test('works with minification (string concatenation)', async () => {
 			const buildStats = await build(
 				{
-					'/src/index.js': 'export default __("hello");',
+					'/src/index.js': 'export default __("hello") + " world and " + __("stringWithQuotes");',
 				},
 				(config) => {
 					config.optimization!.minimize = true;
@@ -318,6 +354,11 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createMemRequire(mfs);
+
+			const enBuild = await mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(`${localesMulti.en.hello} world and "quotes"`);
 
 			// Assert that asset is minified
 			expect(mfs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
@@ -498,8 +539,9 @@ describe(`Webpack ${webpack.version}`, () => {
 			);
 
 			expect(buildStats.hasWarnings()).toBe(true);
-			expect(buildStats.compilation.warnings.length).toBe(1);
+			expect(buildStats.compilation.warnings.length).toBe(2);
 			expect(buildStats.compilation.warnings[0].message).toMatch('Unused string key "hello"');
+			expect(buildStats.compilation.warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
 		});
 
 		test('works with WebpackManifestPlugin', async () => {
@@ -525,7 +567,6 @@ describe(`Webpack ${webpack.version}`, () => {
 						new MiniCssExtractPlugin(),
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
-							warnOnUnusedString: true,
 						}),
 						...localeNames.map(locale => new WebpackManifestPlugin({
 							fileName: `manifest.${locale}.json`,
@@ -557,6 +598,49 @@ describe(`Webpack ${webpack.version}`, () => {
 				'index.css': 'index.css',
 				'index.js': 'index.ja.js',
 			});
+		});
+
+		test('works with Webpack 5 cache', async () => {
+			const volume = {
+				'/src/index.js': 'export default __("hello");',
+				'/cache/empty': '',
+			};
+			const configure = (config) => {
+				config.cache = {
+					type: 'filesystem',
+				};
+
+				config.plugins!.push(
+					new WebpackLocalizeAssetsPlugin({
+						locales: localesMulti,
+					}),
+				);
+			};
+
+			const buildAStats = await build(
+				volume,
+				configure,
+			);
+
+			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfsA);
+
+			const mRequireA = createMemRequire(mfsA);
+			const indexEnA = mRequireA('/dist/index.en.js');
+			expect(indexEnA).toBe('Hello');
+
+			const buildBStats = await build(
+				volume,
+				configure,
+			);
+
+			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfsB);
+
+			const mRequireB = createMemRequire(mfsB);
+			const indexEnB = mRequireB('/dist/index.en.js');
+
+			expect(indexEnB).toBe(indexEnA);
 		});
 	});
 });
