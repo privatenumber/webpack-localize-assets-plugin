@@ -1,15 +1,13 @@
 import vm from 'vm';
 import path from 'path';
 import Module from 'module';
+import { readFileSync, writeFileSync } from 'fs';
 
 const isFilePath = /^[./]/;
 const hasExtension = /\.\w+$/;
-
 export interface FileSystem {
-    readFileSync(
-		path: string | Buffer | URL | number,
-		options?: { encoding?: null; flag?: string } | null
-	): Buffer;
+    readFileSync: typeof readFileSync;
+	writeFileSync: typeof writeFileSync;
 }
 
 export const createMemRequire = <T extends FileSystem>(mfs: T) => {

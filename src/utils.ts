@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import webpack from 'webpack';
+import WebpackError from 'webpack/lib/WebpackError.js';
 import {
 	Webpack,
 	Compilation,
@@ -78,5 +79,13 @@ export const deleteAsset = (
 				chunk.files.splice(hasAsset, 1, ...newAssetNames);
 			}
 		}
+	}
+};
+
+export const reportModuleWarning = (module, warning: typeof WebpackError) => {
+	if (module.addWarning) {
+		module.addWarning(warning);
+	} else {
+		module.warnings.push(warning);
 	}
 };

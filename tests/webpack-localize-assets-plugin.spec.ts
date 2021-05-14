@@ -4,7 +4,7 @@ import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { isWebpack5 } from '../src/utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
-import { build, assertFsWithReadFileSync } from './utils';
+import { build, watch, assertFsWithReadFileSync } from './utils';
 import { createMemRequire } from './memfs-require';
 
 const localesEmpty = {};
@@ -116,112 +116,6 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assets).toHaveProperty(['index.en.en.js']);
 		});
 
-		test('missing locale - warning - single locale', async () => {
-			const buildStats = await build(
-				{
-					'/src/index.js': 'export default __("bad key");',
-				},
-				(config) => {
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesSingle,
-						}),
-					);
-				},
-			);
-
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createMemRequire(mfs);
-
-			expect(mRequire('/dist/index.en.js')).toBe('bad key');
-
-			expect(buildStats.hasWarnings()).toBe(true);
-			expect(buildStats.compilation.warnings.length).toBe(1);
-			expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" in locales: en');
-		});
-
-		test('missing locale - warning - multi locale', async () => {
-			const buildStats = await build(
-				{
-					'/src/index.js': 'export default __("bad key");',
-				},
-				(config) => {
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesMulti,
-						}),
-					);
-				},
-			);
-
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createMemRequire(mfs);
-
-			expect(mRequire('/dist/index.en.js')).toBe('bad key');
-
-			expect(buildStats.hasWarnings()).toBe(true);
-			expect(buildStats.compilation.warnings.length).toBe(1);
-			expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" in locales: en, es, ja');
-		});
-
-		test('missing locale - throwOnMissing', async () => {
-			await expect(async () => {
-				await build(
-					{
-						'/src/index.js': 'export default __("bad key");',
-					},
-					(config) => {
-						config.plugins!.push(
-							new WebpackLocalizeAssetsPlugin({
-								locales: localesMulti,
-								throwOnMissing: true,
-							}),
-						);
-					},
-				);
-			}).rejects.toThrow(/Missing localization for key "bad key" in locale/);
-		});
-
-		test('missing [locale] from filename', async () => {
-			await expect(async () => {
-				await build(
-					{
-						'/src/index.js': '',
-					},
-					(config) => {
-						config.output!.filename = '[name].js';
-						config.plugins!.push(
-							new WebpackLocalizeAssetsPlugin({
-								locales: localesSingle,
-							}),
-						);
-					},
-				);
-			}).rejects.toThrow('output.filename must include [locale]');
-		});
-
-		test('missing [locale] from chunkFilename', async () => {
-			await expect(async () => {
-				await build(
-					{
-						'/src/index.js': '',
-					},
-					(config) => {
-						config.output!.chunkFilename = '[name].js';
-						config.plugins!.push(
-							new WebpackLocalizeAssetsPlugin({
-								locales: localesSingle,
-							}),
-						);
-					},
-				);
-			}).rejects.toThrow('output.chunkFilename must include [locale]');
-		});
-
 		test('warn on confusing function usage', async () => {
 			const buildStats = await build(
 				{
@@ -263,6 +157,149 @@ describe(`Webpack ${webpack.version}`, () => {
 					},
 				);
 			}).rejects.toThrow('sourceMapsForLocales must contain valid locales');
+		});
+
+		describe('missing locale', () => {
+			test('warning - single locale', async () => {
+				const buildStats = await build(
+					{
+						'/src/index.js': 'export default __("bad key");',
+					},
+					(config) => {
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesSingle,
+							}),
+						);
+					},
+				);
+
+				const mfs = buildStats.compilation.compiler.outputFileSystem;
+				assertFsWithReadFileSync(mfs);
+
+				const mRequire = createMemRequire(mfs);
+
+				expect(mRequire('/dist/index.en.js')).toBe('bad key');
+
+				expect(buildStats.hasWarnings()).toBe(true);
+				expect(buildStats.compilation.warnings.length).toBe(1);
+				expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en');
+			});
+
+			test('warning - multi locale', async () => {
+				const buildStats = await build(
+					{
+						'/src/index.js': 'export default __("bad key");',
+					},
+					(config) => {
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesMulti,
+							}),
+						);
+					},
+				);
+
+				const mfs = buildStats.compilation.compiler.outputFileSystem;
+				assertFsWithReadFileSync(mfs);
+
+				const mRequire = createMemRequire(mfs);
+
+				expect(mRequire('/dist/index.en.js')).toBe('bad key');
+
+				expect(buildStats.hasWarnings()).toBe(true);
+				expect(buildStats.compilation.warnings.length).toBe(1);
+				expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en, es, ja');
+			});
+
+			test('throwOnMissing', async () => {
+				await expect(async () => {
+					await build(
+						{
+							'/src/index.js': 'export default __("bad key");',
+						},
+						(config) => {
+							config.plugins!.push(
+								new WebpackLocalizeAssetsPlugin({
+									locales: localesMulti,
+									throwOnMissing: true,
+								}),
+							);
+						},
+					);
+				}).rejects.toThrow('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en, es, ja');
+			});
+
+			test('missing [locale] from filename', async () => {
+				await expect(async () => {
+					await build(
+						{
+							'/src/index.js': '',
+						},
+						(config) => {
+							config.output!.filename = '[name].js';
+							config.plugins!.push(
+								new WebpackLocalizeAssetsPlugin({
+									locales: localesSingle,
+								}),
+							);
+						},
+					);
+				}).rejects.toThrow('output.filename must include [locale]');
+			});
+
+			test('missing [locale] from chunkFilename', async () => {
+				await expect(async () => {
+					await build(
+						{
+							'/src/index.js': '',
+						},
+						(config) => {
+							config.output!.chunkFilename = '[name].js';
+							config.plugins!.push(
+								new WebpackLocalizeAssetsPlugin({
+									locales: localesSingle,
+								}),
+							);
+						},
+					);
+				}).rejects.toThrow('output.chunkFilename must include [locale]');
+			});
+
+			test('watch - should re-warn on compile', async () => {
+				const buildStats = await watch(
+					{
+						'/src/index.js': 'export default __("missing-key-1");',
+					},
+					(config) => {
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesSingle,
+							}),
+						);
+					},
+					[
+						(mfs, stats) => {
+							expect(stats.compilation.warnings.length).toBe(1);
+							expect(stats.compilation.warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:15 from locales: en');
+
+							assertFsWithReadFileSync(mfs);
+							mfs.writeFileSync('/src/index.js', 'export default [__("missing-key-1"), __("missing-key-2")];');
+						},
+						(mfs, stats) => {
+							expect(stats.compilation.warnings.length).toBe(2);
+							expect(stats.compilation.warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:16 from locales: en');
+							expect(stats.compilation.warnings[1].message).toMatch('Missing localization for key "missing-key-2" used in /src/index.js:1:37 from locales: en');
+
+							assertFsWithReadFileSync(mfs);
+							mfs.writeFileSync('/src/index.js', 'export default __("missing-key-1");');
+						},
+					],
+				);
+
+				expect(buildStats.compilation.warnings.length).toBe(1);
+				expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:15 from locales: en');
+			});
 		});
 	});
 

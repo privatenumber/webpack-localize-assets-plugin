@@ -11,6 +11,7 @@ import {
 	toConstantDependency,
 	isWebpack5Compilation,
 	deleteAsset,
+	reportModuleWarning,
 } from './utils';
 import {
 	Options,
@@ -75,8 +76,9 @@ class LocalizeAssetsPlugin implements Plugin {
 		compiler.hooks.compilation.tap(
 			LocalizeAssetsPlugin.name,
 			(compilation: Compilation, { normalModuleFactory }) => {
+				this.validatedLocales.clear();
 				this.interpolateLocaleToFileName(compilation);
-				this.insertLocalePlaceholders(compilation, normalModuleFactory);
+				this.insertLocalePlaceholders(normalModuleFactory);
 			},
 		);
 
@@ -129,8 +131,9 @@ class LocalizeAssetsPlugin implements Plugin {
 	}
 
 	validateLocale(
-		compilation: Compilation,
 		stringKey: string,
+		module,
+		node,
 	) {
 		if (this.validatedLocales.has(stringKey)) {
 			return;
@@ -149,17 +152,20 @@ class LocalizeAssetsPlugin implements Plugin {
 		this.validatedLocales.add(stringKey);
 
 		if (isMissingFromLocales) {
-			const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Missing localization for key "${stringKey}" in locales: ${missingFromLocales.join(', ')}`);
+			const location = node.loc.start;
+			const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Missing localization for key "${stringKey}" used in ${module.resource}:${location.line}:${location.column} from locales: ${missingFromLocales.join(', ')}`);
 			if (throwOnMissing) {
 				throw error;
 			} else {
-				compilation.warnings.push(error);
+				reportModuleWarning(
+					module,
+					error,
+				);
 			}
 		}
 	}
 
 	insertLocalePlaceholders(
-		compilation: Compilation,
 		normalModuleFactory: NormalModuleFactory,
 	) {
 		const { singleLocale } = this;
@@ -175,7 +181,11 @@ class LocalizeAssetsPlugin implements Plugin {
 					&& typeof firstArgumentNode.value === 'string'
 				) {
 					const stringKey = firstArgumentNode.value;
-					this.validateLocale(compilation, stringKey);
+					this.validateLocale(
+						stringKey,
+						parser.state.module,
+						callExpressionNode,
+					);
 
 					if (singleLocale) {
 						toConstantDependency(
@@ -191,15 +201,10 @@ class LocalizeAssetsPlugin implements Plugin {
 				}
 
 				const location = callExpressionNode.loc.start;
-				const error = new WebpackError(
-					`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`,
+				reportModuleWarning(
+					parser.state.module,
+					new WebpackError(`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`),
 				);
-
-				if (parser.state.module.addWarning) {
-					parser.state.module.addWarning(error);
-				} else {
-					parser.state.module.warnings.push(error);
-				}
 			});
 		};
 
