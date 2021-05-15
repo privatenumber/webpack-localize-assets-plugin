@@ -61,6 +61,12 @@ function createCompiler(
 			libraryExport: 'default',
 		},
 		plugins: [
+			/**
+			 * Inject memfs into the compiler before internal dependencies initialize
+			 * (eg. PackFileCacheStrategy)
+			 *
+			 * https://github.com/webpack/webpack/blob/068ce839478317b54927d533f6fa4713cb6834da/lib/webpack.js#L69-L77
+			 */
 			new ConfigureCompilerPlugin({
 				inputFileSystem: ufs.use(fs).use(mfs as unknown as IFS),
 				outputFileSystem: mfs,
