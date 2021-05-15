@@ -115,7 +115,7 @@ Default: `false`
 
 Throw an error if a string key is not found in a locale object.
 
-#### sourceMapsForLocales
+#### sourceMapForLocales
 Type: `string[]`
 
 An array of locales that source-maps should be emitted for. Source-maps are enabled via [`devtool`](https://webpack.js.org/configuration/devtool/).

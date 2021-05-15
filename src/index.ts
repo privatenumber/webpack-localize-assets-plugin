@@ -276,7 +276,7 @@ class LocalizeAssetsPlugin implements Plugin {
 
 	private generateLocalizedAssets(compilation: Compilation) {
 		const { localeNames } = this;
-		const { sourceMapsForLocales } = this.options;
+		const { sourceMapForLocales } = this.options;
 
 		const generateLocalizedAssets = async () => {
 			// @ts-expect-error Outdated @type
@@ -306,7 +306,7 @@ class LocalizeAssetsPlugin implements Plugin {
 							fileNamePlaceholderLocations,
 							sourceString,
 							(
-								(!sourceMapsForLocales || sourceMapsForLocales.includes(locale))
+								(!sourceMapForLocales || sourceMapForLocales.includes(locale))
 									? map
 									: null
 							),
@@ -324,8 +324,8 @@ class LocalizeAssetsPlugin implements Plugin {
 					}));
 				} else {
 					let localesToIterate = localeNames;
-					if (isSourceMap.test(asset.name) && sourceMapsForLocales) {
-						localesToIterate = sourceMapsForLocales;
+					if (isSourceMap.test(asset.name) && sourceMapForLocales) {
+						localesToIterate = sourceMapForLocales;
 					}
 
 					await Promise.all(localesToIterate.map(async (locale) => {

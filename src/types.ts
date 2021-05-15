@@ -15,13 +15,13 @@ export const OptionsSchema = z.object({
 	locales: LocalesSchema,
 	functionName: z.string().optional(),
 	throwOnMissing: z.boolean().optional(),
-	sourceMapsForLocales: z.string().array().optional(),
+	sourceMapForLocales: z.string().array().optional(),
 	warnOnUnusedString: z.boolean().optional(),
 }).refine(options => (
-	!options.sourceMapsForLocales
-	|| options.sourceMapsForLocales.every(locale => hasOwnProp(options.locales, locale))
+	!options.sourceMapForLocales
+	|| options.sourceMapForLocales.every(locale => hasOwnProp(options.locales, locale))
 ), {
-	message: 'sourceMapsForLocales must contain valid locales',
+	message: 'sourceMapForLocales must contain valid locales',
 });
 
 export type Options = z.infer<typeof OptionsSchema>;

@@ -141,7 +141,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(buildStats.compilation.warnings[1].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:4:7');
 		});
 
-		test('sourceMapsForLocales - invalid locale', async () => {
+		test('sourceMapForLocales - invalid locale', async () => {
 			await expect(async () => {
 				await build(
 					{
@@ -151,12 +151,12 @@ describe(`Webpack ${webpack.version}`, () => {
 						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesSingle,
-								sourceMapsForLocales: ['non-existent-locale'],
+								sourceMapForLocales: ['non-existent-locale'],
 							}),
 						);
 					},
 				);
-			}).rejects.toThrow('sourceMapsForLocales must contain valid locales');
+			}).rejects.toThrow('sourceMapForLocales must contain valid locales');
 		});
 
 		describe('missing locale', () => {
@@ -549,7 +549,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
-							sourceMapsForLocales: ['en'],
+							sourceMapForLocales: ['en'],
 						}),
 					);
 				},
