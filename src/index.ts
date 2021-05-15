@@ -66,19 +66,6 @@ class LocalizeAssetsPlugin implements Plugin {
 		}
 	}
 
-	loadLocales(fs) {
-		this.fileDependencies.clear();
-		for (const locale of this.localeNames) {
-			const localeValue = this.options.locales[locale];
-			if (typeof localeValue === 'string') {
-				this.locales[locale] = loadJson(fs, localeValue);
-				this.fileDependencies.add(localeValue);
-			} else {
-				this.locales[locale] = localeValue;
-			}
-		}
-	}
-
 	apply(compiler: Compiler) {
 		const { inputFileSystem } = compiler;
 
@@ -129,7 +116,20 @@ class LocalizeAssetsPlugin implements Plugin {
 		}
 	}
 
-	interpolateLocaleToFileName(compilation: Compilation) {
+	private loadLocales(fs) {
+		this.fileDependencies.clear();
+		for (const locale of this.localeNames) {
+			const localeValue = this.options.locales[locale];
+			if (typeof localeValue === 'string') {
+				this.locales[locale] = loadJson(fs, localeValue);
+				this.fileDependencies.add(localeValue);
+			} else {
+				this.locales[locale] = localeValue;
+			}
+		}
+	}
+
+	private interpolateLocaleToFileName(compilation: Compilation) {
 		const replaceWith = this.singleLocale ?? fileNameTemplatePlaceholder;
 		const interpolate = (path) => {
 			if (typeof path === 'string') {
@@ -152,7 +152,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		}
 	}
 
-	validateLocale(
+	private validateLocale(
 		stringKey: string,
 		module,
 		node,
@@ -185,7 +185,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		}
 	}
 
-	insertLocalePlaceholders(
+	private insertLocalePlaceholders(
 		normalModuleFactory: NormalModuleFactory,
 	) {
 		const { singleLocale } = this;
@@ -244,7 +244,7 @@ class LocalizeAssetsPlugin implements Plugin {
 			.tap(LocalizeAssetsPlugin.name, handler);
 	}
 
-	locatePlaceholders(sourceString: string) {
+	private locatePlaceholders(sourceString: string) {
 		const placeholderLocations: PlaceholderLocations = [];
 
 		const possibleLocations = findSubstringLocations(sourceString, placeholderPrefix);
@@ -274,7 +274,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		return placeholderLocations;
 	}
 
-	generateLocalizedAssets(compilation: Compilation) {
+	private generateLocalizedAssets(compilation: Compilation) {
 		const { localeNames } = this;
 		const { sourceMapsForLocales } = this.options;
 
@@ -366,7 +366,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		}
 	}
 
-	localizeAsset(
+	private localizeAsset(
 		locale: string,
 		assetName: string,
 		placeholderLocations: PlaceholderLocations,
