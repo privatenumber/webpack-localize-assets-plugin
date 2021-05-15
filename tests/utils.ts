@@ -24,6 +24,19 @@ const mfsFromJson = (volJson: DirectoryJSON): webpack.OutputFileSystem => {
 	return mfs;
 };
 
+type CompilerOptions = Partial<webpack.Compiler>;
+class ConfigureCompilerPlugin {
+	options: CompilerOptions;
+
+	constructor(options: CompilerOptions) {
+		this.options = options;
+	}
+
+	apply(compiler: webpack.Compiler) {
+		Object.assign(compiler, this.options);
+	}
+}
+
 function createCompiler(
 	volJson: DirectoryJSON,
 	configCallback: (config: webpack.Configuration) => void,
@@ -47,19 +60,25 @@ function createCompiler(
 			libraryTarget: 'commonjs2',
 			libraryExport: 'default',
 		},
-		plugins: [],
+		plugins: [
+			/**
+			 * Inject memfs into the compiler before internal dependencies initialize
+			 * (eg. PackFileCacheStrategy)
+			 *
+			 * https://github.com/webpack/webpack/blob/068ce839478317b54927d533f6fa4713cb6834da/lib/webpack.js#L69-L77
+			 */
+			new ConfigureCompilerPlugin({
+				inputFileSystem: ufs.use(fs).use(mfs as unknown as IFS),
+				outputFileSystem: mfs,
+			}),
+		],
 	};
 
 	if (configCallback) {
 		configCallback(config);
 	}
 
-	const compiler = webpack(config);
-
-	compiler.inputFileSystem = ufs.use(fs).use(mfs as unknown as IFS);
-	compiler.outputFileSystem = mfs;
-
-	return compiler;
+	return webpack(config);
 }
 
 export function build(
