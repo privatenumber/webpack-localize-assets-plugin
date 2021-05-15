@@ -44,6 +44,8 @@ class LocalizeAssetsPlugin implements Plugin {
 
 	private readonly validatedLocales = new Set<string>();
 
+	private readonly fileDependencies = new Set<string>();
+
 	private readonly trackStringKeys = new Set<string>();
 
 	constructor(options: Options) {
@@ -65,12 +67,14 @@ class LocalizeAssetsPlugin implements Plugin {
 	}
 
 	loadLocales(fs) {
+		this.fileDependencies.clear();
 		for (const locale of this.localeNames) {
-			const value = this.options.locales[locale];
-			if (typeof value === 'string') {
-				this.locales[locale] = loadJson(fs, value);
+			const localeValue = this.options.locales[locale];
+			if (typeof localeValue === 'string') {
+				this.locales[locale] = loadJson(fs, localeValue);
+				this.fileDependencies.add(localeValue);
 			} else {
-				this.locales[locale] = value;
+				this.locales[locale] = localeValue;
 			}
 		}
 	}
@@ -189,6 +193,7 @@ class LocalizeAssetsPlugin implements Plugin {
 
 		const handler = (parser) => {
 			parser.hooks.call.for(functionName).tap(LocalizeAssetsPlugin.name, (callExpressionNode) => {
+				const { module } = parser.state;
 				const firstArgumentNode = callExpressionNode.arguments[0];
 
 				if (
@@ -199,9 +204,13 @@ class LocalizeAssetsPlugin implements Plugin {
 					const stringKey = firstArgumentNode.value;
 					this.validateLocale(
 						stringKey,
-						parser.state.module,
+						module,
 						callExpressionNode,
 					);
+
+					for (const fileDependency of this.fileDependencies) {
+						module.buildInfo.fileDependencies.add(fileDependency);
+					}
 
 					if (singleLocale) {
 						toConstantDependency(
@@ -218,8 +227,8 @@ class LocalizeAssetsPlugin implements Plugin {
 
 				const location = callExpressionNode.loc.start;
 				reportModuleWarning(
-					parser.state.module,
-					new WebpackError(`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`),
+					module,
+					new WebpackError(`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${module.resource}:${location.line}:${location.column}`),
 				);
 			});
 		};
