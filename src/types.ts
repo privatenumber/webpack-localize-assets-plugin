@@ -4,7 +4,7 @@ import * as z from 'zod';
 import hasOwnProp from 'has-own-prop';
 
 const LocaleSchema = z.record(z.string());
-const LocalesSchema = z.record(LocaleSchema).refine(
+const LocalesSchema = z.record(z.union([LocaleSchema, z.string()])).refine(
 	object => Object.keys(object).length > 0,
 	{
 		message: 'locales must contain at least one locale',

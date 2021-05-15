@@ -11,6 +11,8 @@ import {
 	toConstantDependency,
 	isWebpack5Compilation,
 	deleteAsset,
+	reportModuleWarning,
+	loadJson,
 } from './utils';
 import {
 	Options,
@@ -34,11 +36,15 @@ const placeholderSuffix = '|';
 class LocalizeAssetsPlugin implements Plugin {
 	private readonly options: Options;
 
+	private readonly locales: Options['locales'] = {};
+
 	private readonly localeNames: string[];
 
 	private readonly singleLocale?: string;
 
 	private readonly validatedLocales = new Set<string>();
+
+	private readonly fileDependencies = new Set<string>();
 
 	private readonly trackStringKeys = new Set<string>();
 
@@ -61,10 +67,14 @@ class LocalizeAssetsPlugin implements Plugin {
 	}
 
 	apply(compiler: Compiler) {
+		const { inputFileSystem } = compiler;
+
 		// Validate output file name
 		compiler.hooks.thisCompilation.tap(
 			LocalizeAssetsPlugin.name,
 			(compilation: Compilation) => {
+				this.loadLocales(inputFileSystem);
+
 				const { filename, chunkFilename } = compilation.outputOptions;
 				assert(filename.includes('[locale]'), 'output.filename must include [locale]');
 				assert(chunkFilename.includes('[locale]'), 'output.chunkFilename must include [locale]');
@@ -75,8 +85,9 @@ class LocalizeAssetsPlugin implements Plugin {
 		compiler.hooks.compilation.tap(
 			LocalizeAssetsPlugin.name,
 			(compilation: Compilation, { normalModuleFactory }) => {
+				this.validatedLocales.clear();
 				this.interpolateLocaleToFileName(compilation);
-				this.insertLocalePlaceholders(compilation, normalModuleFactory);
+				this.insertLocalePlaceholders(normalModuleFactory);
 			},
 		);
 
@@ -105,7 +116,20 @@ class LocalizeAssetsPlugin implements Plugin {
 		}
 	}
 
-	interpolateLocaleToFileName(compilation: Compilation) {
+	private loadLocales(fs) {
+		this.fileDependencies.clear();
+		for (const locale of this.localeNames) {
+			const localeValue = this.options.locales[locale];
+			if (typeof localeValue === 'string') {
+				this.locales[locale] = loadJson(fs, localeValue);
+				this.fileDependencies.add(localeValue);
+			} else {
+				this.locales[locale] = localeValue;
+			}
+		}
+	}
+
+	private interpolateLocaleToFileName(compilation: Compilation) {
 		const replaceWith = this.singleLocale ?? fileNameTemplatePlaceholder;
 		const interpolate = (path) => {
 			if (typeof path === 'string') {
@@ -128,18 +152,17 @@ class LocalizeAssetsPlugin implements Plugin {
 		}
 	}
 
-	validateLocale(
-		compilation: Compilation,
+	private validateLocale(
 		stringKey: string,
+		module,
+		node,
 	) {
 		if (this.validatedLocales.has(stringKey)) {
 			return;
 		}
 
-		const {
-			locales,
-			throwOnMissing,
-		} = this.options;
+		const { locales } = this;
+		const { throwOnMissing } = this.options;
 
 		const missingFromLocales = this.localeNames.filter(
 			locale => !hasOwnProp(locales[locale], stringKey),
@@ -149,17 +172,20 @@ class LocalizeAssetsPlugin implements Plugin {
 		this.validatedLocales.add(stringKey);
 
 		if (isMissingFromLocales) {
-			const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Missing localization for key "${stringKey}" in locales: ${missingFromLocales.join(', ')}`);
+			const location = node.loc.start;
+			const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Missing localization for key "${stringKey}" used in ${module.resource}:${location.line}:${location.column} from locales: ${missingFromLocales.join(', ')}`);
 			if (throwOnMissing) {
 				throw error;
 			} else {
-				compilation.warnings.push(error);
+				reportModuleWarning(
+					module,
+					error,
+				);
 			}
 		}
 	}
 
-	insertLocalePlaceholders(
-		compilation: Compilation,
+	private insertLocalePlaceholders(
 		normalModuleFactory: NormalModuleFactory,
 	) {
 		const { singleLocale } = this;
@@ -167,6 +193,7 @@ class LocalizeAssetsPlugin implements Plugin {
 
 		const handler = (parser) => {
 			parser.hooks.call.for(functionName).tap(LocalizeAssetsPlugin.name, (callExpressionNode) => {
+				const { module } = parser.state;
 				const firstArgumentNode = callExpressionNode.arguments[0];
 
 				if (
@@ -175,12 +202,20 @@ class LocalizeAssetsPlugin implements Plugin {
 					&& typeof firstArgumentNode.value === 'string'
 				) {
 					const stringKey = firstArgumentNode.value;
-					this.validateLocale(compilation, stringKey);
+					this.validateLocale(
+						stringKey,
+						module,
+						callExpressionNode,
+					);
+
+					for (const fileDependency of this.fileDependencies) {
+						module.buildInfo.fileDependencies.add(fileDependency);
+					}
 
 					if (singleLocale) {
 						toConstantDependency(
 							parser,
-							JSON.stringify(this.options.locales[singleLocale][stringKey] || stringKey),
+							JSON.stringify(this.locales[singleLocale][stringKey] || stringKey),
 						)(callExpressionNode);
 					} else {
 						const placeholder = placeholderPrefix + base64.encode(stringKey) + placeholderSuffix;
@@ -191,15 +226,10 @@ class LocalizeAssetsPlugin implements Plugin {
 				}
 
 				const location = callExpressionNode.loc.start;
-				const error = new WebpackError(
-					`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${parser.state.module.resource}:${location.line}:${location.column}`,
+				reportModuleWarning(
+					module,
+					new WebpackError(`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${module.resource}:${location.line}:${location.column}`),
 				);
-
-				if (parser.state.module.addWarning) {
-					parser.state.module.addWarning(error);
-				} else {
-					parser.state.module.warnings.push(error);
-				}
 			});
 		};
 
@@ -214,7 +244,7 @@ class LocalizeAssetsPlugin implements Plugin {
 			.tap(LocalizeAssetsPlugin.name, handler);
 	}
 
-	locatePlaceholders(sourceString: string) {
+	private locatePlaceholders(sourceString: string) {
 		const placeholderLocations: PlaceholderLocations = [];
 
 		const possibleLocations = findSubstringLocations(sourceString, placeholderPrefix);
@@ -244,7 +274,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		return placeholderLocations;
 	}
 
-	generateLocalizedAssets(compilation: Compilation) {
+	private generateLocalizedAssets(compilation: Compilation) {
 		const { localeNames } = this;
 		const { sourceMapsForLocales } = this.options;
 
@@ -336,7 +366,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		}
 	}
 
-	localizeAsset(
+	private localizeAsset(
 		locale: string,
 		assetName: string,
 		placeholderLocations: PlaceholderLocations,
@@ -344,7 +374,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		source: string,
 		map: RawSourceMap | null,
 	) {
-		const localeData = this.options.locales[locale];
+		const localeData = this.locales[locale];
 		const magicStringInstance = new MagicString(source);
 
 		// Localze strings

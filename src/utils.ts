@@ -1,5 +1,7 @@
 import crypto from 'crypto';
+import { readFileSync } from 'fs';
 import webpack from 'webpack';
+import WebpackError from 'webpack/lib/WebpackError.js';
 import {
 	Webpack,
 	Compilation,
@@ -79,4 +81,19 @@ export const deleteAsset = (
 			}
 		}
 	}
+};
+
+export const reportModuleWarning = (module, warning: typeof WebpackError) => {
+	if (module.addWarning) {
+		module.addWarning(warning);
+	} else {
+		module.warnings.push(warning);
+	}
+};
+
+export const loadJson = <T extends {
+	readFileSync: typeof readFileSync;
+}>(fs: T, jsonPath: string): any | null => {
+	const stringContent = fs.readFileSync(jsonPath).toString();
+	return JSON.parse(stringContent);
 };

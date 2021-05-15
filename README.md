@@ -1,4 +1,4 @@
-# webpack-localize-assets-plugin <a href="https://npm.im/webpack-localize-assets-plugin"><img src="https://badgen.net/npm/v/webpack-localize-assets-plugin"></a> <!--<a href="https://npm.im/webpack-localize-assets-plugin"><img src="https://badgen.net/npm/dm/webpack-localize-assets-plugin"></a> --><a href="https://packagephobia.now.sh/result?p=webpack-localize-assets-plugin"><img src="https://packagephobia.now.sh/badge?p=webpack-localize-assets-plugin"></a>
+# webpack-localize-assets-plugin <a href="https://npm.im/webpack-localize-assets-plugin"><img src="https://badgen.net/npm/v/webpack-localize-assets-plugin"></a> <a href="https://npm.im/webpack-localize-assets-plugin"><img src="https://badgen.net/npm/dm/webpack-localize-assets-plugin"></a> <a href="https://packagephobia.now.sh/result?p=webpack-localize-assets-plugin"><img src="https://packagephobia.now.sh/badge?p=webpack-localize-assets-plugin"></a>
 
 Localize your Webpack bundle with multiple locales.
 
@@ -59,15 +59,29 @@ Required
 Type:
 ```ts
 {
-  [locale: string]: {
+  [locale: string]: string | {
     [stringKey: string]: string;
   };
 }
 ```
 
-An object containing all the localization strings. The key should be the locale name, and the value should be an object mapping the string key to the localized string.
+An object containing all the localization strings.
+
+The key should be the locale name, and the value can either be _the path to the locale JSON file_ or _an object mapping the string key to the localized string_.
+
+Using a JSON path has the advantage of automatically detecting changes across compilations, which is useful in development.
 
 Example:
+```json5
+{
+  en: './locales/en.json',
+  es: './locales/es.json',
+  ...
+}
+```
+
+Or:
+
 ```json5
 {
   en: {
