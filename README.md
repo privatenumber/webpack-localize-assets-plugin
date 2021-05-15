@@ -16,7 +16,7 @@ _How does it compare to [i18n-webpack-plugin](https://github.com/webpack-contrib
 npm i -D webpack-localize-assets-plugin
 ```
 
-## 🚦 Quick Setup
+## 🚦 Quick setup
 
 - Import `webpack-localize-assets-plugin`.
 - Include `[locale]` in `output.filename` to indicate where the locale name should go in the output file.
