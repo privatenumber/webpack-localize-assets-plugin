@@ -64,48 +64,42 @@ class LocalizeAssetsPlugin implements Plugin {
 		// Validate output file name
 		compiler.hooks.thisCompilation.tap(
 			LocalizeAssetsPlugin.name,
-			(compilation: Compilation) => {
+			(compilation: Compilation, { normalModuleFactory }) => {
 				this.loadLocales(inputFileSystem);
 
 				const { filename, chunkFilename } = compilation.outputOptions;
 				assert(filename.includes('[locale]'), 'output.filename must include [locale]');
 				assert(chunkFilename.includes('[locale]'), 'output.chunkFilename must include [locale]');
-			},
-		);
 
-		// Insert locale placeholders into assets and asset names
-		compiler.hooks.compilation.tap(
-			LocalizeAssetsPlugin.name,
-			(compilation: Compilation, { normalModuleFactory }) => {
+				// Insert locale placeholders into assets and asset names
 				this.validatedLocales.clear();
 				this.interpolateLocaleToFileName(compilation);
 				this.insertLocalePlaceholders(normalModuleFactory);
-			},
-		);
 
-		compiler.hooks.make.tap(
-			LocalizeAssetsPlugin.name,
-			(compilation) => {
 				if (!this.singleLocale) {
 					// Create localized assets by swapping out placeholders with localized strings
 					this.generateLocalizedAssets(compilation);
 				}
+
+				if (this.options.warnOnUnusedString) {
+					/**
+					 * Using something like compiler.done happens
+					 * too late after the stats are reported in watch mode
+					 */
+					compilation.hooks.afterSeal.tap(
+						LocalizeAssetsPlugin.name,
+						() => {
+							if (this.trackStringKeys.size > 0) {
+								for (const unusedStringKey of this.trackStringKeys) {
+									const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Unused string key "${unusedStringKey}"`);
+									compilation.warnings.push(error);
+								}
+							}
+						},
+					);
+				}
 			},
 		);
-
-		if (this.options.warnOnUnusedString) {
-			compiler.hooks.done.tap(
-				LocalizeAssetsPlugin.name,
-				({ compilation }) => {
-					if (this.trackStringKeys.size > 0) {
-						for (const unusedStringKey of this.trackStringKeys) {
-							const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Unused string key "${unusedStringKey}"`);
-							compilation.warnings.push(error);
-						}
-					}
-				},
-			);
-		}
 	}
 
 	private loadLocales(fs) {
