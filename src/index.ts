@@ -56,14 +56,6 @@ class LocalizeAssetsPlugin implements Plugin {
 		if (this.localeNames.length === 1) {
 			[this.singleLocale] = this.localeNames;
 		}
-
-		if (options.warnOnUnusedString) {
-			for (const locale of this.localeNames) {
-				for (const stringKey of Object.keys(options.locales[locale])) {
-					this.trackStringKeys.add(stringKey);
-				}
-			}
-		}
 	}
 
 	apply(compiler: Compiler) {
@@ -125,6 +117,14 @@ class LocalizeAssetsPlugin implements Plugin {
 				this.fileDependencies.add(localeValue);
 			} else {
 				this.locales[locale] = localeValue;
+			}
+		}
+
+		if (this.options.warnOnUnusedString) {
+			for (const locale of this.localeNames) {
+				for (const stringKey of Object.keys(this.locales[locale])) {
+					this.trackStringKeys.add(stringKey);
+				}
 			}
 		}
 	}
@@ -220,6 +220,11 @@ class LocalizeAssetsPlugin implements Plugin {
 					} else {
 						const placeholder = placeholderPrefix + base64.encode(stringKey) + placeholderSuffix;
 						toConstantDependency(parser, JSON.stringify(placeholder))(callExpressionNode);
+					}
+
+					// For single locale mode
+					if (this.options.warnOnUnusedString) {
+						this.trackStringKeys.delete(stringKey);
 					}
 
 					return true;
@@ -381,6 +386,7 @@ class LocalizeAssetsPlugin implements Plugin {
 		for (const { stringKey, index, endIndex } of placeholderLocations) {
 			const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
 
+			// For Webpack 5 cache hits
 			if (this.options.warnOnUnusedString) {
 				this.trackStringKeys.delete(stringKey);
 			}
