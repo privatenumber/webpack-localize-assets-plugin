@@ -775,5 +775,46 @@ describe(`Webpack ${webpack.version}`, () => {
 				],
 			);
 		});
+
+		test('warnOnUnusedString to work with json path', async () => {
+			const buildStatsMissing = await build(
+				{
+					'/src/index.js': 'export default true;',
+					'/src/locales/en.json': JSON.stringify(localesSingle.en),
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: {
+								en: '/src/locales/en.json',
+							},
+							warnOnUnusedString: true,
+						}),
+					);
+				},
+			);
+
+			expect(buildStatsMissing.compilation.warnings.length).toBe(1);
+			expect(buildStatsMissing.compilation.warnings[0].message).toMatch('Unused string key "hello-key"');
+
+			const buildStatsUsed = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+					'/src/locales/en.json': JSON.stringify(localesSingle.en),
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: {
+								en: '/src/locales/en.json',
+							},
+							warnOnUnusedString: true,
+						}),
+					);
+				},
+			);
+
+			expect(buildStatsUsed.compilation.warnings.length).toBe(0);
+		});
 	});
 });
