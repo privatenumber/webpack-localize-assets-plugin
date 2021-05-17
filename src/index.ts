@@ -80,22 +80,26 @@ class LocalizeAssetsPlugin implements Plugin {
 					// Create localized assets by swapping out placeholders with localized strings
 					this.generateLocalizedAssets(compilation);
 				}
+
+				if (this.options.warnOnUnusedString) {
+					/**
+					 * Using something like compiler.done happens
+					 * too late after the stats are reported in watch mode
+					 */
+					compilation.hooks.afterSeal.tap(
+						LocalizeAssetsPlugin.name,
+						() => {
+							if (this.trackStringKeys.size > 0) {
+								for (const unusedStringKey of this.trackStringKeys) {
+									const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Unused string key "${unusedStringKey}"`);
+									compilation.warnings.push(error);
+								}
+							}
+						},
+					);
+				}
 			},
 		);
-
-		if (this.options.warnOnUnusedString) {
-			compiler.hooks.done.tap(
-				LocalizeAssetsPlugin.name,
-				({ compilation }) => {
-					if (this.trackStringKeys.size > 0) {
-						for (const unusedStringKey of this.trackStringKeys) {
-							const error = new WebpackError(`[${LocalizeAssetsPlugin.name}] Unused string key "${unusedStringKey}"`);
-							compilation.warnings.push(error);
-						}
-					}
-				},
-			);
-		}
 	}
 
 	private loadLocales(fs) {

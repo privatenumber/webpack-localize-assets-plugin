@@ -300,6 +300,35 @@ describe(`Webpack ${webpack.version}`, () => {
 				expect(buildStats.compilation.warnings.length).toBe(1);
 				expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:15 from locales: en');
 			});
+
+			test('watch - unused', async () => {
+				await watch(
+					{
+						'/src/index.js': 'export default true;',
+					},
+					(config) => {
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesMulti,
+								warnOnUnusedString: true,
+							}),
+						);
+					},
+					[
+						(mfs, stats) => {
+							expect(stats.compilation.warnings.length).toBe(2);
+							expect(stats.compilation.warnings[0].message).toMatch('Unused string key "hello-key"');
+							expect(stats.compilation.warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
+
+							assertFsWithReadFileSync(mfs);
+							mfs.writeFileSync('/src/index.js', 'export default [__("hello-key"), __("stringWithQuotes")];');
+						},
+						(mfs, stats) => {
+							expect(stats.compilation.warnings.length).toBe(0);
+						},
+					],
+				);
+			});
 		});
 	});
 
