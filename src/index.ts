@@ -1,4 +1,5 @@
 import assert from 'assert';
+import path from 'path';
 import { RawSource, SourceMapSource, SourceAndMapResult } from 'webpack-sources';
 import { RawSourceMap } from 'source-map';
 import MagicString from 'magic-string';
@@ -107,8 +108,9 @@ class LocalizeAssetsPlugin implements Plugin {
 		for (const locale of this.localeNames) {
 			const localeValue = this.options.locales[locale];
 			if (typeof localeValue === 'string') {
-				this.locales[locale] = loadJson(fs, localeValue);
-				this.fileDependencies.add(localeValue);
+				const resolvedPath = path.resolve(localeValue);
+				this.locales[locale] = loadJson(fs, resolvedPath);
+				this.fileDependencies.add(resolvedPath);
 			} else {
 				this.locales[locale] = localeValue;
 			}
@@ -125,11 +127,11 @@ class LocalizeAssetsPlugin implements Plugin {
 
 	private interpolateLocaleToFileName(compilation: Compilation) {
 		const replaceWith = this.singleLocale ?? fileNameTemplatePlaceholder;
-		const interpolate = (path) => {
-			if (typeof path === 'string') {
-				path = path.replace(/\[locale]/g, replaceWith);
+		const interpolate = (filePath) => {
+			if (typeof filePath === 'string') {
+				filePath = filePath.replace(/\[locale]/g, replaceWith);
 			}
-			return path;
+			return filePath;
 		};
 
 		if (isWebpack5Compilation(compilation)) {

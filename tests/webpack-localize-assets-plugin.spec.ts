@@ -747,7 +747,11 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(buildBStats.compilation.warnings[0].message).toMatch('Unused string key "stringWithQuotes"');
 		});
 
-		test('dynamically loading locale json path', async () => {
+		test('dynamically load relative locale json path', async () => {
+			const originalCwd = process.cwd();
+
+			process.chdir('/');
+
 			await watch(
 				{
 					'/src/index.js': 'export default __("hello-key") + " " + __("world-key");',
@@ -757,7 +761,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
-								en: '/src/locales/en.json',
+								en: './src/locales/en.json',
 							},
 						}),
 					);
@@ -803,6 +807,8 @@ describe(`Webpack ${webpack.version}`, () => {
 					},
 				],
 			);
+
+			process.chdir(originalCwd);
 		});
 
 		test('warnOnUnusedString to work with json path', async () => {
