@@ -2,10 +2,10 @@ import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
+import { createFsRequire } from 'fs-require';
 import { isWebpack5 } from '../src/utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
 import { build, watch, assertFsWithReadFileSync } from './utils';
-import { createMemRequire } from './memfs-require';
 
 const localesEmpty = {};
 const localesSingle = {
@@ -91,7 +91,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			assertFsWithReadFileSync(mfs);
 
-			const mRequire = createMemRequire(mfs);
+			const mRequire = createFsRequire(mfs);
 
 			const enBuild = mRequire('/dist/index.en.js');
 			expect(enBuild).toBe('[locale]');
@@ -177,7 +177,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				const mfs = buildStats.compilation.compiler.outputFileSystem;
 				assertFsWithReadFileSync(mfs);
 
-				const mRequire = createMemRequire(mfs);
+				const mRequire = createFsRequire(mfs);
 
 				expect(mRequire('/dist/index.en.js')).toBe('bad key');
 
@@ -203,7 +203,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				const mfs = buildStats.compilation.compiler.outputFileSystem;
 				assertFsWithReadFileSync(mfs);
 
-				const mRequire = createMemRequire(mfs);
+				const mRequire = createFsRequire(mfs);
 
 				expect(mRequire('/dist/index.en.js')).toBe('bad key');
 
@@ -353,7 +353,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
 
-			const mRequire = createMemRequire(mfs);
+			const mRequire = createFsRequire(mfs);
 
 			const enBuild = mRequire('/dist/index.en.js');
 			expect(enBuild).toBe(localesMulti.en['hello-key']);
@@ -392,7 +392,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
 
-			const mRequire = createMemRequire(mfs);
+			const mRequire = createFsRequire(mfs);
 
 			const enBuild = await mRequire('/dist/index.en.js');
 			expect(enBuild).toBe(localesMulti.en['hello-key']);
@@ -422,7 +422,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
 
-			const mRequire = createMemRequire(mfs);
+			const mRequire = createFsRequire(mfs);
 
 			const enBuild = await mRequire('/dist/index.en.js');
 			expect(enBuild).toBe(`${localesMulti.en['hello-key']} world and "quotes"`);
@@ -646,7 +646,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mfs = buildStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfs);
 
-			const mRequire = createMemRequire(mfs);
+			const mRequire = createFsRequire(mfs);
 			const manifestEn = mRequire('/dist/manifest.en.json');
 
 			expect(manifestEn).toMatchObject({
@@ -693,7 +693,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfsA);
 
-			const mRequireA = createMemRequire(mfsA);
+			const mRequireA = createFsRequire(mfsA);
 			const indexEnA = mRequireA('/dist/index.en.js');
 			expect(indexEnA).toBe('Hello');
 
@@ -705,7 +705,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfsB);
 
-			const mRequireB = createMemRequire(mfsB);
+			const mRequireB = createFsRequire(mfsB);
 			const indexEnB = mRequireB('/dist/index.en.js');
 
 			expect(indexEnB).toBe(indexEnA);
@@ -773,7 +773,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 						assertFsWithReadFileSync(mfs);
 
-						const mRequire = createMemRequire(mfs);
+						const mRequire = createFsRequire(mfs);
 						const enBuild = mRequire('/dist/index.en.js');
 						expect(enBuild).toBe('Hello world-key');
 
@@ -787,7 +787,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 						assertFsWithReadFileSync(mfs);
 
-						const mRequire = createMemRequire(mfs);
+						const mRequire = createFsRequire(mfs);
 						const enBuild = mRequire('/dist/index.en.js');
 						expect(enBuild).toBe('Hello World');
 
@@ -801,7 +801,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 						assertFsWithReadFileSync(mfs);
 
-						const mRequire = createMemRequire(mfs);
+						const mRequire = createFsRequire(mfs);
 						const enBuild = mRequire('/dist/index.en.js');
 						expect(enBuild).toBe('hello-key World');
 					},
