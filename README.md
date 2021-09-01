@@ -7,7 +7,7 @@ Localize your Webpack bundle with multiple locales.
 - Suports single & multiple locales
 - Blazing fast!
 
-_How does it compare to [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin)?_ Answered in the [FAQ](#how-does-this-compare-to-a-href-https-github-com-webpack-contrib-i18n-webpack-plugin-i18n-webpack-plugin-a-).
+_How does it compare to [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin)?_ Answered in the [FAQ](https://github.com/privatenumber/webpack-localize-assets-plugin#how-does-this-compare-to-i18n-webpack-plugin).
 
 <sub>Support this project by ⭐️ starring and sharing it. [Follow me](https://github.com/privatenumber) to see what other cool projects I'm working on! ❤️</sub>
 
