@@ -1,36 +1,42 @@
 import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
-import * as z from 'zod';
 import hasOwnProp from 'has-own-prop';
 
-const LocaleSchema = z.record(z.string());
-const LocalesSchema = z.record(z.union([LocaleSchema, z.string()])).refine(
-	object => Object.keys(object).length > 0,
-	{
-		message: 'locales must contain at least one locale',
-	},
-);
-
-export const OptionsSchema = z.object({
-	locales: LocalesSchema,
-	functionName: z.string().optional(),
-	throwOnMissing: z.boolean().optional(),
-	sourceMapForLocales: z.string().array().optional(),
-	warnOnUnusedString: z.boolean().optional(),
-}).refine(options => (
-	!options.sourceMapForLocales
-	|| options.sourceMapForLocales.every(locale => hasOwnProp(options.locales, locale))
-), {
-	message: 'sourceMapForLocales must contain valid locales',
-});
-
-export type Options = z.infer<typeof OptionsSchema>;
+export interface Locale {
+	[stringKey: string]: string;
+}
+export interface Locales {
+	[locale: string]: string | Locale;
+}
+export interface Options {
+	locales: Locales;
+	functionName?: string;
+	throwOnMissing?: boolean;
+	sourceMapForLocales?: string[];
+	warnOnUnusedString?: boolean;
+}
 
 export type PlaceholderLocations = {
 	stringKey: string;
 	index: number;
 	endIndex: number;
 }[];
+
+export function validateOptions(options: Options): void {
+	if (!options) {
+		throw new Error('Options are required');
+	}
+	if (!options.locales) {
+		throw new Error('Locales are required');
+	}
+	if (Object.keys(options.locales).length === 0) {
+		throw new Error('locales must contain at least one locale');
+	}
+	if (options.sourceMapForLocales
+		&& options.sourceMapForLocales.some(locale => !hasOwnProp(options.locales, locale))) {
+		throw new Error('sourceMapForLocales must contain valid locales');
+	}
+}
 
 export { WP4, WP5 };
 export type Webpack = typeof WP4 | typeof WP5;

@@ -17,7 +17,7 @@ import {
 } from './utils';
 import {
 	Options,
-	OptionsSchema,
+	validateOptions,
 	PlaceholderLocations,
 	Plugin,
 	Compiler,
@@ -50,7 +50,7 @@ class LocalizeAssetsPlugin implements Plugin {
 	private readonly trackStringKeys = new Set<string>();
 
 	constructor(options: Options) {
-		OptionsSchema.parse(options);
+		validateOptions(options);
 		this.options = options;
 
 		this.localeNames = Object.keys(options.locales);

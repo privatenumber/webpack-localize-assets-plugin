@@ -41,7 +41,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						);
 					},
 				);
-			}).rejects.toThrow(/Required/);
+			}).rejects.toThrow(/required/);
 		});
 
 		test('no option.locales', async () => {
@@ -55,7 +55,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						);
 					},
 				);
-			}).rejects.toThrow(/Required/);
+			}).rejects.toThrow(/required/);
 		});
 
 		test('no locales', async () => {
