@@ -350,11 +350,13 @@ class LocalizeAssetsPlugin implements Plugin {
 		// Apply after minification since we don't want to
 		// duplicate the costs of that for each asset
 		if (isWebpack5Compilation(compilation)) {
-			// Happens after PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE
+			const Comp = compilation.constructor as typeof WP5.Compilation;
 			compilation.hooks.processAssets.tapPromise(
 				{
 					name: LocalizeAssetsPlugin.name,
-					stage: (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_ANALYSE,
+					// Happens after PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE
+					// but before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH
+					stage: Comp.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
 				},
 				generateLocalizedAssets,
 			);

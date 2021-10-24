@@ -3,9 +3,12 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { createFsRequire } from 'fs-require';
+import { WP5 } from '../src/types';
 import { isWebpack5 } from '../src/utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
-import { build, watch, assertFsWithReadFileSync } from './utils';
+import {
+	build, watch, assertFsWithReadFileSync, matchKey,
+} from './utils';
 
 const localesEmpty = {};
 const localesSingle = {
@@ -850,6 +853,50 @@ describe(`Webpack ${webpack.version}`, () => {
 			);
 
 			expect(buildStatsUsed.compilation.warnings.length).toBe(0);
+		});
+	});
+
+	(isWebpack5(webpack) ? describe : describe.skip)('webpack 5 specific', () => {
+		test('changing a translation results in new contenthash', async () => {
+			const firstBuild = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					const c = config as WP5.Configuration;
+					c.optimization!.realContentHash = true;
+					c.output!.filename = '[name].[contenthash].[locale].js';
+					c.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+			const newLocales = { ...localesMulti, en: { 'hello-key': 'wazzup' } };
+			const secondBuild = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					const c = config as WP5.Configuration;
+					c.optimization!.realContentHash = true;
+					c.output!.filename = '[name].[contenthash].[locale].js';
+					c.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: newLocales,
+						}),
+					);
+				},
+			);
+
+			const { assets: firstAssets } = firstBuild.compilation;
+			const firstEnAssetHash = matchKey(firstAssets, /index\.([^.]+).en.js/)![1];
+
+			const { assets: secondAssets } = secondBuild.compilation;
+			const secondEnAssetHash = matchKey(secondAssets, /index\.([^.]+).en.js/)![1];
+
+			expect(firstEnAssetHash).not.toEqual(secondEnAssetHash);
 		});
 	});
 });
