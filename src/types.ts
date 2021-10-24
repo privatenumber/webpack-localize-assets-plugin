@@ -2,7 +2,7 @@ import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
 // estree is a types-only package
 // eslint-disable-next-line import/no-unresolved
-import type * as estree from 'estree';
+import type { Expression, CallExpression } from 'estree';
 import hasOwnProp from 'has-own-prop';
 
 export interface Locale<LocalizedData = string> {
@@ -17,7 +17,7 @@ export interface LocalizeCompilerContext<LocalizedData = string> {
 	locale: Locale<LocalizedData>;
 	localeName: string;
 	locales: Locales<LocalizedData>;
-	callExpr: estree.CallExpression;
+	callExpr: CallExpression;
 }
 export type Options<LocalizedData = string> = {
 	locales: Locales<LocalizedData>;
@@ -28,7 +28,7 @@ export type Options<LocalizedData = string> = {
 } & LocalizeCompilerOption<LocalizedData>;
 
 type LocalizeCompiler<LocalizedData>
-	= (context: LocalizeCompilerContext<LocalizedData>) => string | estree.Expression;
+	= (context: LocalizeCompilerContext<LocalizedData>) => string | Expression;
 
 type LocalizeCompilerOption<LocalizedData>
 	= LocalizedData extends string // optional if the localized data is a string
@@ -38,7 +38,7 @@ type LocalizeCompilerOption<LocalizedData>
 export type PlaceholderLocation = {
 	index: number;
 	endIndex: number;
-} & ({ expr: estree.CallExpression } | { key: string });
+} & ({ expr: CallExpression } | { key: string });
 
 export function validateOptions<LocalizedData>(options: Options<LocalizedData>): void {
 	if (!options) {

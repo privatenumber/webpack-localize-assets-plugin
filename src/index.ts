@@ -7,9 +7,9 @@ import hasOwnProp from 'has-own-prop';
 import WebpackError from 'webpack/lib/WebpackError.js';
 // estree is a types-only package
 // eslint-disable-next-line import/no-unresolved
-import { CallExpression, Literal } from 'estree';
+import type { CallExpression, Literal } from 'estree';
 import * as astring from 'astring';
-import * as acorn from 'acorn';
+import acorn from 'acorn';
 import {
 	sha256,
 	base64,
