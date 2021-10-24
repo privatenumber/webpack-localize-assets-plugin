@@ -5,7 +5,10 @@ import tempy from 'tempy';
 import { createFsRequire } from 'fs-require';
 import { isWebpack5 } from '../src/utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
-import { build, watch, assertFsWithReadFileSync } from './utils';
+import { LocalizeCompilerContext } from '../src/types';
+import {
+	build, watch, assertFsWithReadFileSync, parseJSExpression,
+} from './utils';
 
 const localesEmpty = {};
 const localesSingle = {
@@ -404,6 +407,91 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
 		});
 
+		test('custom localisation compiler', async () => {
+			const compilerCalls: LocalizeCompilerContext[] = [];
+			const buildStats = await build(
+				{
+					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nexport default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							localizeCompiler(context) {
+								compilerCalls.push(context);
+								return `compiled('${context.localeName}')`;
+							},
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe('en-compiled');
+
+			const esBuild = mRequire('/dist/index.es.js');
+			expect(esBuild).toBe('es-compiled');
+
+			const jaBuild = mRequire('/dist/index.ja.js');
+			expect(jaBuild).toBe('ja-compiled');
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.en\.js/);
+			expect(statsOutput).toMatch(/index\.es\.js/);
+			expect(statsOutput).toMatch(/index\.ja\.js/);
+
+			// one __() call per locale
+			expect(compilerCalls).toHaveLength(3);
+			expect(compilerCalls[0]).toMatchObject(expectedCompilerCall('en'));
+			expect(compilerCalls[1]).toMatchObject(expectedCompilerCall('es'));
+			expect(compilerCalls[2]).toMatchObject(expectedCompilerCall('ja'));
+
+			function expectedCompilerCall(locale: string) {
+				return {
+					localizedData: localesMulti[locale]['hello-key'],
+					key: 'hello-key',
+					locale: localesMulti[locale],
+					localeName: locale,
+					locales: localesMulti,
+					callExpr: parseJSExpression('__("hello-key")'),
+				};
+			}
+		});
+
+		test('custom localisation compiler - single locale, returning ESTree object', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nexport default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+							localizeCompiler(context) {
+								return parseJSExpression(`compiled('${context.localeName}')`);
+							},
+						}),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe('en-compiled');
+		});
+
 		test('works with minification (string concatenation)', async () => {
 			const buildStats = await build(
 				{
@@ -430,6 +518,47 @@ describe(`Webpack ${webpack.version}`, () => {
 			// Assert that asset is minified
 			expect(mfs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
 			expect(mfs.readFileSync('/dist/index.ja.js').toString()).not.toMatch(/\s{2,}/);
+		});
+
+		test('custom localisation compiler works with minification', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key") + " world and " + __("stringWithQuotes");',
+				},
+				(config) => {
+					config.optimization!.minimize = true;
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							localizeCompiler(context) {
+								return `'${context.localeName}-${context.key}'`;
+							},
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe('en-hello-key world and en-stringWithQuotes');
+
+			const esBuild = mRequire('/dist/index.es.js');
+			expect(esBuild).toBe('es-hello-key world and es-stringWithQuotes');
+
+			const jaBuild = mRequire('/dist/index.ja.js');
+			expect(jaBuild).toBe('ja-hello-key world and ja-stringWithQuotes');
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.en\.js/);
+			expect(statsOutput).toMatch(/index\.es\.js/);
+			expect(statsOutput).toMatch(/index\.ja\.js/);
 		});
 
 		test('handle CSS', async () => {

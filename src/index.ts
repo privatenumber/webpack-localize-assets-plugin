@@ -5,6 +5,11 @@ import { RawSourceMap } from 'source-map';
 import MagicString from 'magic-string';
 import hasOwnProp from 'has-own-prop';
 import WebpackError from 'webpack/lib/WebpackError.js';
+// estree is a types-only package
+// eslint-disable-next-line import/no-unresolved
+import { CallExpression, Literal } from 'estree';
+import * as astring from 'astring';
+import * as acorn from 'acorn';
 import {
 	sha256,
 	base64,
@@ -18,12 +23,13 @@ import {
 import {
 	Options,
 	validateOptions,
-	PlaceholderLocations,
+	PlaceholderLocation,
 	Plugin,
 	Compiler,
 	Compilation,
 	NormalModuleFactory,
 	WP5,
+	Locale,
 } from './types';
 
 const fileNameTemplatePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
@@ -34,10 +40,12 @@ const isSourceMap = /\.js\.map$/;
 const placeholderPrefix = sha256('localize-assets-plugin-placeholder-prefix').slice(0, 8);
 const placeholderSuffix = '|';
 
-class LocalizeAssetsPlugin implements Plugin {
-	private readonly options: Options;
+const astringOptions = Object.freeze({ indent: '', lineEnd: '' });
 
-	private readonly locales: Options['locales'] = {};
+class LocalizeAssetsPlugin<LocalizedData = string> implements Plugin {
+	private readonly options: Options<LocalizedData>;
+
+	private readonly locales: Record<string, Locale<LocalizedData>> = {};
 
 	private readonly localeNames: string[];
 
@@ -49,7 +57,7 @@ class LocalizeAssetsPlugin implements Plugin {
 
 	private readonly trackStringKeys = new Set<string>();
 
-	constructor(options: Options) {
+	constructor(options: Options<LocalizedData>) {
 		validateOptions(options);
 		this.options = options;
 
@@ -62,12 +70,12 @@ class LocalizeAssetsPlugin implements Plugin {
 	apply(compiler: Compiler) {
 		const { inputFileSystem } = compiler;
 
-		// Validate output file name
 		compiler.hooks.thisCompilation.tap(
 			LocalizeAssetsPlugin.name,
 			(compilation: Compilation, { normalModuleFactory }) => {
 				this.loadLocales(inputFileSystem);
 
+				// Validate output file name
 				const { filename, chunkFilename } = compilation.outputOptions;
 				assert(filename.includes('[locale]'), 'output.filename must include [locale]');
 				assert(chunkFilename.includes('[locale]'), 'output.chunkFilename must include [locale]');
@@ -184,7 +192,6 @@ class LocalizeAssetsPlugin implements Plugin {
 	private insertLocalePlaceholders(
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const { singleLocale } = this;
 		const { functionName = '__' } = this.options;
 
 		const handler = (parser) => {
@@ -193,7 +200,7 @@ class LocalizeAssetsPlugin implements Plugin {
 				const firstArgumentNode = callExpressionNode.arguments[0];
 
 				if (
-					callExpressionNode.arguments.length === 1
+					(this.options.localizeCompiler || callExpressionNode.arguments.length === 1)
 					&& firstArgumentNode.type === 'Literal'
 					&& typeof firstArgumentNode.value === 'string'
 				) {
@@ -208,17 +215,9 @@ class LocalizeAssetsPlugin implements Plugin {
 						module.buildInfo.fileDependencies.add(fileDependency);
 					}
 
-					if (singleLocale) {
-						toConstantDependency(
-							parser,
-							JSON.stringify(this.locales[singleLocale][stringKey] || stringKey),
-						)(callExpressionNode);
-					} else {
-						const placeholder = placeholderPrefix + base64.encode(stringKey) + placeholderSuffix;
-						toConstantDependency(parser, JSON.stringify(placeholder))(callExpressionNode);
-					}
+					const replacement = this.getReplacementExpr(callExpressionNode, stringKey);
+					toConstantDependency(parser, replacement)(callExpressionNode);
 
-					// For single locale mode
 					if (this.options.warnOnUnusedString) {
 						this.trackStringKeys.delete(stringKey);
 					}
@@ -245,29 +244,77 @@ class LocalizeAssetsPlugin implements Plugin {
 			.tap(LocalizeAssetsPlugin.name, handler);
 	}
 
+	private getReplacementExpr(callExpr: CallExpression, key: string): string {
+		if (this.singleLocale) {
+			// single locale - let's insert the localised version of the string right now,
+			// no need to use placeholder for string replacement on the asset
+
+			const locale = this.locales[this.singleLocale];
+			const localizedData = locale[key];
+
+			if (this.options.localizeCompiler) {
+				const result = this.options.localizeCompiler({
+					callExpr,
+					key,
+					locale,
+					localeName: this.singleLocale,
+					locales: this.locales,
+					localizedData,
+				});
+				return typeof result === 'string'
+					? result
+					: astring.generate(result, astringOptions);
+			}
+
+			return JSON.stringify(localizedData || key);
+		}
+
+		// OK, we have multiple locales. Let's replace the `__()` call
+		// with a string literal containing a placeholder value.
+		// Then during asset generation we'll parse that placeholder
+		// and use it to generate localised assets.
+		//
+		// If localizeCompiler is overridden, we'll write the entire CallExpression
+		// into the placeholder so that we can re-parse it and give it to localizeCompiler later.
+		// Otherwise, we'll just write the stringKey.
+		// (This is an optimisation - avoid printing and parsing the expression if we don't need to)
+		const placeholderContent = this.options.localizeCompiler
+			? astring.generate(callExpr, astringOptions)
+			: key;
+		const placeholderContentEncoded = base64.encode(placeholderContent);
+		const placeholder = placeholderPrefix + placeholderContentEncoded + placeholderSuffix;
+		return JSON.stringify(placeholder);
+	}
+
 	private locatePlaceholders(sourceString: string) {
-		const placeholderLocations: PlaceholderLocations = [];
+		const placeholderLocations: PlaceholderLocation[] = [];
 
 		const possibleLocations = findSubstringLocations(sourceString, placeholderPrefix);
 		for (const placeholderIndex of possibleLocations) {
-			const placeholderStartIndex = placeholderIndex + placeholderPrefix.length;
-			const placeholderSuffixIndex = sourceString.indexOf(placeholderSuffix, placeholderStartIndex);
+			const startIndex = placeholderIndex + placeholderPrefix.length;
+			const suffixIndex = sourceString.indexOf(placeholderSuffix, startIndex);
 
-			if (placeholderSuffixIndex === -1) {
+			if (suffixIndex === -1) {
 				continue;
 			}
 
-			const placeholder = sourceString.slice(
-				placeholderStartIndex,
-				placeholderSuffixIndex,
-			);
+			const placeholder = sourceString.slice(startIndex, suffixIndex);
+			const decoded = base64.decode(placeholder);
 
-			const stringKey = base64.decode(placeholder);
-			if (stringKey) {
+			if (this.options.localizeCompiler) {
+				// the decoded string is a JS expression
+				const expr = acorn.parseExpressionAt(decoded, 0, { ecmaVersion: 'latest' });
 				placeholderLocations.push({
-					stringKey,
+					expr: expr as unknown as CallExpression,
 					index: placeholderIndex,
-					endIndex: placeholderSuffixIndex + placeholderSuffix.length,
+					endIndex: suffixIndex + placeholderSuffix.length,
+				});
+			} else {
+				// the decoded string is the stringKey
+				placeholderLocations.push({
+					key: decoded,
+					index: placeholderIndex,
+					endIndex: suffixIndex + placeholderSuffix.length,
 				});
 			}
 		}
@@ -347,20 +394,26 @@ class LocalizeAssetsPlugin implements Plugin {
 			}));
 		};
 
-		// Apply after minification since we don't want to
-		// duplicate the costs of that for each asset
+		// When we have a custom localisation compiler,
+		// we have to run asset generation before minification,
+		// since the compiler may generate code which needs minifying.
+		// Otherwise, we can run after minification as an optimisation
 		if (isWebpack5Compilation(compilation)) {
-			// Happens after PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE
+			const stage = this.options.localizeCompiler
+				? (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_DERIVED
+				: (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_ANALYSE;
 			compilation.hooks.processAssets.tapPromise(
 				{
 					name: LocalizeAssetsPlugin.name,
-					stage: (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_ANALYSE,
+					stage,
 				},
 				generateLocalizedAssets,
 			);
 		} else {
-			// Triggered after minification, which usually happens in optimizeChunkAssets
-			compilation.hooks.optimizeAssets.tapPromise(
+			const hook = this.options.localizeCompiler
+				? compilation.hooks.additionalAssets
+				: compilation.hooks.optimizeAssets;
+			hook.tapPromise(
 				LocalizeAssetsPlugin.name,
 				generateLocalizedAssets,
 			);
@@ -370,7 +423,7 @@ class LocalizeAssetsPlugin implements Plugin {
 	private localizeAsset(
 		locale: string,
 		assetName: string,
-		placeholderLocations: PlaceholderLocations,
+		placeholderLocations: PlaceholderLocation[],
 		fileNamePlaceholderLocations: number[],
 		source: string,
 		map: RawSourceMap | null,
@@ -378,20 +431,55 @@ class LocalizeAssetsPlugin implements Plugin {
 		const localeData = this.locales[locale];
 		const magicStringInstance = new MagicString(source);
 
-		// Localze strings
-		for (const { stringKey, index, endIndex } of placeholderLocations) {
-			const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
+		// Localize strings
+		for (const loc of placeholderLocations) {
+			let stringKey;
+			if (this.options.localizeCompiler) {
+				const callExpr = (loc as { expr: CallExpression }).expr;
+				stringKey = (callExpr.arguments[0] as Literal).value as string;
+				const localizedValue = localeData[stringKey];
+				const result = this.options.localizeCompiler({
+					callExpr,
+					key: stringKey,
+					locale: localeData,
+					localeName: locale,
+					locales: this.locales,
+					localizedData: localizedValue,
+				});
+
+				const localizedCode = typeof result === 'string'
+					? result
+					: astring.generate(result, astringOptions);
+
+				// we're running before minification, so we can safely assume that the
+				// placeholder is directly inside a string literal.
+				// `localizedCode` is an arbitrary JS expression,
+				// so we want to replace code one character either side of the placeholder
+				// in order to eat the string literal's quotes.
+				magicStringInstance.overwrite(
+					loc.index - 1,
+					loc.endIndex + 1,
+					localizedCode,
+				);
+			} else {
+				// if localizedCompiler is undefined then LocalizedValue = string.
+				stringKey = (loc as { key: string }).key;
+
+				// we're running after minification, which means that the placeholder
+				// may have (eg) been concated into another string.
+				// so here we're going to replace only the placeholder itself
+				const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
+				magicStringInstance.overwrite(
+					loc.index,
+					loc.endIndex,
+					localizedString,
+				);
+			}
 
 			// For Webpack 5 cache hits
 			if (this.options.warnOnUnusedString) {
 				this.trackStringKeys.delete(stringKey);
 			}
-
-			magicStringInstance.overwrite(
-				index,
-				endIndex,
-				localizedString,
-			);
 		}
 
 		// Localize chunk requests

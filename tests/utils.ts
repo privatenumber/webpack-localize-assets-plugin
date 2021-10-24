@@ -6,6 +6,10 @@ import { IFS } from 'unionfs/lib/fs.js';
 import { Volume, DirectoryJSON } from 'memfs';
 import AggregateError from 'aggregate-error';
 import type { FileSystem } from 'fs-require';
+import acorn from 'acorn';
+// estree is a types-only package
+// eslint-disable-next-line import/no-unresolved
+import { Expression } from 'estree';
 
 export function assertFsWithReadFileSync(
 	mfs: webpack.InputFileSystem | webpack.OutputFileSystem,
@@ -130,4 +134,8 @@ export function watch(
 			}
 		});
 	});
+}
+
+export function parseJSExpression(expr: string): Expression {
+	return acorn.parseExpressionAt(expr, 0, { ecmaVersion: 'latest' }) as unknown as Expression;
 }

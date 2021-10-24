@@ -39,6 +39,9 @@
 		"*.{js,ts}": "eslint"
 	},
 	"dependencies": {
+		"@types/estree": "^0.0.50",
+		"acorn": "^8.5.0",
+		"astring": "^1.7.5",
 		"has-own-prop": "^2.0.0",
 		"magic-string": "^0.25.7",
 		"webpack-sources": "^2.2.0"

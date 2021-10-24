@@ -1,28 +1,46 @@
 import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
+// estree is a types-only package
+// eslint-disable-next-line import/no-unresolved
+import type * as estree from 'estree';
 import hasOwnProp from 'has-own-prop';
 
-export interface Locale {
-	[stringKey: string]: string;
+export interface Locale<LocalizedData = string> {
+	[stringKey: string]: LocalizedData;
 }
-export interface Locales {
-	[locale: string]: string | Locale;
+export interface Locales<LocalizedData = string> {
+	[locale: string]: string | Locale<LocalizedData>;
 }
-export interface Options {
-	locales: Locales;
+export interface LocalizeCompilerContext<LocalizedData = string> {
+	localizedData: LocalizedData;
+	key: string;
+	locale: Locale<LocalizedData>;
+	localeName: string;
+	locales: Locales<LocalizedData>;
+	callExpr: estree.CallExpression;
+}
+export type Options<LocalizedData = string> = {
+	locales: Locales<LocalizedData>;
 	functionName?: string;
 	throwOnMissing?: boolean;
 	sourceMapForLocales?: string[];
 	warnOnUnusedString?: boolean;
-}
+} & LocalizeCompilerOption<LocalizedData>;
 
-export type PlaceholderLocations = {
-	stringKey: string;
+type LocalizeCompiler<LocalizedData>
+	= (context: LocalizeCompilerContext<LocalizedData>) => string | estree.Expression;
+
+type LocalizeCompilerOption<LocalizedData>
+	= LocalizedData extends string // optional if the localized data is a string
+		? { localizeCompiler?: LocalizeCompiler<LocalizedData> }
+		: { localizeCompiler: LocalizeCompiler<LocalizedData> };
+
+export type PlaceholderLocation = {
 	index: number;
 	endIndex: number;
-}[];
+} & ({ expr: estree.CallExpression } | { key: string });
 
-export function validateOptions(options: Options): void {
+export function validateOptions<LocalizedData>(options: Options<LocalizedData>): void {
 	if (!options) {
 		throw new Error('Options are required');
 	}

@@ -2,9 +2,12 @@ lockfileVersion: 5.3
 
 specifiers:
   '@pvtnbr/eslint-config-typescript': ^0.1.15
+  '@types/estree': ^0.0.50
   '@types/jest': ^26.0.23
   '@types/webpack': ^4.41.28
+  acorn: ^8.5.0
   aggregate-error: ^4.0.0
+  astring: ^1.7.5
   css-loader: ^5.2.4
   es-jest: ^1.2.0
   eslint: ^7.24.0
@@ -27,6 +30,9 @@ specifiers:
   webpack5: npm:webpack@5.10.1
 
 dependencies:
+  '@types/estree': 0.0.50
+  acorn: 8.5.0
+  astring: 1.7.5
   has-own-prop: 2.0.0
   magic-string: 0.25.7
   webpack-sources: 2.2.0
@@ -817,19 +823,22 @@ packages:
     resolution: {integrity: sha512-O/ql2+rrCUe2W2rs7wMR+GqPRcgB6UiqN5RhrR5xruFlY7l9YLMn0ZkDzjoHLeiFkR8MCQZVudUuuvQ2BLC9Qw==}
     dependencies:
       '@types/eslint': 7.2.11
-      '@types/estree': 0.0.45
+      '@types/estree': 0.0.50
     dev: true
 
   /@types/eslint/7.2.11:
     resolution: {integrity: sha512-WYhv//5K8kQtsSc9F1Kn2vHzhYor6KpwPbARH7hwYe3C3ETD0EVx/3P5qQybUoaBEuUa9f/02JjBiXFWalYUmw==}
     dependencies:
-      '@types/estree': 0.0.45
+      '@types/estree': 0.0.50
       '@types/json-schema': 7.0.7
     dev: true
 
   /@types/estree/0.0.45:
     resolution: {integrity: sha512-jnqIUKDUqJbDIUxm0Uj7bnlMnRm1T/eZ9N+AVMqhPgzrba2GhGG5o/jCTwmdPK709nEZsGoMzXEDUjcXHa3W0g==}
     dev: true
+
+  /@types/estree/0.0.50:
+    resolution: {integrity: sha512-C6N5s2ZFtuZRj54k2/zyRhNDjJwwcViAM3Nbm8zjBpbqAdZ00mr0CFxvSKeO8Y/e03WVFLpQMdHYVfUd6SB+Hw==}
 
   /@types/graceful-fs/4.1.5:
     resolution: {integrity: sha512-anKkLmZZ+xm4p8JWBf4hElkM4XR+EZeA2M9BAkkTldmcyDY4mbdIJnRghDJH3Ov5ooY7/UAoENtmdMSkaAd7Cw==}
@@ -1348,11 +1357,10 @@ packages:
     hasBin: true
     dev: true
 
-  /acorn/8.2.4:
-    resolution: {integrity: sha512-Ibt84YwBDDA890eDiDCEqcbwvHlBvzzDkU2cGBBDDI1QWT12jTiXIOn2CIw5KK4i6N5Z2HUxwYjzriDyqaqqZg==}
+  /acorn/8.5.0:
+    resolution: {integrity: sha512-yXbYeFy+jUuYd3/CDcg2NkIYE991XYX/bje7LmjJigUciaeO1JR4XxXgCIV1/Zc/dRuFEyw1L0pbA+qynJkW5Q==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-    dev: true
 
   /aggregate-error/3.1.0:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
@@ -1541,6 +1549,11 @@ packages:
     resolution: {integrity: sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==}
     engines: {node: '>=8'}
     dev: true
+
+  /astring/1.7.5:
+    resolution: {integrity: sha512-lobf6RWXb8c4uZ7Mdq0U12efYmpD1UFnyOWVJPTa3ukqZrMopav+2hdNu0hgBF0JIBFK9QgrBDfwYvh3DFJDAA==}
+    hasBin: true
+    dev: false
 
   /async-each/1.0.3:
     resolution: {integrity: sha512-z/WhQ5FPySLdvREByI2vZiTWwCnF0moMJ1hK9YQwDTHKh6I7/uSckMetoRGb5UBZPC1z0jlw+n/XCgjeH7y1AQ==}
@@ -4464,7 +4477,7 @@ packages:
         optional: true
     dependencies:
       abab: 2.0.5
-      acorn: 8.2.4
+      acorn: 8.5.0
       acorn-globals: 6.0.0
       cssom: 0.4.4
       cssstyle: 2.3.0
@@ -7026,7 +7039,7 @@ packages:
       '@webassemblyjs/helper-module-context': 1.9.1
       '@webassemblyjs/wasm-edit': 1.9.1
       '@webassemblyjs/wasm-parser': 1.9.1
-      acorn: 8.2.4
+      acorn: 8.5.0
       browserslist: 4.16.6
       chrome-trace-event: 1.0.3
       enhanced-resolve: 5.8.2
