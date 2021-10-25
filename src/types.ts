@@ -14,6 +14,7 @@ const LocalesSchema = z.record(z.union([LocaleSchema, z.string()])).refine(
 export const OptionsSchema = z.object({
 	locales: LocalesSchema,
 	functionName: z.string().optional(),
+	functionNames: z.array(z.string()).nonempty().optional(),
 	throwOnMissing: z.boolean().optional(),
 	sourceMapForLocales: z.string().array().optional(),
 	warnOnUnusedString: z.boolean().optional(),
@@ -22,7 +23,10 @@ export const OptionsSchema = z.object({
 	|| options.sourceMapForLocales.every(locale => hasOwnProp(options.locales, locale))
 ), {
 	message: 'sourceMapForLocales must contain valid locales',
-});
+}).refine(
+	options => !(options.functionName && options.functionNames),
+	{ message: 'Can\'t specify both functionName and functionNames' },
+);
 
 export type Options = z.infer<typeof OptionsSchema>;
 

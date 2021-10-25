@@ -185,10 +185,10 @@ class LocalizeAssetsPlugin implements Plugin {
 		normalModuleFactory: NormalModuleFactory,
 	) {
 		const { singleLocale } = this;
-		const { functionName = '__' } = this.options;
+		const functionNames = this.options.functionNames ?? [this.options.functionName ?? '__'];
 
 		const handler = (parser) => {
-			parser.hooks.call.for(functionName).tap(LocalizeAssetsPlugin.name, (callExpressionNode) => {
+			const callExpressionNodeHandler = functionName => (callExpressionNode) => {
 				const { module } = parser.state;
 				const firstArgumentNode = callExpressionNode.arguments[0];
 
@@ -231,7 +231,12 @@ class LocalizeAssetsPlugin implements Plugin {
 					module,
 					new WebpackError(`[${LocalizeAssetsPlugin.name}] Ignoring confusing usage of localization function "${functionName}" in ${module.resource}:${location.line}:${location.column}`),
 				);
-			});
+			};
+			for (const functionName of functionNames) {
+				parser.hooks.call
+					.for(functionName)
+					.tap(LocalizeAssetsPlugin.name, callExpressionNodeHandler(functionName));
+			}
 		};
 
 		normalModuleFactory.hooks.parser

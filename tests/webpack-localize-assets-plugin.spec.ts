@@ -73,6 +73,40 @@ describe(`Webpack ${webpack.version}`, () => {
 			}).rejects.toThrow(/locales must contain at least one locale/);
 		});
 
+		test('empty functionNames', async () => {
+			await expect(async () => {
+				await build(
+					{},
+					(config) => {
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesSingle,
+								// this is a type error in TS. Trying to emulate a JS mistake
+								functionNames: [] as any,
+							}),
+						);
+					},
+				);
+			}).rejects.toThrow(/empty/);
+		});
+
+		test('functionName and functionNames together', async () => {
+			await expect(async () => {
+				await build(
+					{},
+					(config) => {
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								functionName: 'bar',
+								locales: localesSingle,
+								functionNames: ['foo'],
+							}),
+						);
+					},
+				);
+			}).rejects.toThrow(/both/);
+		});
+
 		test('can use string [locale] in source', async () => {
 			const buildStats = await build(
 				{
@@ -430,6 +464,34 @@ describe(`Webpack ${webpack.version}`, () => {
 			// Assert that asset is minified
 			expect(mfs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
 			expect(mfs.readFileSync('/dist/index.ja.js').toString()).not.toMatch(/\s{2,}/);
+		});
+
+		test('overriding functionNames', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default [_f("hello-key"), _g("hello-key")]',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+							functionNames: ['_f', '_g'],
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(1);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild[0]).toBe(localesSingle.en['hello-key']);
+			expect(enBuild[1]).toBe(localesSingle.en['hello-key']);
 		});
 
 		test('handle CSS', async () => {
