@@ -127,6 +127,31 @@ Default: `false`
 
 Enable to see warnings when unused string keys are found.
 
+### localizeCompiler
+Optional. Type: `(context: LocalizeCompilerContext) => string | Expression`
+
+A function to generate a JS expression to replace the `__()` call. It'll be called for each occurrence of `__` for each locale.
+
+The `LocalizeCompilerContext` has the following fields:
+| Name            | Type                                                                                   | Description                                                                        |
+| --------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `key`           | `string`                                                                               | The translation key.                                                               |
+| `localizedData` | `string`                                                                               | The data in the locale object for the key. Equal to `context.locale[context.key]`. |
+| `locale`        | `Record<string, string>`                                                               | The current locale object. Equal to `context.locales[context.localeName]`.         |
+| `localeName`    | `string`                                                                               | The name of the current locale.                                                    |
+| `locales`       | `Record<string, Record<string, string>>`                                               | All the locales.                                                                   |
+| `callExpr`      | [`CallExpression`](https://github.com/estree/estree/blob/master/es5.md#callexpression) | An `estree` node representing the original call to `__()`.                         |
+
+`localizeCompiler` should return either a string containing a JavaScript expression, or an `estree`-compatible `Expression` node. The expression will be injected into the bundle in the place of the original `__()` call. The expression should represent the localised string.
+
+For example, this `localizeCompiler` replicates the default behaviour:
+
+```js
+localizeCompiler(context) { return JSON.stringify(context.localizedData); }
+```
+
+You can use `localizeCompiler` to do things like runtime pluralisation.
+
 ## 💁‍♀️ FAQ
 
 ### How does this compare to [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin)?
