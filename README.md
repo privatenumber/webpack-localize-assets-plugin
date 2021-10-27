@@ -98,12 +98,12 @@ Or:
 }
 ```
 
-#### functionName
-Type: `string`
+#### functionNames
+Type: `string[]`
 
-Default: `__`
+Default: `['__']`
 
-The function name to use to detect localization string keys.
+An array of function names to detect localization string keys.
 
 ```js
 const message = __('helloWorld'); // => 'Hello world!'
