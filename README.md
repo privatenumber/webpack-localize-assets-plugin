@@ -108,6 +108,33 @@ The function name to use to detect localization string keys.
 ```js
 const message = __('helloWorld'); // => 'Hello world!'
 ```
+
+### emitFunctionCall
+Type: `boolean`
+
+Default: `false`
+
+Set the `emitFunctionCall` option to `true` if you want the `__` call to be emitted into the output. (By default, this plugin remvoes the `__` call and replaces it with the localized string directly.) This is useful if you need to do runtime logic in your `__` function, such as string templating.
+
+For example, you could define a global `__` function like this:
+
+```js
+window.__ = (str, placeholderVal) => str.replace(/@placeholder@/, placeholderVal);
+```
+
+Then, if you set `emitFunctionCall` to `true`, input code like this:
+
+```js
+const message = __('helloPlaceholder', user.name);
+```
+
+will result in bundled code like this:
+
+```js
+// evaluates at runtime to 'Hello privatenumber!'
+const message = __('Hello @placeholder@!', user.name);
+```
+
 #### throwOnMissing
 Type: `boolean`
 

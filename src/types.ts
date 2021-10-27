@@ -14,6 +14,7 @@ const LocalesSchema = z.record(z.union([LocaleSchema, z.string()])).refine(
 export const OptionsSchema = z.object({
 	locales: LocalesSchema,
 	functionName: z.string().optional(),
+	emitFunctionCall: z.boolean().optional(),
 	throwOnMissing: z.boolean().optional(),
 	sourceMapForLocales: z.string().array().optional(),
 	warnOnUnusedString: z.boolean().optional(),

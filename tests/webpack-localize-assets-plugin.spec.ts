@@ -538,6 +538,49 @@ describe(`Webpack ${webpack.version}`, () => {
 			);
 		});
 
+		test('emit function call', async () => {
+			const buildStats = await build(
+				{
+					// parser.hooks.call only works with free variables,
+					// so I have to define __ on globalThis and not as a module-local function.
+					//
+					// TODO: does this plugin work with tagged variables?
+					// https://github.com/webpack/webpack/blob/d75a387d15357a9064c500829469edc22173e073/lib/javascript/JavascriptParser.js#L3499
+					'/src/index.js': 'globalThis.__ = x => "__("+x+")";\nexport default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							emitFunctionCall: true,
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(`__(${localesMulti.en['hello-key']})`);
+
+			const esBuild = mRequire('/dist/index.es.js');
+			expect(esBuild).toBe(`__(${localesMulti.es['hello-key']})`);
+
+			const jaBuild = mRequire('/dist/index.ja.js');
+			expect(jaBuild).toBe(`__(${localesMulti.ja['hello-key']})`);
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.en\.js/);
+			expect(statsOutput).toMatch(/index\.es\.js/);
+			expect(statsOutput).toMatch(/index\.ja\.js/);
+		});
+
 		test('emits source-maps', async () => {
 			const locales = {
 				en: {

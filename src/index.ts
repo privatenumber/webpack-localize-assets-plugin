@@ -185,15 +185,18 @@ class LocalizeAssetsPlugin implements Plugin {
 		normalModuleFactory: NormalModuleFactory,
 	) {
 		const { singleLocale } = this;
-		const { functionName = '__' } = this.options;
+		const { functionName = '__', emitFunctionCall = false } = this.options;
 
 		const handler = (parser) => {
 			parser.hooks.call.for(functionName).tap(LocalizeAssetsPlugin.name, (callExpressionNode) => {
 				const { module } = parser.state;
 				const firstArgumentNode = callExpressionNode.arguments[0];
 
+				// If we're leaving a __() call in the output (only rewriting the first argument),
+				// it's ok if there were other arguments because
+				// __()'s implementation can take care of them.
 				if (
-					callExpressionNode.arguments.length === 1
+					(emitFunctionCall || callExpressionNode.arguments.length === 1)
 					&& firstArgumentNode.type === 'Literal'
 					&& typeof firstArgumentNode.value === 'string'
 				) {
@@ -208,14 +211,18 @@ class LocalizeAssetsPlugin implements Plugin {
 						module.buildInfo.fileDependencies.add(fileDependency);
 					}
 
+					const nodeToReplace = emitFunctionCall
+						? callExpressionNode.arguments[0]
+						: callExpressionNode;
+
 					if (singleLocale) {
 						toConstantDependency(
 							parser,
 							JSON.stringify(this.locales[singleLocale][stringKey] || stringKey),
-						)(callExpressionNode);
+						)(nodeToReplace);
 					} else {
 						const placeholder = placeholderPrefix + base64.encode(stringKey) + placeholderSuffix;
-						toConstantDependency(parser, JSON.stringify(placeholder))(callExpressionNode);
+						toConstantDependency(parser, JSON.stringify(placeholder))(nodeToReplace);
 					}
 
 					// For single locale mode
