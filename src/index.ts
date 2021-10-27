@@ -3,7 +3,6 @@ import {
 	Options,
 	OptionsSchema,
 	Compiler,
-	Compilation,
 	NormalModuleFactory,
 	LocalizedStringKey,
 	LocalesMap,
