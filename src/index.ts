@@ -57,7 +57,7 @@ class LocalizeAssetsPlugin {
 
 		(compiler as WP5.Compiler).hooks.thisCompilation.tap(
 			name,
-			(compilation: Compilation, { normalModuleFactory }) => {
+			(compilation, { normalModuleFactory }) => {
 				// Reload on build
 				const { fileDependencies, locales } = loadLocales(inputFileSystem, this.options.locales);
 
