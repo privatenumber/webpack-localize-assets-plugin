@@ -581,6 +581,24 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(statsOutput).toMatch(/index\.ja\.js/);
 		});
 
+		test('emitFunctionCall: don\'t emit confusion warning for extra args', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key", "second param");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							emitFunctionCall: true,
+						}),
+					);
+				},
+			);
+
+			expect(buildStats.hasWarnings()).toBe(false);
+		});
+
 		test('emits source-maps', async () => {
 			const locales = {
 				en: {
