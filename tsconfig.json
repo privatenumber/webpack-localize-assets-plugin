@@ -5,7 +5,7 @@
 		"esModuleInterop": true,
 		"declaration": true,
 		"outDir": "dist",
-		"strictNullChecks": true,
+		"strict": true,
 
 		// Node 12
 		"module": "commonjs",

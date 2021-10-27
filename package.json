@@ -26,6 +26,7 @@
 	"scripts": {
 		"lint": "eslint .",
 		"build": "tsc",
+		"typecheck": "tsc --noEmit",
 		"test": "npm run test:wp4 && npm run test:wp5",
 		"test:wp4": "jest",
 		"test:wp5": "WEBPACK=5 jest"
@@ -45,13 +46,14 @@
 		"zod": "^1.11.17"
 	},
 	"devDependencies": {
-		"@pvtnbr/eslint-config-typescript": "^0.1.15",
-		"@types/jest": "^26.0.23",
-		"@types/webpack": "^4.41.28",
+		"@pvtnbr/eslint-config": "^0.4.1",
+		"@types/estree": "^0.0.50",
+		"@types/jest": "^26.0.24",
+		"@types/webpack": "^4.41.31",
 		"aggregate-error": "^4.0.0",
 		"css-loader": "^5.2.4",
 		"es-jest": "^1.2.0",
-		"eslint": "^7.24.0",
+		"eslint": "^7.32.0",
 		"esno": "^0.5.0",
 		"fs-require": "^1.0.0",
 		"husky": "^4.3.8",
@@ -68,6 +70,6 @@
 		"webpack5": "npm:webpack@5.10.1"
 	},
 	"eslintConfig": {
-		"extends": "@pvtnbr/eslint-config-typescript"
+		"extends": "@pvtnbr"
 	}
 }

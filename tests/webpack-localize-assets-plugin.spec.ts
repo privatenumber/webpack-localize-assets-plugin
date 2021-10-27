@@ -3,7 +3,7 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { createFsRequire } from 'fs-require';
-import { isWebpack5 } from '../src/utils';
+import { isWebpack5 } from '../src/utils/webpack';
 import WebpackLocalizeAssetsPlugin from '../src/index';
 import { build, watch, assertFsWithReadFileSync } from './utils';
 
@@ -612,7 +612,7 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('works with WebpackManifestPlugin', async () => {
-			const hasLocale = /\.(en|es|ja)\.\w{2}(\.map)?$/;
+			const hasLocale = /\.(?:en|es|ja)\.\w{2}(?:\.map)?$/;
 			const localeNames = Object.keys(localesMulti);
 			const buildStats = await build(
 				{
