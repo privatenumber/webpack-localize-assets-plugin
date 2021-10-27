@@ -49,6 +49,8 @@ class LocalizeAssetsPlugin implements Plugin {
 
 	private readonly trackStringKeys = new Set<string>();
 
+	private runBeforeMinification: boolean;
+
 	constructor(options: Options) {
 		OptionsSchema.parse(options);
 		this.options = options;
@@ -67,6 +69,16 @@ class LocalizeAssetsPlugin implements Plugin {
 			LocalizeAssetsPlugin.name,
 			(compilation: Compilation, { normalModuleFactory }) => {
 				this.loadLocales(inputFileSystem);
+
+				// If all of the localized data are plain strings,
+				// we can inject the strings after minification (as an optimisation).
+				// Otherwise, we're gonna inject JSON data at some point,
+				// so we need to run before minification.
+				//
+				// TODO: I think we can safely run after minification when emitFunctionCall is true.
+				// https://github.com/privatenumber/webpack-localize-assets-plugin/pull/25
+				this.runBeforeMinification = Object.values(this.locales)
+					.some(locale => Object.values(locale).some(data => typeof data !== 'string'));
 
 				const { filename, chunkFilename } = compilation.outputOptions;
 				assert(filename.includes('[locale]'), 'output.filename must include [locale]');
@@ -347,20 +359,26 @@ class LocalizeAssetsPlugin implements Plugin {
 			}));
 		};
 
-		// Apply after minification since we don't want to
-		// duplicate the costs of that for each asset
 		if (isWebpack5Compilation(compilation)) {
-			// Happens after PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE
+			const Comp = (compilation.constructor as typeof WP5.Compilation);
+			const stage = this.runBeforeMinification
+				? Comp.PROCESS_ASSETS_STAGE_DERIVED
+				: Comp.PROCESS_ASSETS_STAGE_ANALYSE; // Happens after PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE
+
 			compilation.hooks.processAssets.tapPromise(
 				{
 					name: LocalizeAssetsPlugin.name,
-					stage: (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_ANALYSE,
+					stage,
 				},
 				generateLocalizedAssets,
 			);
 		} else {
-			// Triggered after minification, which usually happens in optimizeChunkAssets
-			compilation.hooks.optimizeAssets.tapPromise(
+			const hook = this.runBeforeMinification
+				? compilation.hooks.additionalAssets
+				// Triggered after minification, which usually happens in optimizeChunkAssets
+				: compilation.hooks.optimizeAssets;
+
+			hook.tapPromise(
 				LocalizeAssetsPlugin.name,
 				generateLocalizedAssets,
 			);
@@ -378,20 +396,43 @@ class LocalizeAssetsPlugin implements Plugin {
 		const localeData = this.locales[locale];
 		const magicStringInstance = new MagicString(source);
 
-		// Localze strings
+		// Localize strings
 		for (const { stringKey, index, endIndex } of placeholderLocations) {
-			const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
+			const localizedData = JSON.stringify(localeData[stringKey] || stringKey);
 
 			// For Webpack 5 cache hits
 			if (this.options.warnOnUnusedString) {
 				this.trackStringKeys.delete(stringKey);
 			}
 
-			magicStringInstance.overwrite(
-				index,
-				endIndex,
-				localizedString,
-			);
+			if (this.runBeforeMinification) {
+				// We can safely assume that the placeholder is directly inside a string literal.
+				// `localizedData` is an arbitrary JS expression,
+				// so we want to replace code one character either side of the placeholder
+				// in order to eat the string literal's quotes.
+				//
+				// `"placeholder-value"` -> `"localized-string"`
+				//  ~~~~~~~~~~~~~~~~~~~  ->  ~~~~~~~~~~~~~~~~~~
+				magicStringInstance.overwrite(
+					index - 1,
+					endIndex + 1,
+					localizedData,
+				);
+			} else {
+				// After minification, we may be somewhere inside a larger
+				// string (eg if the minifier concat-ed some string literals).
+				// But we know that localizedData is a JSON string literal,
+				// so we can chop the leading and trailing quotes from
+				// localizedData and overwrite the placeholder inside the string.
+				//
+				// `"string with placeholder-value inside it"` -> `"string with localized-string inside it"`
+				//               ~~~~~~~~~~~~~~~~~             ->               ~~~~~~~~~~~~~~~~
+				magicStringInstance.overwrite(
+					index,
+					endIndex,
+					localizedData.slice(1, -1),
+				);
+			}
 		}
 
 		// Localize chunk requests

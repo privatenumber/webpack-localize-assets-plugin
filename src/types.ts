@@ -3,7 +3,7 @@ import type WP5 from 'webpack5';
 import * as z from 'zod';
 import hasOwnProp from 'has-own-prop';
 
-const LocaleSchema = z.record(z.string());
+const LocaleSchema = z.record(z.unknown());
 const LocalesSchema = z.record(z.union([LocaleSchema, z.string()])).refine(
 	object => Object.keys(object).length > 0,
 	{

@@ -27,6 +27,38 @@ const localesMulti = {
 		stringWithQuotes: '"quotes"',
 	},
 };
+const localesSingleJsonData = {
+	en: {
+		'hello-key': { val: 'Hello' },
+	},
+};
+const localesMultiJsonData = {
+	en: {
+		'hello-key': { val: 'Hello' },
+	},
+	es: {
+		'hello-key': { val: 'Hola' },
+	},
+	ja: {
+		'hello-key': { val: 'こんにちは' },
+	},
+};
+const localesSingleWithFunction = {
+	en: {
+		'hello-key': { fun() { console.log('Hello'); } },
+	},
+};
+const localesMultiWithFunction = {
+	en: {
+		'hello-key': { fun() { console.log('Hello'); } },
+	},
+	es: {
+		'hello-key': { fun() { console.log('Hola'); } },
+	},
+	ja: {
+		'hello-key': { fun() { console.log('こんにちは'); } },
+	},
+};
 
 describe(`Webpack ${webpack.version}`, () => {
 	describe('error-cases', () => {
@@ -430,6 +462,117 @@ describe(`Webpack ${webpack.version}`, () => {
 			// Assert that asset is minified
 			expect(mfs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
 			expect(mfs.readFileSync('/dist/index.ja.js').toString()).not.toMatch(/\s{2,}/);
+		});
+
+		test('inject json', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMultiJsonData,
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toEqual(localesMultiJsonData.en['hello-key']);
+
+			const esBuild = mRequire('/dist/index.es.js');
+			expect(esBuild).toEqual(localesMultiJsonData.es['hello-key']);
+
+			const jaBuild = mRequire('/dist/index.ja.js');
+			expect(jaBuild).toEqual(localesMultiJsonData.ja['hello-key']);
+		});
+
+		test('inject json in single locale mode', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingleJsonData,
+						}),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toEqual(localesSingleJsonData.en['hello-key']);
+		});
+
+		test('cant use json to inject code', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMultiWithFunction,
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			// JSON.stringify drops values which are functions
+			expect(enBuild).toEqual({});
+
+			const esBuild = mRequire('/dist/index.es.js');
+			expect(esBuild).toEqual({});
+
+			const jaBuild = mRequire('/dist/index.ja.js');
+			expect(jaBuild).toEqual({});
+		});
+
+		test('cant use json to inject code in single locale mode', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingleWithFunction,
+						}),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toEqual({});
 		});
 
 		test('handle CSS', async () => {
