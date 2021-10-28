@@ -1,7 +1,7 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import {
 	Options,
-	OptionsSchema,
+	validateOptions,
 	Compiler,
 	NormalModuleFactory,
 	LocalizedStringKey,
@@ -42,7 +42,7 @@ class LocalizeAssetsPlugin {
 	private trackStringKeys?: StringKeysCollection;
 
 	constructor(options: Options) {
-		OptionsSchema.parse(options);
+		validateOptions(options);
 		this.options = options;
 
 		this.localeNames = Object.keys(options.locales);
