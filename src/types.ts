@@ -3,6 +3,13 @@ import type WP5 from 'webpack5';
 import * as z from 'zod';
 import hasOwnProp from 'has-own-prop';
 
+export type LocaleName = string;
+export type LocaleFilePath = string;
+export type LocalizedStringKey = string;
+export type LocaleStrings = Record<LocalizedStringKey, unknown>;
+export type LocalesMap = Record<LocaleName, LocaleStrings>;
+export type UnprocessedLocalesMap = Record<LocaleName, LocaleFilePath | LocaleStrings>;
+
 const LocaleSchema = z.record(z.unknown());
 const LocalesSchema = z.record(z.union([LocaleSchema, z.string()])).refine(
 	object => Object.keys(object).length > 0,
@@ -26,15 +33,9 @@ export const OptionsSchema = z.object({
 
 export type Options = z.infer<typeof OptionsSchema>;
 
-export type PlaceholderLocations = {
-	stringKey: string;
-	index: number;
-	endIndex: number;
-}[];
-
 export { WP4, WP5 };
 export type Webpack = typeof WP4 | typeof WP5;
-export type Plugin = WP4.Plugin;
 export type Compiler = WP4.Compiler | WP5.Compiler;
 export type Compilation = WP5.Compilation | WP4.compilation.Compilation;
 export type NormalModuleFactory = Parameters<WP5.Compiler['newCompilation']>[0]['normalModuleFactory'];
+export type Module = WP4.compilation.Module | WP5.Module;
