@@ -4,6 +4,7 @@ import {
 	Options,
 	validateOptions,
 	Compiler,
+	Module,
 	NormalModuleFactory,
 	LocalizedStringKey,
 	LocalesMap,
@@ -108,6 +109,18 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 						this.trackStringKeys,
 						this.options.localizeCompiler,
 					);
+
+					// Update chunkHash based on localized content
+					compilation.hooks.chunkHash.tap(name, (chunk, hash) => {
+						const modules = chunk.getModules();
+						const localizedModules = modules
+							.map(module => module.buildInfo.localized)
+							.filter(Boolean);
+
+						if (localizedModules.length > 0) {
+							hash.update(JSON.stringify(localizedModules));
+						}
+					});
 				}
 			},
 		);
@@ -154,16 +167,15 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 					module.buildInfo.fileDependencies.add(fileDependency);
 				}
 
-				const replacement = this.getReplacementExpr(callExpressionNode, stringKey);
+				const replacement = this.getReplacementExpr(callExpressionNode, stringKey, module);
 				toConstantDependency(parser, replacement)(callExpressionNode);
-				this.trackStringKeys?.delete(stringKey);
 
 				return true;
 			},
 		);
 	}
 
-	private getReplacementExpr(callExpr: CallExpression, key: string): string {
+	private getReplacementExpr(callExpr: CallExpression, key: string, module: Module): string {
 		if (this.singleLocale) {
 			// single locale - let's insert the localised version of the string right now,
 			// no need to use placeholder for string replacement on the asset
@@ -185,7 +197,19 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				);
 			}
 
+			this.trackStringKeys?.delete(key);
+
 			return JSON.stringify(localizedData || key);
+		}
+
+		if (!module.buildInfo.localized) {
+			module.buildInfo.localized = {};
+		}
+
+		if (!module.buildInfo.localized[key]) {
+			module.buildInfo.localized[key] = this.localeNames.map(
+				locale => this.locales[locale][key],
+			);
 		}
 
 		// OK, we have multiple locales. Let's replace the `__()` call
