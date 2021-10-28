@@ -1,7 +1,7 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import {
 	Options,
-	OptionsSchema,
+	validateOptions,
 	Compiler,
 	NormalModuleFactory,
 	LocalizedStringKey,
@@ -42,7 +42,7 @@ class LocalizeAssetsPlugin {
 	private trackStringKeys?: StringKeysCollection;
 
 	constructor(options: Options) {
-		OptionsSchema.parse(options);
+		validateOptions(options);
 		this.options = options;
 
 		this.localeNames = Object.keys(options.locales);
@@ -115,6 +115,18 @@ class LocalizeAssetsPlugin {
 						this.options.sourceMapForLocales,
 						this.trackStringKeys,
 					);
+
+					// Update chunkHash based on localized content
+					compilation.hooks.chunkHash.tap(name, (chunk, hash) => {
+						const modules = chunk.getModules();
+						const localizedModules = modules
+							.map(module => module.buildInfo.localized)
+							.filter(Boolean);
+
+						if (localizedModules.length > 0) {
+							hash.update(JSON.stringify(localizedModules));
+						}
+					});
 				}
 			},
 		);
@@ -170,6 +182,16 @@ class LocalizeAssetsPlugin {
 
 					this.trackStringKeys?.delete(stringKey);
 				} else {
+					if (!module.buildInfo.localized) {
+						module.buildInfo.localized = {};
+					}
+
+					if (!module.buildInfo.localized[stringKey]) {
+						module.buildInfo.localized[stringKey] = this.localeNames.map(
+							locale => locales[locale][stringKey],
+						);
+					}
+
 					const placeholder = getPlaceholder(stringKey);
 					toConstantDependency(parser, JSON.stringify(placeholder))(callExpressionNode);
 				}

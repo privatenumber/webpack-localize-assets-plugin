@@ -26,13 +26,11 @@ specifiers:
   webpack-manifest-plugin: ^3.1.1
   webpack-sources: ^2.2.0
   webpack5: npm:webpack@5.10.1
-  zod: ^1.11.17
 
 dependencies:
   has-own-prop: 2.0.0
   magic-string: 0.25.7
   webpack-sources: 2.2.0
-  zod: 1.11.17
 
 devDependencies:
   '@pvtnbr/eslint-config': 0.4.1_eslint@7.32.0+typescript@4.4.4
@@ -669,7 +667,7 @@ packages:
     engines: {node: '>= 10.14.2'}
     dependencies:
       callsites: 3.1.0
-      graceful-fs: 4.2.6
+      graceful-fs: 4.2.8
       source-map: 0.6.1
     dev: true
 
@@ -688,7 +686,7 @@ packages:
     engines: {node: '>= 10.14.2'}
     dependencies:
       '@jest/test-result': 26.6.2
-      graceful-fs: 4.2.6
+      graceful-fs: 4.2.8
       jest-haste-map: 26.6.2
       jest-runner: 26.6.3
       jest-runtime: 26.6.3
@@ -1369,12 +1367,6 @@ packages:
     hasBin: true
     dev: true
 
-  /acorn/8.2.1:
-    resolution: {integrity: sha512-z716cpm5TX4uzOzILx8PavOE6C6DKshHDw1aQN52M/yNSqE9s5O8SMfyhCCfCJ3HmTL0NkVOi+8a/55T7YB3bg==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
-    dev: true
-
   /acorn/8.5.0:
     resolution: {integrity: sha512-yXbYeFy+jUuYd3/CDcg2NkIYE991XYX/bje7LmjJigUciaeO1JR4XxXgCIV1/Zc/dRuFEyw1L0pbA+qynJkW5Q==}
     engines: {node: '>=0.4.0'}
@@ -1625,7 +1617,7 @@ packages:
       babel-plugin-istanbul: 6.0.0
       babel-preset-jest: 26.6.2_@babel+core@7.13.16
       chalk: 4.1.1
-      graceful-fs: 4.2.6
+      graceful-fs: 4.2.8
       slash: 3.0.0
     transitivePeerDependencies:
       - supports-color
@@ -1894,7 +1886,7 @@ packages:
       chownr: 1.1.4
       figgy-pudding: 3.5.2
       glob: 7.1.7
-      graceful-fs: 4.2.6
+      graceful-fs: 4.2.8
       infer-owner: 1.0.4
       lru-cache: 5.1.1
       mississippi: 3.0.0
@@ -2004,6 +1996,7 @@ packages:
   /chokidar/3.5.1:
     resolution: {integrity: sha512-9+s+Od+W0VJJzawDma/gvBNQqkTiqYTWLuZoyAsivsI4AaWTCzHG06/TMjsf1cYe9Cb97UCEhjz7HvnPk2p/tw==}
     engines: {node: '>= 8.10.0'}
+    requiresBuild: true
     dependencies:
       anymatch: 3.1.2
       braces: 3.0.2
@@ -2180,7 +2173,7 @@ packages:
     resolution: {integrity: sha512-27HBghJxjiZtIk3Ycvn/4kbJk/1uZuJFfuPEns6LaEvpvG1f0hTea8lilrouyo9mVc2GWdcEZ8OLoGmSADlrCw==}
     engines: {'0': node >= 0.8}
     dependencies:
-      buffer-from: 1.1.1
+      buffer-from: 1.1.2
       inherits: 2.0.4
       readable-stream: 2.3.7
       typedarray: 0.0.6
@@ -3387,7 +3380,7 @@ packages:
     dependencies:
       asynckit: 0.4.0
       combined-stream: 1.0.8
-      mime-types: 2.1.30
+      mime-types: 2.1.33
     dev: true
 
   /fragment-cache/0.2.1:
@@ -3415,7 +3408,7 @@ packages:
   /fs-write-stream-atomic/1.0.10:
     resolution: {integrity: sha1-tH31NJPvkR33VzHnCp3tAYnbQMk=}
     dependencies:
-      graceful-fs: 4.2.6
+      graceful-fs: 4.2.8
       iferr: 0.1.5
       imurmurhash: 0.1.4
       readable-stream: 2.3.7
@@ -3441,6 +3434,7 @@ packages:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -4594,7 +4588,7 @@ packages:
     engines: {node: '>= 10.14.2'}
     dependencies:
       '@types/node': 14.14.41
-      graceful-fs: 4.2.6
+      graceful-fs: 4.2.8
     dev: true
 
   /jest-snapshot/26.6.2:
@@ -4727,7 +4721,7 @@ packages:
         optional: true
     dependencies:
       abab: 2.0.5
-      acorn: 8.2.1
+      acorn: 8.5.0
       acorn-globals: 6.0.0
       cssom: 0.4.4
       cssstyle: 2.3.0
@@ -5171,21 +5165,9 @@ packages:
       brorand: 1.1.0
     dev: true
 
-  /mime-db/1.47.0:
-    resolution: {integrity: sha512-QBmA/G2y+IfeS4oktet3qRZ+P5kPhCKRXxXnQEudYqUaEioAU1/Lq2us3D/t1Jfo4hE9REQPrbB7K5sOczJVIw==}
-    engines: {node: '>= 0.6'}
-    dev: true
-
   /mime-db/1.50.0:
     resolution: {integrity: sha512-9tMZCDlYHqeERXEHO9f/hKfNXhre5dK2eE/krIvUjZbS2KPcqGDfNShIWS1uW9XOTKQKqK6qbeOci18rbfW77A==}
     engines: {node: '>= 0.6'}
-    dev: true
-
-  /mime-types/2.1.30:
-    resolution: {integrity: sha512-crmjA4bLtR8m9qLpHvgxSChT+XoSlZi8J4n/aIdn3z92e/U47Z0V/yl+Wh9W046GgFVAmoNR/fmdbZYcSSIUeg==}
-    engines: {node: '>= 0.6'}
-    dependencies:
-      mime-db: 1.47.0
     dev: true
 
   /mime-types/2.1.33:
@@ -5368,6 +5350,7 @@ packages:
 
   /node-notifier/8.0.2:
     resolution: {integrity: sha512-oJP/9NAdd9+x2Q+rfphB2RJCHjod70RcRLjosiPMMu5gjIfwVnOUGq2nbTjTUbmy0DJ/tFIVT30+Qe3nzl4TJg==}
+    requiresBuild: true
     dependencies:
       growly: 1.3.0
       is-wsl: 2.2.0
@@ -6072,7 +6055,7 @@ packages:
     resolution: {integrity: sha512-1JU/8q+VgFZyxwrJ+SVIOsh+KywWGpds3NTqikiKpDMZWScmAYyKIgqkO+ARvNWJfXeXR1zxz7aHF4u4CyH6vQ==}
     engines: {node: '>=0.10'}
     dependencies:
-      graceful-fs: 4.2.6
+      graceful-fs: 4.2.8
       micromatch: 3.1.10
       readable-stream: 2.3.7
     dev: true
@@ -6191,7 +6174,7 @@ packages:
       is-typedarray: 1.0.0
       isstream: 0.1.2
       json-stringify-safe: 5.0.1
-      mime-types: 2.1.30
+      mime-types: 2.1.33
       oauth-sign: 0.9.0
       performance-now: 2.1.0
       qs: 6.5.2
@@ -7362,6 +7345,7 @@ packages:
 
   /watchpack-chokidar2/2.0.1:
     resolution: {integrity: sha512-nCFfBIPKr5Sh61s4LPpy1Wtfi0HE8isJ3d2Yb5/Ppw2P2B/3eVSEBjKfN0fmHJSK14+31KwMKmcrzs2GM4P0Ww==}
+    requiresBuild: true
     dependencies:
       chokidar: 2.1.8
     dev: true
@@ -7664,7 +7648,3 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
-
-  /zod/1.11.17:
-    resolution: {integrity: sha512-UzIwO92D0dSFwIRyyqAfRXICITLjF0IP8tRbEK/un7adirMssWZx8xF/1hZNE7t61knWZ+lhEuUvxlu2MO8qqA==}
-    dev: false
