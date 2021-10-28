@@ -1,34 +1,16 @@
-import crypto from 'crypto';
-import { readFileSync } from 'fs';
 import webpack from 'webpack';
-import WebpackError from 'webpack/lib/WebpackError.js';
+import type WebpackError from 'webpack/lib/WebpackError.js';
+import type { SimpleCallExpression } from 'estree';
 import {
 	Webpack,
 	Compilation,
 	WP5,
-} from './types';
+	NormalModuleFactory,
+	Module,
+} from '../types';
 
-export const sha256 = (input: string) => crypto.createHash('sha256').update(input).digest('hex');
-
-export const base64 = {
-	encode: (ascii: string) => Buffer.from(ascii).toString('base64'),
-	decode: (base64Encoded: string) => Buffer.from(base64Encoded, 'base64').toString('ascii'),
-};
-
-export function findSubstringLocations(
-	string: string,
-	substring: string,
-): number[] {
-	const indices: number[] = [];
-	let index = string.indexOf(substring);
-
-	while (index > -1) {
-		indices.push(index);
-		index = string.indexOf(substring, index + 1);
-	}
-
-	return indices;
-}
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { name } = require('../../package.json');
 
 export const isWebpack5 = (wp: Webpack) => {
 	const [major] = wp.version ? wp.version.split('.') : [];
@@ -83,17 +65,36 @@ export const deleteAsset = (
 	}
 };
 
-export const reportModuleWarning = (module, warning: typeof WebpackError) => {
-	if (module.addWarning) {
+export const reportModuleWarning = (
+	module: Module,
+	warning: WebpackError,
+) => {
+	if ('addWarning' in module) {
 		module.addWarning(warning);
 	} else {
 		module.warnings.push(warning);
 	}
 };
 
-export const loadJson = <T extends {
-	readFileSync: typeof readFileSync;
-}>(fs: T, jsonPath: string): any | null => {
-	const stringContent = fs.readFileSync(jsonPath).toString();
-	return JSON.parse(stringContent);
+export const onFunctionCall = (
+	normalModuleFactory: NormalModuleFactory,
+	functionName: string,
+	hook: (parser: WP5.javascript.JavascriptParser, node: SimpleCallExpression) => void,
+) => {
+	const handler = (parser: WP5.javascript.JavascriptParser) => {
+		parser.hooks.call.for(functionName).tap(
+			name,
+			node => hook(parser, node as SimpleCallExpression),
+		);
+	};
+
+	normalModuleFactory.hooks.parser
+		.for('javascript/auto')
+		.tap(name, handler);
+	normalModuleFactory.hooks.parser
+		.for('javascript/dynamic')
+		.tap(name, handler);
+	normalModuleFactory.hooks.parser
+		.for('javascript/esm')
+		.tap(name, handler);
 };
