@@ -334,7 +334,36 @@ describe(`Webpack ${webpack.version}`, () => {
 	});
 
 	describe('passing', () => {
-		test('localize assets', async () => {
+		test('single locale', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(1);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(localesMulti.en['hello-key']);
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.en\.js/);
+		});
+
+		test('multi locale', async () => {
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default __("hello-key");',
