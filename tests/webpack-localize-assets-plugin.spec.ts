@@ -1,11 +1,10 @@
-import webpack from 'webpack';
+import webpack, { Configuration } from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { createFsRequire } from 'fs-require';
-import { isWebpack5 } from '../src/utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
-import { LocalizeCompilerContext } from '../src/types';
+import { Compiler, LocalizeCompilerContext, WP5 } from '../src/types';
 import {
 	build, watch, assertFsWithReadFileSync, parseJSExpression,
 } from './utils';
@@ -32,6 +31,8 @@ const localesMulti = {
 };
 
 describe(`Webpack ${webpack.version}`, () => {
+	const isWebpack5 = webpack.version?.startsWith('5.');
+
 	describe('error-cases', () => {
 		test('no option', async () => {
 			await expect(async () => {
@@ -336,7 +337,36 @@ describe(`Webpack ${webpack.version}`, () => {
 	});
 
 	describe('passing', () => {
-		test('localize assets', async () => {
+		test('single locale', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(1);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(localesMulti.en['hello-key']);
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.en\.js/);
+		});
+
+		test('multi locale', async () => {
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default __("hello-key");',
@@ -454,7 +484,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(compilerCalls[1]).toMatchObject(expectedCompilerCall('es'));
 			expect(compilerCalls[2]).toMatchObject(expectedCompilerCall('ja'));
 
-			function expectedCompilerCall(locale: string) {
+			function expectedCompilerCall(locale: keyof typeof localesMulti) {
 				return {
 					localizedData: localesMulti[locale]['hello-key'],
 					key: 'hello-key',
@@ -582,7 +612,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						}),
 						new MiniCssExtractPlugin({
 							filename: '[name].[locale].css',
-						}),
+						}) as any,
 					);
 				},
 			);
@@ -612,7 +642,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
-						new MiniCssExtractPlugin(),
+						new MiniCssExtractPlugin() as any,
 					);
 				},
 			);
@@ -626,7 +656,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const FakeMinifier = {
 				name: 'FakeMinfier',
 
-				apply(compiler) {
+				apply(compiler: Compiler) {
 					compiler.hooks.compilation.tap(FakeMinifier.name, (compilation) => {
 						const checkAssets = () => {
 							const assets = Object.keys(compilation.assets);
@@ -637,11 +667,12 @@ describe(`Webpack ${webpack.version}`, () => {
 							expect(asset.source.source()).toMatch(/"Hello"/);
 						};
 
-						if (isWebpack5(webpack)) {
-							compilation.hooks.processAssets.tap(
+						if (isWebpack5) {
+							(compilation as WP5.Compilation).hooks.processAssets.tap(
 								{
 									name: FakeMinifier.name,
-									stage: compilation.constructor.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
+									stage: (compilation.constructor as typeof WP5.Compilation)
+										.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
 								},
 								checkAssets,
 							);
@@ -741,7 +772,7 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('works with WebpackManifestPlugin', async () => {
-			const hasLocale = /\.(en|es|ja)\.\w{2}(\.map)?$/;
+			const hasLocale = /\.(?:en|es|ja)\.\w{2}(?:\.map)?$/;
 			const localeNames = Object.keys(localesMulti);
 			const buildStats = await build(
 				{
@@ -760,13 +791,14 @@ describe(`Webpack ${webpack.version}`, () => {
 					});
 
 					config.plugins!.push(
-						new MiniCssExtractPlugin(),
+						new MiniCssExtractPlugin() as any,
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
 						...localeNames.map(locale => new WebpackManifestPlugin({
 							fileName: `manifest.${locale}.json`,
-							filter: file => !file.isAsset && (!hasLocale.test(file.path) || file.path.match(`.${locale}.`)),
+							// eslint-disable-next-line unicorn/prefer-regexp-test
+							filter: file => !file.isAsset && (!hasLocale.test(file.path) || !!file.path.match(`.${locale}.`)),
 						})),
 					);
 				},
@@ -801,7 +833,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 			const cacheDirectory = tempy.directory();
-			const configure = (config) => {
+			const configure = (config: Configuration) => {
 				config.cache = {
 					type: 'filesystem',
 					cacheDirectory,
@@ -844,7 +876,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const volume = {
 				'/src/index.js': 'export default __("hello-key");',
 			};
-			const configure = (config) => {
+			const configure = (config: Configuration) => {
 				config.cache = {
 					type: 'filesystem',
 				};
@@ -979,6 +1011,53 @@ describe(`Webpack ${webpack.version}`, () => {
 			);
 
 			expect(buildStatsUsed.compilation.warnings.length).toBe(0);
+		});
+
+		test('function filename with Wepback placeholder', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					if (isWebpack5) {
+						config!.output!.filename = () => '[name].fn.[locale].[fullhash].js';
+						// @ts-expect-error Webpack 5 config
+						config!.output!.chunkFilename = () => '[name].fn.[locale].[fullhash].js';
+					} else {
+						config!.output!.filename = () => '[name].fn.[locale].[hash].js';
+						config!.output!.chunkFilename = '[name].fn.[locale].[hash].js';
+					}
+
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const { hash } = buildStats;
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire(`/dist/index.fn.en.${hash}.js`);
+			expect(enBuild).toBe(localesMulti.en['hello-key']);
+
+			const esBuild = mRequire(`/dist/index.fn.es.${hash}.js`);
+			expect(esBuild).toBe(localesMulti.es['hello-key']);
+
+			const jaBuild = mRequire(`/dist/index.fn.ja.${hash}.js`);
+			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.fn\.en\./);
+			expect(statsOutput).toMatch(/index\.fn\.es\./);
+			expect(statsOutput).toMatch(/index\.fn\.ja\./);
 		});
 	});
 });
