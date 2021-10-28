@@ -3,7 +3,6 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { createFsRequire } from 'fs-require';
-import { isWebpack5 } from '../src/utils/webpack';
 import WebpackLocalizeAssetsPlugin from '../src/index';
 import { build, watch, assertFsWithReadFileSync } from './utils';
 
@@ -29,6 +28,8 @@ const localesMulti = {
 };
 
 describe(`Webpack ${webpack.version}`, () => {
+	const isWebpack5 = webpack.version?.startsWith('5.');
+
 	describe('error-cases', () => {
 		test('no option', async () => {
 			await expect(async () => {
@@ -508,7 +509,7 @@ describe(`Webpack ${webpack.version}`, () => {
 							expect(asset.source.source()).toMatch(/"Hello"/);
 						};
 
-						if (isWebpack5(webpack)) {
+						if (isWebpack5) {
 							compilation.hooks.processAssets.tap(
 								{
 									name: FakeMinifier.name,
@@ -850,6 +851,53 @@ describe(`Webpack ${webpack.version}`, () => {
 			);
 
 			expect(buildStatsUsed.compilation.warnings.length).toBe(0);
+		});
+
+		test('function filename with Wepback placeholder', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					if (isWebpack5) {
+						config!.output!.filename = () => '[name].fn.[locale].[fullhash].js';
+						// @ts-expect-error Webpack 5 config
+						config!.output!.chunkFilename = () => '[name].fn.[locale].[fullhash].js';
+					} else {
+						config!.output!.filename = () => '[name].fn.[locale].[hash].js';
+						config!.output!.chunkFilename = '[name].fn.[locale].[hash].js';
+					}
+
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const { hash } = buildStats;
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire(`/dist/index.fn.en.${hash}.js`);
+			expect(enBuild).toBe(localesMulti.en['hello-key']);
+
+			const esBuild = mRequire(`/dist/index.fn.es.${hash}.js`);
+			expect(esBuild).toBe(localesMulti.es['hello-key']);
+
+			const jaBuild = mRequire(`/dist/index.fn.ja.${hash}.js`);
+			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.fn\.en\./);
+			expect(statsOutput).toMatch(/index\.fn\.es\./);
+			expect(statsOutput).toMatch(/index\.fn\.ja\./);
 		});
 	});
 });
