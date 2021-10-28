@@ -1,6 +1,5 @@
 import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
-import * as z from 'zod';
 import hasOwnProp from 'has-own-prop';
 
 export type LocaleName = string;
@@ -11,32 +10,42 @@ export type LocaleStrings = Record<LocalizedStringKey, LocalizedStringValue>;
 export type LocalesMap = Record<LocaleName, LocaleStrings>;
 export type UnprocessedLocalesMap = Record<LocaleName, LocaleFilePath | LocaleStrings>;
 
-const LocaleSchema = z.record(z.string());
-const LocalesSchema = z.record(z.union([LocaleSchema, z.string()])).refine(
-	object => Object.keys(object).length > 0,
-	{
-		message: 'locales must contain at least one locale',
-	},
-);
+export interface Options {
+	locales: UnprocessedLocalesMap;
+	functionName?: string;
+	functionNames?: string[];
+	throwOnMissing?: boolean;
+	sourceMapForLocales?: string[];
+	warnOnUnusedString?: boolean;
+}
 
-export const OptionsSchema = z.object({
-	locales: LocalesSchema,
-	functionName: z.string().optional(),
-	functionNames: z.array(z.string()).nonempty().optional(),
-	throwOnMissing: z.boolean().optional(),
-	sourceMapForLocales: z.string().array().optional(),
-	warnOnUnusedString: z.boolean().optional(),
-}).refine(options => (
-	!options.sourceMapForLocales
-	|| options.sourceMapForLocales.every(locale => hasOwnProp(options.locales, locale))
-), {
-	message: 'sourceMapForLocales must contain valid locales',
-}).refine(
-	options => !(options.functionName && options.functionNames),
-	{ message: 'Can\'t specify both functionName and functionNames' },
-);
+export type PlaceholderLocations = {
+	stringKey: string;
+	index: number;
+	endIndex: number;
+}[];
 
-export type Options = z.infer<typeof OptionsSchema>;
+export function validateOptions(options: Options): void {
+	if (!options) {
+		throw new Error('Options are required');
+	}
+	if (!options.locales) {
+		throw new Error('Locales are required');
+	}
+	if (Object.keys(options.locales).length === 0) {
+		throw new Error('locales must contain at least one locale');
+	}
+	if (options.sourceMapForLocales
+		&& options.sourceMapForLocales.some(locale => !hasOwnProp(options.locales, locale))) {
+		throw new Error('sourceMapForLocales must contain valid locales');
+	}
+	if (options.functionNames && options.functionNames.length === 0) {
+		throw new Error('FunctionNames can\'t be empty');
+	}
+	if (options.functionName && options.functionNames) {
+		throw new Error('Can\'t specify both functionName and functionNames');
+	}
+}
 
 export { WP4, WP5 };
 export type Webpack = typeof WP4 | typeof WP5;
