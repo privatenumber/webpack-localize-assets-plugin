@@ -42,8 +42,7 @@
 	"dependencies": {
 		"has-own-prop": "^2.0.0",
 		"magic-string": "^0.25.7",
-		"webpack-sources": "^2.2.0",
-		"zod": "^1.11.17"
+		"webpack-sources": "^2.2.0"
 	},
 	"devDependencies": {
 		"@pvtnbr/eslint-config": "^0.4.1",

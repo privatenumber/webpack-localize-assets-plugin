@@ -131,15 +131,3 @@ export function watch(
 		});
 	});
 }
-
-export function matchKey(
-	object: Record<string, unknown>,
-	keyPattern: RegExp,
-): RegExpMatchArray | undefined {
-	for (const key of Object.keys(object)) {
-		const result = keyPattern.exec(key);
-		if (result && result.length > 0) {
-			return result;
-		}
-	}
-}
