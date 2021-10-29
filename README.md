@@ -145,7 +145,7 @@ A function to generate a JS expression to replace the `__()` call. It'll be call
 | `emitError`   | `(message: string) => void`                                                            | Call this function to emit an error into the Webpack build.  |
 | `callNode`    | [`CallExpression`](https://github.com/estree/estree/blob/master/es5.md#callexpression) | An `estree` node representing the original call to `__()`.   |
 
-`localizeCompiler` should return either a string containing a JavaScript expression, or an `estree`-compatible `Expression` node. The expression will be injected into the bundle in the place of the original `__()` call. The expression should represent the localised string.
+`localizeCompiler` should return a string containing a JavaScript expression. The expression will be injected into the bundle in the place of the original `__()` call. The expression should represent the localised string.
 
 For example, this `localizeCompiler` replicates the default behaviour:
 
