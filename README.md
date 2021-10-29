@@ -42,13 +42,6 @@ In `webpack.config.js`:
       ...
    },
 
-   optimization: {
-+     // Required if you need the hash to change when translations are updated.
-+     // Webpack 5 only; enabled by default in production mode
-+     realContentHash: true,
-      ...
-   },
-
     plugins: [
       ...,
 +     new LocalizeAssetsPlugin({
