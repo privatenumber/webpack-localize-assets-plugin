@@ -1142,6 +1142,65 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
+			const assetsB = Object.keys(buildBStats.compilation.assets);
+			const assetFilenameB = assetsB[0];
+
+			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfsB);
+			const mRequireB = createFsRequire(mfsB);
+			const enBuildB = mRequireB(`/dist/${assetFilenameB}`);
+			expect(enBuildB).toBe('Wazzup');
+
+			expect(assetFilenameA).not.toBe(assetFilenameB);
+
+			// All assets are coming from the same chunk, so they should share the same chunkhash
+			const hashPattern = /[a-f\d]{20}/;
+			expect(assetsB[0].match(hashPattern)?.[0]).toBe(assetsB[1].match(hashPattern)?.[0]);
+		});
+	});
+
+	describe('contenthash', () => {
+		test('single locale', async () => {
+			const volume = {
+				'/src/index.js': 'export default __("hello-key");',
+			};
+
+			const buildAStats = await build(
+				volume,
+				(config) => {
+					config.output!.filename = '[name].[contenthash].[locale].js';
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+						}),
+					);
+				},
+			);
+
+			const assetFilenameA = Object.keys(buildAStats.compilation.assets)[0];
+			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfsA);
+			const mRequireA = createFsRequire(mfsA);
+			const enBuildA = mRequireA(`/dist/${assetFilenameA}`);
+			expect(enBuildA).toBe('Hello');
+
+			const buildBStats = await build(
+				volume,
+				(config) => {
+					config.output!.filename = '[name].[contenthash].[locale].js';
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: {
+								...localesSingle,
+								en: {
+									'hello-key': 'Wazzup',
+								},
+							},
+						}),
+					);
+				},
+			);
+
 			const assetFilenameB = Object.keys(buildBStats.compilation.assets)[0];
 
 			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
@@ -1153,6 +1212,61 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assetFilenameA).not.toBe(assetFilenameB);
 		});
 
-		// TODO: chunkHash across locales should be different too
+		// remove skip after implementing hashing w/o realcontenthash
+		(isWebpack5 ? test : test.skip)('multi locale', async () => {
+			const volume = {
+				'/src/index.js': 'export default __("hello-key");',
+			};
+
+			const buildAStats = await build(
+				volume,
+				(config) => {
+					config.output!.filename = '[name].[contenthash].[locale].js';
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+
+			const assetsA = Object.keys(buildAStats.compilation.assets);
+			const [assetFilenameA] = assetsA;
+			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfsA);
+			const mRequireA = createFsRequire(mfsA);
+			const enBuildA = mRequireA(`/dist/${assetFilenameA}`);
+			expect(enBuildA).toBe('Hello');
+
+			const buildBStats = await build(
+				volume,
+				(config) => {
+					config.output!.filename = '[name].[contenthash].[locale].js';
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: {
+								...localesMulti,
+								en: {
+									'hello-key': 'Wazzup',
+									stringWithQuotes: '"quotes"',
+								},
+							},
+						}),
+					);
+				},
+			);
+
+			const assetsB = Object.keys(buildBStats.compilation.assets);
+			const [assetFilenameB] = assetsB;
+
+			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfsB);
+			const mRequireB = createFsRequire(mfsB);
+			const enBuildB = mRequireB(`/dist/${assetFilenameB}`);
+			expect(enBuildB).toBe('Wazzup');
+
+			expect(assetFilenameA).not.toBe(assetFilenameB);
+			expect(assetsB[1]).toBe(assetsA[1]);
+		});
 	});
 });

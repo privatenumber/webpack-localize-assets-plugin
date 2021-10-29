@@ -178,7 +178,6 @@ function localizeAsset<LocalizedData>(
 			true,
 		);
 	}
-
 	return new RawSource(localizedCode);
 }
 
@@ -207,7 +206,35 @@ export function generateLocalizedAssets<LocalizedData>(
 				);
 
 				await Promise.all(localeNames.map(async (locale) => {
-					const newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+					let newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+
+					// object spread breaks types
+					// eslint-disable-next-line prefer-object-spread
+					const newInfo = Object.assign(
+						{},
+						asset.info,
+						{ locale },
+					);
+
+					// Add localce to hash for RealContentHashPlugin plugin
+					if (newInfo.contenthash) {
+						let { contenthash } = newInfo;
+
+						if (Array.isArray(contenthash)) {
+							contenthash = contenthash.map((chash) => {
+								const newContentHash = sha256(chash + locale).slice(0, chash.length);
+								newAssetName = newAssetName.replace(chash, newContentHash);
+								return newContentHash;
+							});
+						} else {
+							const newContentHash = sha256(contenthash + locale).slice(0, contenthash.length);
+							newAssetName = newAssetName.replace(contenthash, newContentHash);
+							contenthash = newContentHash;
+						}
+
+						newInfo.contenthash = contenthash;
+					}
+
 					localizedAssetNames.push(newAssetName);
 
 					const localizedSource = localizeAsset(
@@ -231,10 +258,7 @@ export function generateLocalizedAssets<LocalizedData>(
 					compilation.emitAsset(
 						newAssetName,
 						localizedSource,
-						{
-							...asset.info,
-							locale,
-						},
+						newInfo,
 					);
 				}));
 			} else {
@@ -266,11 +290,26 @@ export function generateLocalizedAssets<LocalizedData>(
 	// since the compiler may generate code which needs minifying.
 	// Otherwise, we can run after minification as an optimisation
 	if (isWebpack5Compilation(compilation)) {
+		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
 		const stage = localizeCompiler
-			? (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_DERIVED
-			: (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_ANALYSE;
+			? Webpack5Compilation.PROCESS_ASSETS_STAGE_DERIVED
+			/**
+			 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH,
+			 * which is where RealContentHashPlugin re-hashes assets:
+			 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
+			 *
+			 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
+			 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
+			 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH). PROCESS_ASSETS_STAGE_SUMMARIZE
+			 * isn't actually used by Webpack, but there seemed to be other plugins
+			 * that were relying on it to summarize assets, so it makes sense to run just before that.
+			 *
+			 * All "process assets" stages:
+			 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
+			 */
+			: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1;
 		compilation.hooks.processAssets.tapPromise(
-			{ name, stage },
+			{ name, stage, additionalAssets: true },
 			generateLocalizedAssetsHandler,
 		);
 	} else {
