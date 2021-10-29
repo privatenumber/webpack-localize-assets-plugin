@@ -1,5 +1,5 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
-import type { CallExpression } from 'estree';
+import type { SimpleCallExpression } from 'estree';
 import {
 	Options,
 	validateOptions,
@@ -19,6 +19,7 @@ import {
 	toConstantDependency,
 	reportModuleWarning,
 	onFunctionCall,
+	reportModuleError,
 } from './utils/webpack';
 import { localizedStringKeyValidator } from './utils/localized-string-key-validator';
 import {
@@ -175,7 +176,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		);
 	}
 
-	private getReplacementExpr(callExpr: CallExpression, key: string, module: Module): string {
+	private getReplacementExpr(callExpr: SimpleCallExpression, key: string, module: Module): string {
 		if (this.singleLocale) {
 			// single locale - let's insert the localised version of the string right now,
 			// no need to use placeholder for string replacement on the asset
@@ -187,13 +188,16 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				return callLocalizeCompiler(
 					this.options.localizeCompiler,
 					{
-						callExpr,
-						key,
-						locale,
-						localeName: this.singleLocale,
-						locales: this.locales,
-						localizedData,
+						callNode: callExpr,
+						resolve: (stringKey: string) => this.locales[this.singleLocale!][stringKey],
+						emitWarning(message) {
+							reportModuleWarning(module, new WebpackError(message));
+						},
+						emitError(message) {
+							reportModuleError(module, new WebpackError(message));
+						},
 					},
+					this.singleLocale,
 				);
 			}
 

@@ -438,7 +438,7 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('custom localisation compiler', async () => {
-			const compilerCalls: LocalizeCompilerContext[] = [];
+			const compilerCalls: [LocalizeCompilerContext, string[], string][] = [];
 			const buildStats = await build(
 				{
 					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nexport default __("hello-key");',
@@ -447,9 +447,9 @@ describe(`Webpack ${webpack.version}`, () => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
-							localizeCompiler(context) {
-								compilerCalls.push(context);
-								return `compiled('${context.localeName}')`;
+							localizeCompiler(callArguments, localeName) {
+								compilerCalls.push([this, callArguments, localeName]);
+								return `compiled('${this.resolve(callArguments[0].slice(1, -1))}')`;
 							},
 						}),
 					);
@@ -465,13 +465,13 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mRequire = createFsRequire(mfs);
 
 			const enBuild = mRequire('/dist/index.en.js');
-			expect(enBuild).toBe('en-compiled');
+			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
 
 			const esBuild = mRequire('/dist/index.es.js');
-			expect(esBuild).toBe('es-compiled');
+			expect(esBuild).toBe(`${localesMulti.es['hello-key']}-compiled`);
 
 			const jaBuild = mRequire('/dist/index.ja.js');
-			expect(jaBuild).toBe('ja-compiled');
+			expect(jaBuild).toBe(`${localesMulti.ja['hello-key']}-compiled`);
 
 			const statsOutput = buildStats.toString();
 			expect(statsOutput).toMatch(/index\.en\.js/);
@@ -480,23 +480,9 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			// one __() call per locale
 			expect(compilerCalls).toHaveLength(3);
-			expect(compilerCalls[0]).toMatchObject(expectedCompilerCall('en'));
-			expect(compilerCalls[1]).toMatchObject(expectedCompilerCall('es'));
-			expect(compilerCalls[2]).toMatchObject(expectedCompilerCall('ja'));
-
-			function expectedCompilerCall(locale: keyof typeof localesMulti) {
-				return {
-					localizedData: localesMulti[locale]['hello-key'],
-					key: 'hello-key',
-					locale: localesMulti[locale],
-					localeName: locale,
-					locales: localesMulti,
-					callExpr: parseJSExpression('__("hello-key")'),
-				};
-			}
 		});
 
-		test('custom localisation compiler - single locale, returning ESTree object', async () => {
+		test('custom localisation compiler - single locale', async () => {
 			const buildStats = await build(
 				{
 					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nexport default __("hello-key");',
@@ -504,9 +490,9 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales: localesSingle,
-							localizeCompiler(context) {
-								return parseJSExpression(`compiled('${context.localeName}')`);
+							locales: localesMulti,
+							localizeCompiler(callArguments) {
+								return `compiled('${this.resolve(callArguments[0].slice(1, -1))}')`;
 							},
 						}),
 					);
@@ -519,7 +505,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mRequire = createFsRequire(mfs);
 
 			const enBuild = mRequire('/dist/index.en.js');
-			expect(enBuild).toBe('en-compiled');
+			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
 		});
 
 		test('works with minification (string concatenation)', async () => {
@@ -560,8 +546,8 @@ describe(`Webpack ${webpack.version}`, () => {
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
-							localizeCompiler(context) {
-								return `'${context.localeName}-${context.key}'`;
+							localizeCompiler(callArguments, localeName) {
+								return `'${localeName}-${callArguments[0].slice(1, -1)}'`;
 							},
 						}),
 					);

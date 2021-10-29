@@ -1,6 +1,6 @@
 import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
-import type { Expression, CallExpression } from 'estree';
+import type { SimpleCallExpression } from 'estree';
 import hasOwnProp from 'has-own-prop';
 
 export type LocaleName = string;
@@ -13,14 +13,6 @@ export type UnprocessedLocalesMap<LocalizedData> = Record<
 	LocaleFilePath | LocaleStrings<LocalizedData>
 >;
 
-export interface LocalizeCompilerContext<LocalizedData = string> {
-	localizedData: LocalizedData;
-	key: string;
-	locale: LocaleStrings<LocalizedData>;
-	localeName: string;
-	locales: LocalesMap<LocalizedData>;
-	callExpr: CallExpression;
-}
 export type Options<LocalizedData = string> = {
 	locales: UnprocessedLocalesMap<LocalizedData>;
 	functionName?: string;
@@ -29,13 +21,23 @@ export type Options<LocalizedData = string> = {
 	warnOnUnusedString?: boolean;
 } & LocalizeCompilerOption<LocalizedData>;
 
-export type LocalizeCompiler<LocalizedData>
-	= (context: LocalizeCompilerContext<LocalizedData>) => string | Expression;
-
 type LocalizeCompilerOption<LocalizedData>
 	= LocalizedData extends string // optional if the localized data is a string
 		? { localizeCompiler?: LocalizeCompiler<LocalizedData> }
 		: { localizeCompiler: LocalizeCompiler<LocalizedData> };
+
+export interface LocalizeCompilerContext<LocalizedData = string> {
+	readonly callNode: SimpleCallExpression;
+	resolve(stringKey: string): LocalizedData;
+	emitWarning(message: string): void;
+	emitError(message: string): void;
+}
+
+export type LocalizeCompiler<LocalizedData = string> = (
+	this: LocalizeCompilerContext<LocalizedData>,
+	functionArgments: string[],
+	localeName: string,
+) => string;
 
 export function validateOptions<LocalizedData>(options: Options<LocalizedData>): void {
 	if (!options) {

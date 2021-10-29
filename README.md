@@ -128,26 +128,29 @@ Default: `false`
 Enable to see warnings when unused string keys are found.
 
 ### localizeCompiler
-Optional. Type: `(context: LocalizeCompilerContext) => string | Expression`
+Optional. Type: `(this: LocalizeCompilerContext, callArgs: string[], localeName: string) => string`
 
 A function to generate a JS expression to replace the `__()` call. It'll be called for each occurrence of `__` for each locale.
 
-The `LocalizeCompilerContext` has the following fields:
-| Name            | Type                                                                                   | Description                                                                        |
-| --------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `key`           | `string`                                                                               | The translation key.                                                               |
-| `localizedData` | `string`                                                                               | The data in the locale object for the key. Equal to `context.locale[context.key]`. |
-| `locale`        | `Record<string, string>`                                                               | The current locale object. Equal to `context.locales[context.localeName]`.         |
-| `localeName`    | `string`                                                                               | The name of the current locale.                                                    |
-| `locales`       | `Record<string, Record<string, string>>`                                               | All the locales.                                                                   |
-| `callExpr`      | [`CallExpression`](https://github.com/estree/estree/blob/master/es5.md#callexpression) | An `estree` node representing the original call to `__()`.                         |
+**`callArgs`** will be an array of strings containing JavaScript expressions. The expressions are the arguments of the original call. So `callArgs[0]` will be a JavaScript expression containing the translation key.
+
+**`localName`** is the name of the current locale.
+
+**`this`**: The function's `this` variable has the following fields:
+
+| Name          | Type                                                                                   | Description                                                  |
+| ------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `resolve`     | `(stringKey: string) => string`                                                        | A function to get the localized data for the key.            |
+| `emitWarning` | `(message: string) => void`                                                            | Call this function to emit a warning into the Webpack build. |
+| `emitError`   | `(message: string) => void`                                                            | Call this function to emit an error into the Webpack build.  |
+| `callNode`    | [`CallExpression`](https://github.com/estree/estree/blob/master/es5.md#callexpression) | An `estree` node representing the original call to `__()`.   |
 
 `localizeCompiler` should return either a string containing a JavaScript expression, or an `estree`-compatible `Expression` node. The expression will be injected into the bundle in the place of the original `__()` call. The expression should represent the localised string.
 
 For example, this `localizeCompiler` replicates the default behaviour:
 
 ```js
-localizeCompiler(context) { return JSON.stringify(context.localizedData); }
+localizeCompiler(callArgs) { return JSON.stringify(this.resolve(callArgs[0].slice(1, -1))); }
 ```
 
 You can use `localizeCompiler` to do things like runtime pluralisation.

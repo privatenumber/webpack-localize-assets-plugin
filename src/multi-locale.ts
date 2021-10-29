@@ -1,13 +1,10 @@
 import MagicString from 'magic-string';
 import { RawSource, SourceMapSource, SourceAndMapResult } from 'webpack-sources';
+import WebpackError from 'webpack/lib/WebpackError.js';
 import { RawSourceMap } from 'source-map';
 import acorn from 'acorn';
-import astring from 'astring';
-import type { CallExpression, Literal } from 'estree';
-import {
-	isWebpack5Compilation,
-	deleteAsset,
-} from './utils/webpack';
+import type { Literal, SimpleCallExpression } from 'estree';
+import { isWebpack5Compilation, deleteAsset } from './utils/webpack';
 import { sha256 } from './utils/sha256';
 import * as base64 from './utils/base64';
 import {
@@ -41,7 +38,7 @@ function findSubstringLocations(
 export type PlaceholderLocation = {
 	index: number;
 	endIndex: number;
-} & ({ expr: CallExpression } | { key: string });
+} & ({ expr: SimpleCallExpression } | { key: string });
 
 export const fileNameTemplatePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
 
@@ -72,7 +69,7 @@ function locatePlaceholders(sourceString: string, expectCallExpression: boolean)
 			// the decoded string is a JS expression
 			const expr = acorn.parseExpressionAt(decoded, 0, { ecmaVersion: 'latest' });
 			placeholderLocations.push({
-				expr: expr as unknown as CallExpression,
+				expr: expr as unknown as SimpleCallExpression,
 				index: placeholderIndex,
 				endIndex: suffixIndex + placeholderSuffix.length,
 			});
@@ -97,6 +94,7 @@ function localizeAsset<LocalizedData>(
 	fileNamePlaceholderLocations: number[],
 	source: string,
 	map: RawSourceMap | null,
+	compilation: Compilation,
 	localizeCompiler: LocalizeCompiler<LocalizedData> | undefined,
 	trackStringKeys: StringKeysCollection | undefined,
 ) {
@@ -108,19 +106,21 @@ function localizeAsset<LocalizedData>(
 		let stringKey;
 
 		if (localizeCompiler) {
-			const callExpr = (loc as { expr: CallExpression }).expr;
+			const callExpr = (loc as { expr: SimpleCallExpression }).expr;
 			stringKey = (callExpr.arguments[0] as Literal).value as string;
-			const localizedValue = localeData[stringKey];
 			const localizedCode = callLocalizeCompiler(
 				localizeCompiler,
 				{
-					callExpr,
-					key: stringKey,
-					locale: localeData,
-					localeName: locale,
-					locales,
-					localizedData: localizedValue,
+					callNode: callExpr,
+					resolve: (key: string) => localeData[key],
+					emitWarning: (message) => {
+						compilation.warnings.push(new WebpackError(message));
+					},
+					emitError(message) {
+						compilation.errors.push(new WebpackError(message));
+					},
 				},
+				locale,
 			);
 
 			// we're running before minification, so we can safely assume that the
@@ -222,6 +222,7 @@ export function generateLocalizedAssets<LocalizedData>(
 								? map
 								: null
 						),
+						compilation,
 						localizeCompiler,
 						trackStringKeys,
 					);

@@ -4,10 +4,8 @@ import { printAST } from './print-ast';
 export function callLocalizeCompiler<LocalizedData>(
 	localizeCompiler: LocalizeCompiler<LocalizedData>,
 	context: LocalizeCompilerContext<LocalizedData>,
+	localeName: string,
 ) {
-	const result = localizeCompiler(context);
-
-	return typeof result === 'string'
-		? result
-		: printAST(result);
+	const callNodeArguments = context.callNode.arguments.map(x => printAST(x));
+	return localizeCompiler.call(context, callNodeArguments, localeName);
 }
