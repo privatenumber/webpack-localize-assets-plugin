@@ -158,7 +158,35 @@ export function generateLocalizedAssets(
 				);
 
 				await Promise.all(localeNames.map(async (locale) => {
-					const newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+					let newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+
+					// object spread breaks types
+					// eslint-disable-next-line prefer-object-spread
+					const newInfo = Object.assign(
+						{},
+						asset.info,
+						{ locale },
+					);
+
+					// Add localce to hash for RealContentHashPlugin plugin
+					if (newInfo.contenthash) {
+						let { contenthash } = newInfo;
+
+						if (Array.isArray(contenthash)) {
+							contenthash = contenthash.map((chash) => {
+								const newContentHash = sha256(chash + locale).slice(0, chash.length);
+								newAssetName = newAssetName.replace(chash, newContentHash);
+								return newContentHash;
+							});
+						} else {
+							const newContentHash = sha256(contenthash + locale).slice(0, contenthash.length);
+							newAssetName = newAssetName.replace(contenthash, newContentHash);
+							contenthash = newContentHash;
+						}
+
+						newInfo.contenthash = contenthash;
+					}
+
 					localizedAssetNames.push(newAssetName);
 
 					const localizedSource = localizeAsset(
@@ -180,10 +208,7 @@ export function generateLocalizedAssets(
 					compilation.emitAsset(
 						newAssetName,
 						localizedSource,
-						{
-							...asset.info,
-							locale,
-						},
+						newInfo,
 					);
 				}));
 			} else {
@@ -231,6 +256,7 @@ export function generateLocalizedAssets(
 				 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
 				 */
 				stage: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
+				additionalAssets: true,
 			},
 			generateLocalizedAssetsHandler,
 		);

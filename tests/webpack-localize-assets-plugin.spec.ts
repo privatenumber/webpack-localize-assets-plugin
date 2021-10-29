@@ -1025,7 +1025,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetFilenameB = Object.keys(buildBStats.compilation.assets)[0];
+			const assetsB = Object.keys(buildBStats.compilation.assets);
+			const assetFilenameB = assetsB[0];
 
 			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfsB);
@@ -1034,9 +1035,11 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(enBuildB).toBe('Wazzup');
 
 			expect(assetFilenameA).not.toBe(assetFilenameB);
-		});
 
-		// TODO: chunkHash across locales should be different too
+			// All assets are coming from the same chunk, so they should share the same chunkhash
+			const hashPattern = /[a-f\d]{20}/;
+			expect(assetsB[0].match(hashPattern)?.[0]).toBe(assetsB[1].match(hashPattern)?.[0]);
+		});
 	});
 
 	describe('contenthash', () => {
@@ -1110,7 +1113,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetFilenameA = Object.keys(buildAStats.compilation.assets)[0];
+			const assetsA = Object.keys(buildAStats.compilation.assets);
+			const [assetFilenameA] = assetsA;
 			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfsA);
 			const mRequireA = createFsRequire(mfsA);
@@ -1135,7 +1139,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetFilenameB = Object.keys(buildBStats.compilation.assets)[0];
+			const assetsB = Object.keys(buildBStats.compilation.assets);
+			const [assetFilenameB] = assetsB;
 
 			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
 			assertFsWithReadFileSync(mfsB);
@@ -1144,6 +1149,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(enBuildB).toBe('Wazzup');
 
 			expect(assetFilenameA).not.toBe(assetFilenameB);
+			expect(assetsB[1]).toBe(assetsA[1]);
 		});
 	});
 });
