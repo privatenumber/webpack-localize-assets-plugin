@@ -91,7 +91,7 @@ function localizeAsset(
 	const localeData = locales[locale];
 	const magicStringInstance = new MagicString(source);
 
-	// Localze strings
+	// Localize strings
 	for (const { stringKey, index, endIndex } of placeholderLocations) {
 		const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
 
@@ -131,7 +131,6 @@ function localizeAsset(
 			true,
 		);
 	}
-
 	return new RawSource(localizedCode);
 }
 
@@ -214,11 +213,24 @@ export function generateLocalizedAssets(
 	// Apply after minification since we don't want to
 	// duplicate the costs of that for each asset
 	if (isWebpack5Compilation(compilation)) {
-		// Happens after PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE
+		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
+
 		compilation.hooks.processAssets.tapPromise(
 			{
 				name,
-				stage: (compilation.constructor as typeof WP5.Compilation).PROCESS_ASSETS_STAGE_ANALYSE,
+
+				/**
+				 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
+				 * which is where RealContentHashPlugin re-hashes assets:
+				 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
+				 *
+				 * PROCESS_ASSETS_STAGE_SUMMARIZE isn't actually used by Webpack, but there seemed to be
+				 * other plugins that were relying on it to summarize assets.
+				 *
+				 * All "process assets" stages:
+				 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
+				 */
+				stage: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
 			},
 			generateLocalizedAssetsHandler,
 		);
