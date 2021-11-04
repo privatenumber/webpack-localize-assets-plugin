@@ -20,7 +20,7 @@ labels: 'bug: pending triage'
 
 ## Environment
 
-- ink-task-runner version:
+- webpack-localize-asets-plugin version:
 - Webpack version:
 - Operating System:
 - Node version:

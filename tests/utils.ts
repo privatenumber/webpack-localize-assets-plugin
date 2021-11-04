@@ -5,11 +5,13 @@ import { ufs } from 'unionfs';
 import { IFS } from 'unionfs/lib/fs.js';
 import { Volume, DirectoryJSON } from 'memfs';
 import AggregateError from 'aggregate-error';
-import { FileSystem } from './memfs-require';
+import type { FileSystem } from 'fs-require';
 
 export function assertFsWithReadFileSync(
 	mfs: webpack.InputFileSystem | webpack.OutputFileSystem,
-): asserts mfs is webpack.OutputFileSystem & FileSystem {
+): asserts mfs is webpack.OutputFileSystem & FileSystem & {
+	writeFileSync: typeof fs.writeFileSync;
+} {
 	if (!('readFileSync' in mfs)) {
 		throw new Error('Missing readFileSync');
 	}
