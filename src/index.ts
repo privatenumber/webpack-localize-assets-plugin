@@ -52,7 +52,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 		this.localeNames = Object.keys(options.locales);
 		if (this.localeNames.length === 1) {
-			[this.singleLocale] = Object.keys(options.locales);
+			[this.singleLocale] = this.localeNames;
 		}
 	}
 
@@ -106,7 +106,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 						compilation,
 						this.localeNames,
 						this.locales,
-						this.options.sourceMapForLocales || Object.keys(this.locales),
+						this.options.sourceMapForLocales || this.localeNames,
 						this.trackStringKeys,
 						this.options.localizeCompiler,
 					);
