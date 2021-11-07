@@ -6,7 +6,7 @@ import { createFsRequire } from 'fs-require';
 import WebpackLocalizeAssetsPlugin from '../src/index';
 import { Compiler, LocalizeCompilerContext, WP5 } from '../src/types';
 import {
-	build, watch, assertFsWithReadFileSync, parseJSExpression,
+	build, watch, assertFsWithReadFileSync,
 } from './utils';
 
 const localesEmpty = {};

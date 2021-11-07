@@ -135,7 +135,3 @@ export function watch(
 		});
 	});
 }
-
-export function parseJSExpression(expr: string): Expression {
-	return acorn.parseExpressionAt(expr, 0, { ecmaVersion: 'latest' }) as unknown as Expression;
-}
