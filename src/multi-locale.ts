@@ -46,22 +46,24 @@ const fileNameTemplatePlaceholderPattern = new RegExp(fileNameTemplatePlaceholde
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-const placeholderPrefix = sha256('localize-assets-plugin-placeholder-prefix').slice(0, 8);
-const placeholderSuffix = '|';
+const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-plugin-placeholder').slice(0, 8)}`;
 
 function locatePlaceholders(sourceString: string, expectCallExpression: boolean) {
 	const placeholderLocations: PlaceholderLocation[] = [];
 
-	const possibleLocations = findSubstringLocations(sourceString, placeholderPrefix);
+	const possibleLocations = findSubstringLocations(sourceString, placeholderFunctionName);
 	for (const placeholderIndex of possibleLocations) {
-		const startIndex = placeholderIndex + placeholderPrefix.length;
-		const suffixIndex = sourceString.indexOf(placeholderSuffix, startIndex);
+		const startIndex = placeholderIndex + placeholderFunctionName.length + 1; // eat '('
+		const suffixIndex = sourceString.indexOf(')', startIndex);
 
 		if (suffixIndex === -1) {
 			continue;
 		}
 
-		const placeholder = sourceString.slice(startIndex, suffixIndex);
+		const endIndex = suffixIndex + 1; // eat ')'
+
+		// don't include the quotes around the string literal
+		const placeholder = sourceString.slice(startIndex + 1, suffixIndex - 1);
 
 		const decoded = base64.decode(placeholder);
 
@@ -71,14 +73,14 @@ function locatePlaceholders(sourceString: string, expectCallExpression: boolean)
 			placeholderLocations.push({
 				expr: expr as unknown as SimpleCallExpression,
 				index: placeholderIndex,
-				endIndex: suffixIndex + placeholderSuffix.length,
+				endIndex,
 			});
 		} else {
 			// the decoded string is the stringKey
 			placeholderLocations.push({
 				key: decoded,
 				index: placeholderIndex,
-				endIndex: suffixIndex + placeholderSuffix.length,
+				endIndex,
 			});
 		}
 	}
@@ -101,14 +103,15 @@ function localizeAsset<LocalizedData>(
 	const localeData = locales[locale];
 	const magicStringInstance = new MagicString(source);
 
-	// Localze strings
+	// Localize strings
 	for (const loc of placeholderLocations) {
-		let stringKey;
+		let stringKey: string;
+		let localizedCode: string;
 
 		if (localizeCompiler) {
 			const callExpr = (loc as { expr: SimpleCallExpression }).expr;
 			stringKey = (callExpr.arguments[0] as Literal).value as string;
-			const localizedCode = callLocalizeCompiler(
+			localizedCode = callLocalizeCompiler(
 				localizeCompiler,
 				{
 					callNode: callExpr,
@@ -122,31 +125,15 @@ function localizeAsset<LocalizedData>(
 				},
 				locale,
 			);
-
-			// we're running before minification, so we can safely assume that the
-			// placeholder is directly inside a string literal.
-			// `localizedCode` is an arbitrary JS expression,
-			// so we want to replace code one character either side of the placeholder
-			// in order to eat the string literal's quotes.
-			magicStringInstance.overwrite(
-				loc.index - 1,
-				loc.endIndex + 1,
-				localizedCode,
-			);
 		} else {
-			// if localizedCompiler is undefined then LocalizedValue = string.
 			stringKey = (loc as { key: string }).key;
-
-			// we're running after minification, which means that the placeholder
-			// may have (eg) been concated into another string.
-			// so here we're going to replace only the placeholder itself
-			const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
-			magicStringInstance.overwrite(
-				loc.index,
-				loc.endIndex,
-				localizedString,
-			);
+			localizedCode = JSON.stringify(localeData[stringKey] || stringKey);
 		}
+		magicStringInstance.overwrite(
+			loc.index,
+			loc.endIndex,
+			localizedCode,
+		);
 
 		// For Webpack 5 cache hits
 		trackStringKeys?.delete(stringKey);
@@ -290,24 +277,22 @@ export function generateLocalizedAssets<LocalizedData>(
 	// since the compiler may generate code which needs minifying.
 	// Otherwise, we can run after minification as an optimisation
 	if (isWebpack5Compilation(compilation)) {
+		/**
+		 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH,
+		 * which is where RealContentHashPlugin re-hashes assets:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH). PROCESS_ASSETS_STAGE_SUMMARIZE
+		 * isn't actually used by Webpack, but there seemed to be other plugins
+		 * that were relying on it to summarize assets, so it makes sense to run just before that.
+		 *
+		 * All "process assets" stages:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
+		 */
 		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
-		const stage = localizeCompiler
-			? Webpack5Compilation.PROCESS_ASSETS_STAGE_DERIVED
-			/**
-			 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH,
-			 * which is where RealContentHashPlugin re-hashes assets:
-			 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
-			 *
-			 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
-			 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
-			 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH). PROCESS_ASSETS_STAGE_SUMMARIZE
-			 * isn't actually used by Webpack, but there seemed to be other plugins
-			 * that were relying on it to summarize assets, so it makes sense to run just before that.
-			 *
-			 * All "process assets" stages:
-			 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
-			 */
-			: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1;
+		const stage = Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1;
 		compilation.hooks.processAssets.tapPromise(
 			{ name, stage, additionalAssets: true },
 			generateLocalizedAssetsHandler,
@@ -324,5 +309,5 @@ export function generateLocalizedAssets<LocalizedData>(
 }
 
 export function getPlaceholder(value: string) {
-	return placeholderPrefix + base64.encode(value) + placeholderSuffix;
+	return `${placeholderFunctionName}("${base64.encode(value)}")`;
 }

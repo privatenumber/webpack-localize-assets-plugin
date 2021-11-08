@@ -229,7 +229,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			? printAST(callExpr)
 			: key;
 
-		return JSON.stringify(getPlaceholder(placeholderContent));
+		return getPlaceholder(placeholderContent);
 	}
 }
 
