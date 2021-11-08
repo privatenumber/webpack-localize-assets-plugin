@@ -227,7 +227,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		// (This is an optimisation - avoid printing and parsing the expression if we don't need to)
 		const placeholderContent = this.options.localizeCompiler
 			? printAST(callExpr)
-			: key;
+			: JSON.stringify(key);
 
 		return getPlaceholder(placeholderContent);
 	}

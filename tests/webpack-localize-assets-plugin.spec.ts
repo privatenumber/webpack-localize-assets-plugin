@@ -508,10 +508,18 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
 		});
 
-		test('works with minification (string concatenation)', async () => {
+		test('works with minification and different contexts for __() usages', async () => {
 			const buildStats = await build(
 				{
-					'/src/index.js': 'export default __("hello-key") + " world and " + __("stringWithQuotes");',
+					'/src/index.js': `
+						export default {
+							test1: __("hello-key") + " world and " + __("stringWithQuotes"),
+						    test2: __("hello-key").length,
+						    test3: [__("hello-key"), __("stringWithQuotes")],
+						    test4: __("hello-key") || "hello",
+						    test5: __("hello-key") ? "hello" : "goodbye",
+						};
+					`,
 				},
 				(config) => {
 					config.optimization!.minimize = true;
@@ -529,7 +537,11 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mRequire = createFsRequire(mfs);
 
 			const enBuild = await mRequire('/dist/index.en.js');
-			expect(enBuild).toBe(`${localesMulti.en['hello-key']} world and "quotes"`);
+			expect(enBuild.test1).toBe(`${localesMulti.en['hello-key']} world and "quotes"`);
+			expect(enBuild.test2).toBe(localesMulti.en['hello-key'].length);
+			expect(enBuild.test3).toEqual([localesMulti.en['hello-key'], localesMulti.en.stringWithQuotes]);
+			expect(enBuild.test4).toBe(localesMulti.en['hello-key']);
+			expect(enBuild.test5).toBe('hello');
 
 			// Assert that asset is minified
 			expect(mfs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);

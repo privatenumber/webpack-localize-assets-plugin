@@ -3,10 +3,19 @@ import { RawSource, SourceMapSource, SourceAndMapResult } from 'webpack-sources'
 import WebpackError from 'webpack/lib/WebpackError.js';
 import { RawSourceMap } from 'source-map';
 import acorn from 'acorn';
-import type { Literal, SimpleCallExpression } from 'estree';
+import type {
+	BinaryExpression,
+	ChainExpression,
+	ConditionalExpression,
+	Expression,
+	Literal,
+	LogicalExpression,
+	MemberExpression,
+	SequenceExpression,
+	SimpleCallExpression,
+} from 'estree';
 import { isWebpack5Compilation, deleteAsset } from './utils/webpack';
 import { sha256 } from './utils/sha256';
-import * as base64 from './utils/base64';
 import {
 	Compilation,
 	LocalesMap,
@@ -53,34 +62,27 @@ function locatePlaceholders(sourceString: string, expectCallExpression: boolean)
 
 	const possibleLocations = findSubstringLocations(sourceString, placeholderFunctionName);
 	for (const placeholderIndex of possibleLocations) {
-		const startIndex = placeholderIndex + placeholderFunctionName.length + 1; // eat '('
-		const suffixIndex = sourceString.indexOf(')', startIndex);
-
-		if (suffixIndex === -1) {
+		const expr = parsePlaceholderCall(sourceString, placeholderIndex);
+		if (!expr) {
 			continue;
 		}
 
-		const endIndex = suffixIndex + 1; // eat ')'
-
-		// don't include the quotes around the string literal
-		const placeholder = sourceString.slice(startIndex + 1, suffixIndex - 1);
-
-		const decoded = base64.decode(placeholder);
+		// expr will be a call to `placeholderFunctionName`
+		const argument = (expr as unknown as SimpleCallExpression).arguments[0];
 
 		if (expectCallExpression) {
-			// the decoded string is a JS expression
-			const expr = acorn.parseExpressionAt(decoded, 0, { ecmaVersion: 'latest' });
+			// argument will be a __() call
 			placeholderLocations.push({
-				expr: expr as unknown as SimpleCallExpression,
-				index: placeholderIndex,
-				endIndex,
+				expr: argument as SimpleCallExpression,
+				index: expr.range![0],
+				endIndex: expr.range![1],
 			});
 		} else {
-			// the decoded string is the stringKey
+			// argument will be the stringKey
 			placeholderLocations.push({
-				key: decoded,
-				index: placeholderIndex,
-				endIndex,
+				key: (argument as Literal).value as string,
+				index: expr.range![0],
+				endIndex: expr.range![1],
 			});
 		}
 	}
@@ -308,6 +310,47 @@ export function generateLocalizedAssets<LocalizedData>(
 	}
 }
 
+function parsePlaceholderCall(
+	source: string,
+	location: number,
+): SimpleCallExpression & acorn.Node | null {
+	const expr = acorn.parseExpressionAt(source, location, { ecmaVersion: 'latest', ranges: true });
+
+	return getLeftmostCallExpression(
+		expr as unknown as Expression,
+	) as SimpleCallExpression & acorn.Node | null;
+}
+
+function getLeftmostCallExpression(expr: Expression): SimpleCallExpression | null {
+	// in case like `__("foo").length`, `__("foo") + "bar"`, etc,
+	// acorn parses the whole expression greedily,
+	// so we need to find the leftmost function call
+	// (the one which was pointed at directly by placeholderLocation)
+	while (expr.type !== 'CallExpression') {
+		switch (expr.type) {
+			case 'SequenceExpression':
+				[expr] = (expr as unknown as SequenceExpression).expressions;
+				break;
+			case 'ConditionalExpression':
+				expr = (expr as unknown as ConditionalExpression).test;
+				break;
+			case 'BinaryExpression':
+			case 'LogicalExpression':
+				expr = (expr as unknown as (BinaryExpression | LogicalExpression)).left;
+				break;
+			case 'MemberExpression':
+				expr = (expr as unknown as MemberExpression).object as Expression;
+				break;
+			case 'ChainExpression':
+				expr = (expr as unknown as ChainExpression).expression;
+				break;
+			default:
+				return null;
+		}
+	}
+	return expr;
+}
+
 export function getPlaceholder(value: string) {
-	return `${placeholderFunctionName}("${base64.encode(value)}")`;
+	return `${placeholderFunctionName}(${value})`;
 }
