@@ -536,47 +536,6 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(mfs.readFileSync('/dist/index.ja.js').toString()).not.toMatch(/\s{2,}/);
 		});
 
-		test('custom localisation compiler works with minification', async () => {
-			const buildStats = await build(
-				{
-					'/src/index.js': 'export default __("hello-key") + " world and " + __("stringWithQuotes");',
-				},
-				(config) => {
-					config.optimization!.minimize = true;
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesMulti,
-							localizeCompiler(callArguments, localeName) {
-								return `'${localeName}-${callArguments[0].slice(1, -1)}'`;
-							},
-						}),
-					);
-				},
-			);
-
-			const { assets } = buildStats.compilation;
-			expect(Object.keys(assets).length).toBe(3);
-
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
-			expect(enBuild).toBe('en-hello-key world and en-stringWithQuotes');
-
-			const esBuild = mRequire('/dist/index.es.js');
-			expect(esBuild).toBe('es-hello-key world and es-stringWithQuotes');
-
-			const jaBuild = mRequire('/dist/index.ja.js');
-			expect(jaBuild).toBe('ja-hello-key world and ja-stringWithQuotes');
-
-			const statsOutput = buildStats.toString();
-			expect(statsOutput).toMatch(/index\.en\.js/);
-			expect(statsOutput).toMatch(/index\.es\.js/);
-			expect(statsOutput).toMatch(/index\.ja\.js/);
-		});
-
 		test('handle CSS', async () => {
 			const buildStats = await build(
 				{
