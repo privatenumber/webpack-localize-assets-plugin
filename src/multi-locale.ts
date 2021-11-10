@@ -296,10 +296,8 @@ export function generateLocalizedAssets<LocalizedData>(
 			generateLocalizedAssetsHandler,
 		);
 	} else {
-		const hook = localizeCompiler
-			? compilation.hooks.additionalAssets
-			: compilation.hooks.optimizeAssets;
-		hook.tapPromise(
+		// Triggered after minification, which usually happens in optimizeChunkAssets
+		compilation.hooks.optimizeAssets.tapPromise(
 			name,
 			generateLocalizedAssetsHandler,
 		);
