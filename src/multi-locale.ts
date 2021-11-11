@@ -80,7 +80,7 @@ const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-p
 
 export function markLocalizeFunction(callExpression: SimpleCallExpression) {
 	if (callExpression.callee.type !== 'Identifier') {
-		throw new Error('Should not happen');
+		throw new Error('Expected Identifier');
 	}
 
 	callExpression.callee.name = placeholderFunctionName;
@@ -128,13 +128,13 @@ function localizeAsset<LocalizedData>(
 	const magicStringInstance = new MagicString(source);
 
 	// Localize strings
-	for (const loc of placeholderLocations) {
-		const stringKey = (loc.node.arguments[0] as Literal).value as string;
+	for (const { node, range } of placeholderLocations) {
+		const stringKey = (node.arguments[0] as Literal).value as string;
 
 		const localizedCode = callLocalizeCompiler(
 			localizeCompiler,
 			{
-				callNode: loc.node,
+				callNode: node,
 				resolve: (key: string) => localeData[key],
 				emitWarning: (message) => {
 					compilation.warnings.push(new WebpackError(message));
@@ -147,8 +147,8 @@ function localizeAsset<LocalizedData>(
 		);
 
 		magicStringInstance.overwrite(
-			loc.range.start,
-			loc.range.end!,
+			range.start,
+			range.end!,
 			localizedCode,
 		);
 
