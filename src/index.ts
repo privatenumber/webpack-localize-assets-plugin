@@ -44,17 +44,17 @@ const safeParseString = (text: string) => {
 class LocalizeAssetsPlugin<LocalizedData = string> {
 	private readonly options: Options<LocalizedData>;
 
-	private locales: LocalesMap<LocalizedData> = {};
-
 	private readonly localeNames: LocaleName[];
 
 	private readonly singleLocale?: LocaleName;
 
+	private readonly localizeCompiler: LocalizeCompiler<LocalizedData>;
+
+	private locales: LocalesMap<LocalizedData> = {};
+
 	private fileDependencies = new Set<LocaleFilePath>();
 
 	private trackStringKeys?: StringKeysCollection;
-
-	private localizeCompiler: LocalizeCompiler<LocalizedData>;
 
 	constructor(options: Options<LocalizedData>) {
 		validateOptions(options);
@@ -200,24 +200,38 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 	}
 
 	private getReplacementExpr(callExpr: SimpleCallExpression, key: string, module: Module): string {
-		if (this.singleLocale) {
-			// single locale - let's insert the localised version of the string right now,
-			// no need to use placeholder for string replacement on the asset
-
+		/**
+		 * Single locale
+		 *
+		 * Insert the localized string during Webpack JS parsing.
+		 * No need to use placeholder for string replacement on asset.
+		 */
+		const { singleLocale } = this;
+		if (singleLocale) {
 			this.trackStringKeys?.delete(key);
 
 			return callLocalizeCompiler(
 				this.localizeCompiler,
 				{
 					callNode: callExpr,
-					resolve: stringKey => this.locales[this.singleLocale!][stringKey],
+					resolve: stringKey => this.locales[singleLocale][stringKey],
 					emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
 					emitError: message => reportModuleError(module, new WebpackError(message)),
 				},
-				this.singleLocale,
+				singleLocale,
 			);
 		}
 
+		/**
+		 * Multiple locales
+		 *
+		 * 1. Replace the `__(...)` call with a placeholder -> `asdf(...) + asdf`
+		 * 2. After the asset is generated & minified, search and replace the
+		 * placeholder with calls to localizeCompiler
+		 * 3. Repeat for each locale
+		 */
+
+		// Track used keys for hash
 		if (!module.buildInfo.localized) {
 			module.buildInfo.localized = {};
 		}
@@ -227,16 +241,6 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				locale => this.locales[locale][key],
 			);
 		}
-
-		// OK, we have multiple locales. Let's replace the `__()` call
-		// with a string literal containing a placeholder value.
-		// Then during asset generation we'll parse that placeholder
-		// and use it to generate localised assets.
-		//
-		// If localizeCompiler is overridden, we'll write the entire CallExpression
-		// into the placeholder so that we can re-parse it and give it to localizeCompiler later.
-		// Otherwise, we'll just write the stringKey.
-		// (This is an optimisation - avoid printing and parsing the expression if we don't need to)
 
 		return markLocalizeFunction(callExpr);
 	}
