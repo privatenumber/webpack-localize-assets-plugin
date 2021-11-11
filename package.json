@@ -40,6 +40,9 @@
 		"*.{js,ts}": "eslint"
 	},
 	"dependencies": {
+		"@types/estree": "^0.0.50",
+		"acorn": "^8.5.0",
+		"astring": "^1.7.5",
 		"has-own-prop": "^2.0.0",
 		"magic-string": "^0.25.7",
 		"webpack-sources": "^2.2.0"
@@ -48,7 +51,9 @@
 		"@pvtnbr/eslint-config": "^0.4.1",
 		"@types/estree": "^0.0.50",
 		"@types/jest": "^26.0.24",
+		"@types/mini-css-extract-plugin": "^2.4.0",
 		"@types/webpack": "^4.41.31",
+		"@types/webpack-manifest-plugin": "^3.0.5",
 		"aggregate-error": "^4.0.0",
 		"css-loader": "^5.2.4",
 		"es-jest": "^1.2.0",

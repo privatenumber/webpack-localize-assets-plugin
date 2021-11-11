@@ -127,6 +127,34 @@ Default: `false`
 
 Enable to see warnings when unused string keys are found.
 
+### localizeCompiler
+Optional. Type: `(this: LocalizeCompilerContext, callArgs: string[], localeName: string) => string`
+
+A function to generate a JS expression to replace the `__()` call. It'll be called for each occurrence of `__` for each locale.
+
+**`callArgs`** will be an array of strings containing JavaScript expressions. The expressions are the arguments of the original call. So `callArgs[0]` will be a JavaScript expression containing the translation key.
+
+**`localName`** is the name of the current locale.
+
+**`this`**: The function's `this` variable has the following fields:
+
+| Name          | Type                                                                                   | Description                                                  |
+| ------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `resolve`     | `(stringKey: string) => string`                                                        | A function to get the localized data for the key.            |
+| `emitWarning` | `(message: string) => void`                                                            | Call this function to emit a warning into the Webpack build. |
+| `emitError`   | `(message: string) => void`                                                            | Call this function to emit an error into the Webpack build.  |
+| `callNode`    | [`CallExpression`](https://github.com/estree/estree/blob/master/es5.md#callexpression) | An `estree` node representing the original call to `__()`.   |
+
+`localizeCompiler` should return a string containing a JavaScript expression. The expression will be injected into the bundle in the place of the original `__()` call. The expression should represent the localised string.
+
+For example, this `localizeCompiler` replicates the default behaviour:
+
+```js
+localizeCompiler(callArgs) { return JSON.stringify(this.resolve(callArgs[0].slice(1, -1))); }
+```
+
+You can use `localizeCompiler` to do things like runtime pluralisation.
+
 ## 💁‍♀️ FAQ
 
 ### How does this compare to [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin)?

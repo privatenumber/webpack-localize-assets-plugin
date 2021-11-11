@@ -1,19 +1,30 @@
 import MagicString from 'magic-string';
 import { RawSource, SourceMapSource, SourceAndMapResult } from 'webpack-sources';
+import WebpackError from 'webpack/lib/WebpackError.js';
 import { RawSourceMap } from 'source-map';
-import {
-	isWebpack5Compilation,
-	deleteAsset,
-} from './utils/webpack';
+import acorn from 'acorn';
+import type {
+	BinaryExpression,
+	ChainExpression,
+	ConditionalExpression,
+	Expression,
+	Literal,
+	LogicalExpression,
+	MemberExpression,
+	SequenceExpression,
+	SimpleCallExpression,
+} from 'estree';
+import { isWebpack5Compilation, deleteAsset } from './utils/webpack';
 import { sha256 } from './utils/sha256';
-import * as base64 from './utils/base64';
 import {
 	Compilation,
 	LocalesMap,
 	LocaleName,
 	WP5,
+	LocalizeCompiler,
 } from './types';
 import type { StringKeysCollection } from './utils/track-unused-localized-strings';
+import { callLocalizeCompiler } from './utils/localize-compiler';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
@@ -33,11 +44,10 @@ function findSubstringLocations(
 	return indices;
 }
 
-type PlaceholderLocations = {
-	stringKey: string;
+export type PlaceholderLocation = {
 	index: number;
 	endIndex: number;
-}[];
+} & ({ expr: SimpleCallExpression } | { key: string });
 
 export const fileNameTemplatePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
 
@@ -45,64 +55,90 @@ const fileNameTemplatePlaceholderPattern = new RegExp(fileNameTemplatePlaceholde
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-const placeholderPrefix = sha256('localize-assets-plugin-placeholder-prefix').slice(0, 8);
-const placeholderSuffix = '|';
+const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-plugin-placeholder').slice(0, 8)}`;
 
-const locatePlaceholders = (sourceString: string) => {
-	const placeholderLocations: PlaceholderLocations = [];
+function locatePlaceholders(sourceString: string, expectCallExpression: boolean) {
+	const placeholderLocations: PlaceholderLocation[] = [];
 
-	const possibleLocations = findSubstringLocations(sourceString, placeholderPrefix);
+	const possibleLocations = findSubstringLocations(sourceString, placeholderFunctionName);
 	for (const placeholderIndex of possibleLocations) {
-		const placeholderStartIndex = placeholderIndex + placeholderPrefix.length;
-		const placeholderSuffixIndex = sourceString.indexOf(placeholderSuffix, placeholderStartIndex);
-
-		if (placeholderSuffixIndex === -1) {
+		const expr = parsePlaceholderCall(sourceString, placeholderIndex);
+		if (!expr) {
 			continue;
 		}
 
-		const placeholder = sourceString.slice(
-			placeholderStartIndex,
-			placeholderSuffixIndex,
-		);
+		// expr will be a call to `placeholderFunctionName`
+		const argument = (expr as unknown as SimpleCallExpression).arguments[0];
 
-		const stringKey = base64.decode(placeholder);
-		if (stringKey) {
+		if (expectCallExpression) {
+			// argument will be a __() call
 			placeholderLocations.push({
-				stringKey,
-				index: placeholderIndex,
-				endIndex: placeholderSuffixIndex + placeholderSuffix.length,
+				expr: argument as SimpleCallExpression,
+				index: expr.range![0],
+				endIndex: expr.range![1],
+			});
+		} else {
+			// argument will be the stringKey
+			placeholderLocations.push({
+				key: (argument as Literal).value as string,
+				index: expr.range![0],
+				endIndex: expr.range![1],
 			});
 		}
 	}
 
 	return placeholderLocations;
-};
+}
 
-function localizeAsset(
-	locales: LocalesMap,
+function localizeAsset<LocalizedData>(
+	locales: LocalesMap<LocalizedData>,
 	locale: LocaleName,
 	assetName: string,
-	placeholderLocations: PlaceholderLocations,
+	placeholderLocations: PlaceholderLocation[],
 	fileNamePlaceholderLocations: number[],
 	source: string,
 	map: RawSourceMap | null,
-	trackStringKeys?: StringKeysCollection,
+	compilation: Compilation,
+	localizeCompiler: LocalizeCompiler<LocalizedData> | undefined,
+	trackStringKeys: StringKeysCollection | undefined,
 ) {
 	const localeData = locales[locale];
 	const magicStringInstance = new MagicString(source);
 
 	// Localize strings
-	for (const { stringKey, index, endIndex } of placeholderLocations) {
-		const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
+	for (const loc of placeholderLocations) {
+		let stringKey: string;
+		let localizedCode: string;
+
+		if (localizeCompiler) {
+			const callExpr = (loc as { expr: SimpleCallExpression }).expr;
+			stringKey = (callExpr.arguments[0] as Literal).value as string;
+			localizedCode = callLocalizeCompiler(
+				localizeCompiler,
+				{
+					callNode: callExpr,
+					resolve: (key: string) => localeData[key],
+					emitWarning: (message) => {
+						compilation.warnings.push(new WebpackError(message));
+					},
+					emitError(message) {
+						compilation.errors.push(new WebpackError(message));
+					},
+				},
+				locale,
+			);
+		} else {
+			stringKey = (loc as { key: string }).key;
+			localizedCode = JSON.stringify(localeData[stringKey] || stringKey);
+		}
+		magicStringInstance.overwrite(
+			loc.index,
+			loc.endIndex,
+			localizedCode,
+		);
 
 		// For Webpack 5 cache hits
 		trackStringKeys?.delete(stringKey);
-
-		magicStringInstance.overwrite(
-			index,
-			endIndex,
-			localizedString,
-		);
 	}
 
 	// Localize chunk requests
@@ -134,12 +170,13 @@ function localizeAsset(
 	return new RawSource(localizedCode);
 }
 
-export function generateLocalizedAssets(
+export function generateLocalizedAssets<LocalizedData>(
 	compilation: Compilation,
 	localeNames: LocaleName[],
-	locales: LocalesMap,
-	sourceMapForLocales?: LocaleName[],
-	trackStringKeys?: StringKeysCollection,
+	locales: LocalesMap<LocalizedData>,
+	sourceMapForLocales: LocaleName[],
+	trackStringKeys: StringKeysCollection | undefined,
+	localizeCompiler: LocalizeCompiler<LocalizedData> | undefined,
 ) {
 	const generateLocalizedAssetsHandler = async () => {
 		const assetsWithInfo = (compilation as WP5.Compilation).getAssets()
@@ -151,7 +188,7 @@ export function generateLocalizedAssets(
 
 			if (isJsFile.test(asset.name)) {
 				const sourceString = source.toString();
-				const placeholderLocations = locatePlaceholders(sourceString);
+				const placeholderLocations = locatePlaceholders(sourceString, !!localizeCompiler);
 				const fileNamePlaceholderLocations = findSubstringLocations(
 					sourceString,
 					fileNameTemplatePlaceholder,
@@ -197,10 +234,12 @@ export function generateLocalizedAssets(
 						fileNamePlaceholderLocations,
 						sourceString,
 						(
-							(!sourceMapForLocales || sourceMapForLocales.includes(locale))
+							sourceMapForLocales.includes(locale)
 								? map
 								: null
 						),
+						compilation,
+						localizeCompiler,
 						trackStringKeys,
 					);
 
@@ -235,40 +274,83 @@ export function generateLocalizedAssets(
 		}));
 	};
 
-	// Apply after minification since we don't want to
-	// duplicate the costs of that for each asset
+	// When we have a custom localisation compiler,
+	// we have to run asset generation before minification,
+	// since the compiler may generate code which needs minifying.
+	// Otherwise, we can run after minification as an optimisation
 	if (isWebpack5Compilation(compilation)) {
+		/**
+		 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH,
+		 * which is where RealContentHashPlugin re-hashes assets:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH). PROCESS_ASSETS_STAGE_SUMMARIZE
+		 * isn't actually used by Webpack, but there seemed to be other plugins
+		 * that were relying on it to summarize assets, so it makes sense to run just before that.
+		 *
+		 * All "process assets" stages:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
+		 */
 		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
-
+		const stage = Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1;
 		compilation.hooks.processAssets.tapPromise(
-			{
-				name,
-
-				/**
-				 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
-				 * which is where RealContentHashPlugin re-hashes assets:
-				 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
-				 *
-				 * PROCESS_ASSETS_STAGE_SUMMARIZE isn't actually used by Webpack, but there seemed to be
-				 * other plugins that were relying on it to summarize assets.
-				 *
-				 * All "process assets" stages:
-				 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
-				 */
-				stage: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
-				additionalAssets: true,
-			},
+			{ name, stage, additionalAssets: true },
 			generateLocalizedAssetsHandler,
 		);
 	} else {
-		// Triggered after minification, which usually happens in optimizeChunkAssets
-		compilation.hooks.optimizeAssets.tapPromise(
+		const hook = localizeCompiler
+			? compilation.hooks.additionalAssets
+			: compilation.hooks.optimizeAssets;
+		hook.tapPromise(
 			name,
 			generateLocalizedAssetsHandler,
 		);
 	}
 }
 
-export const getPlaceholder = (
-	value: string,
-) => placeholderPrefix + base64.encode(value) + placeholderSuffix;
+function parsePlaceholderCall(
+	source: string,
+	location: number,
+): SimpleCallExpression & acorn.Node | null {
+	const expr = acorn.parseExpressionAt(source, location, { ecmaVersion: 'latest', ranges: true });
+
+	return getLeftmostCallExpression(
+		expr as unknown as Expression,
+	) as SimpleCallExpression & acorn.Node | null;
+}
+
+function getLeftmostCallExpression(expr: Expression): SimpleCallExpression | null {
+	// in case like `__("foo").length`, `__("foo") + "bar"`, etc,
+	// acorn parses the whole expression greedily,
+	// so we need to find the leftmost function call
+	// (the one which was pointed at directly by placeholderLocation)
+	while (expr.type !== 'CallExpression') {
+		switch (expr.type) {
+			case 'SequenceExpression':
+				[expr] = (expr as unknown as SequenceExpression).expressions;
+				break;
+			case 'ConditionalExpression':
+				expr = (expr as unknown as ConditionalExpression).test;
+				break;
+			case 'BinaryExpression':
+			case 'LogicalExpression':
+				expr = (expr as unknown as (BinaryExpression | LogicalExpression)).left;
+				break;
+			case 'MemberExpression':
+				expr = (expr as unknown as MemberExpression).object as Expression;
+				break;
+			case 'ChainExpression':
+				expr = (expr as unknown as ChainExpression).expression;
+				break;
+			default:
+				return null;
+		}
+	}
+	return expr;
+}
+
+export function getPlaceholder(value: string) {
+	return `${placeholderFunctionName}(${value})`;
+}

@@ -1,10 +1,13 @@
-import webpack from 'webpack';
+import webpack, { Configuration } from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { createFsRequire } from 'fs-require';
 import WebpackLocalizeAssetsPlugin from '../src/index';
-import { build, watch, assertFsWithReadFileSync } from './utils';
+import { Compiler, LocalizeCompilerContext, WP5 } from '../src/types';
+import {
+	build, watch, assertFsWithReadFileSync,
+} from './utils';
 
 const localesEmpty = {};
 const localesSingle = {
@@ -434,10 +437,89 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
 		});
 
-		test('works with minification (string concatenation)', async () => {
+		test('custom localisation compiler', async () => {
+			const compilerCalls: [LocalizeCompilerContext, string[], string][] = [];
 			const buildStats = await build(
 				{
-					'/src/index.js': 'export default __("hello-key") + " world and " + __("stringWithQuotes");',
+					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nexport default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							localizeCompiler(callArguments, localeName) {
+								compilerCalls.push([this, callArguments, localeName]);
+								return `compiled('${this.resolve(callArguments[0].slice(1, -1))}')`;
+							},
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
+
+			const esBuild = mRequire('/dist/index.es.js');
+			expect(esBuild).toBe(`${localesMulti.es['hello-key']}-compiled`);
+
+			const jaBuild = mRequire('/dist/index.ja.js');
+			expect(jaBuild).toBe(`${localesMulti.ja['hello-key']}-compiled`);
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.en\.js/);
+			expect(statsOutput).toMatch(/index\.es\.js/);
+			expect(statsOutput).toMatch(/index\.ja\.js/);
+
+			// one __() call per locale
+			expect(compilerCalls).toHaveLength(3);
+		});
+
+		test('custom localisation compiler - single locale', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nexport default __("hello-key");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							localizeCompiler(callArguments) {
+								return `compiled('${this.resolve(callArguments[0].slice(1, -1))}')`;
+							},
+						}),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
+		});
+
+		test('works with minification and different contexts for __() usages', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': `
+						export default {
+							test1: __("hello-key") + " world and " + __("stringWithQuotes"),
+						    test2: __("hello-key").length,
+						    test3: [__("hello-key"), __("stringWithQuotes")],
+						    test4: __("hello-key") || "hello",
+						    test5: __("hello-key") ? "hello" : "goodbye",
+						};
+					`,
 				},
 				(config) => {
 					config.optimization!.minimize = true;
@@ -455,7 +537,11 @@ describe(`Webpack ${webpack.version}`, () => {
 			const mRequire = createFsRequire(mfs);
 
 			const enBuild = await mRequire('/dist/index.en.js');
-			expect(enBuild).toBe(`${localesMulti.en['hello-key']} world and "quotes"`);
+			expect(enBuild.test1).toBe(`${localesMulti.en['hello-key']} world and "quotes"`);
+			expect(enBuild.test2).toBe(localesMulti.en['hello-key'].length);
+			expect(enBuild.test3).toEqual([localesMulti.en['hello-key'], localesMulti.en.stringWithQuotes]);
+			expect(enBuild.test4).toBe(localesMulti.en['hello-key']);
+			expect(enBuild.test5).toBe('hello');
 
 			// Assert that asset is minified
 			expect(mfs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
@@ -483,7 +569,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						}),
 						new MiniCssExtractPlugin({
 							filename: '[name].[locale].css',
-						}),
+						}) as any,
 					);
 				},
 			);
@@ -513,7 +599,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
-						new MiniCssExtractPlugin(),
+						new MiniCssExtractPlugin() as any,
 					);
 				},
 			);
@@ -527,7 +613,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const FakeMinifier = {
 				name: 'FakeMinfier',
 
-				apply(compiler) {
+				apply(compiler: Compiler) {
 					compiler.hooks.compilation.tap(FakeMinifier.name, (compilation) => {
 						const checkAssets = () => {
 							const assets = Object.keys(compilation.assets);
@@ -539,10 +625,11 @@ describe(`Webpack ${webpack.version}`, () => {
 						};
 
 						if (isWebpack5) {
-							compilation.hooks.processAssets.tap(
+							(compilation as WP5.Compilation).hooks.processAssets.tap(
 								{
 									name: FakeMinifier.name,
-									stage: compilation.constructor.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
+									stage: (compilation.constructor as typeof WP5.Compilation)
+										.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
 								},
 								checkAssets,
 							);
@@ -661,13 +748,14 @@ describe(`Webpack ${webpack.version}`, () => {
 					});
 
 					config.plugins!.push(
-						new MiniCssExtractPlugin(),
+						new MiniCssExtractPlugin() as any,
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
 						...localeNames.map(locale => new WebpackManifestPlugin({
 							fileName: `manifest.${locale}.json`,
-							filter: file => !file.isAsset && (!hasLocale.test(file.path) || file.path.match(`.${locale}.`)),
+							// eslint-disable-next-line unicorn/prefer-regexp-test
+							filter: file => !file.isAsset && (!hasLocale.test(file.path) || !!file.path.match(`.${locale}.`)),
 						})),
 					);
 				},
@@ -702,7 +790,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 			const cacheDirectory = tempy.directory();
-			const configure = (config) => {
+			const configure = (config: Configuration) => {
 				config.cache = {
 					type: 'filesystem',
 					cacheDirectory,
@@ -745,7 +833,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const volume = {
 				'/src/index.js': 'export default __("hello-key");',
 			};
-			const configure = (config) => {
+			const configure = (config: Configuration) => {
 				config.cache = {
 					type: 'filesystem',
 				};

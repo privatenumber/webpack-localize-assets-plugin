@@ -1,8 +1,10 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
+import type { SimpleCallExpression } from 'estree';
 import {
 	Options,
 	validateOptions,
 	Compiler,
+	Module,
 	NormalModuleFactory,
 	LocalizedStringKey,
 	LocalesMap,
@@ -17,6 +19,7 @@ import {
 	toConstantDependency,
 	reportModuleWarning,
 	onFunctionCall,
+	reportModuleError,
 } from './utils/webpack';
 import { localizedStringKeyValidator } from './utils/localized-string-key-validator';
 import {
@@ -24,14 +27,16 @@ import {
 	getPlaceholder,
 	fileNameTemplatePlaceholder,
 } from './multi-locale';
+import { printAST } from './utils/print-ast';
+import { callLocalizeCompiler } from './utils/localize-compiler';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
 
-class LocalizeAssetsPlugin {
-	private readonly options: Options;
+class LocalizeAssetsPlugin<LocalizedData = string> {
+	private readonly options: Options<LocalizedData>;
 
-	private locales: LocalesMap = {};
+	private locales: LocalesMap<LocalizedData> = {};
 
 	private readonly localeNames: LocaleName[];
 
@@ -41,7 +46,7 @@ class LocalizeAssetsPlugin {
 
 	private trackStringKeys?: StringKeysCollection;
 
-	constructor(options: Options) {
+	constructor(options: Options<LocalizedData>) {
 		validateOptions(options);
 		this.options = options;
 
@@ -101,8 +106,9 @@ class LocalizeAssetsPlugin {
 						compilation,
 						this.localeNames,
 						this.locales,
-						this.options.sourceMapForLocales,
+						this.options.sourceMapForLocales || Object.keys(this.locales),
 						this.trackStringKeys,
+						this.options.localizeCompiler,
 					);
 
 					// Update chunkHash based on localized content
@@ -124,7 +130,7 @@ class LocalizeAssetsPlugin {
 	private interceptTranslationFunctionCalls(
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const { singleLocale, locales } = this;
+		const { locales } = this;
 		const { functionName = '__' } = this.options;
 		const validator = localizedStringKeyValidator(locales, this.options.throwOnMissing);
 
@@ -137,7 +143,7 @@ class LocalizeAssetsPlugin {
 
 				if (
 					!(
-						callExpressionNode.arguments.length === 1
+						(this.options.localizeCompiler || callExpressionNode.arguments.length === 1)
 						&& firstArgumentNode.type === 'Literal'
 						&& typeof firstArgumentNode.value === 'string'
 					)
@@ -147,7 +153,6 @@ class LocalizeAssetsPlugin {
 						module,
 						new WebpackError(`[${name}] Ignoring confusing usage of localization function "${functionName}" in ${module.resource}:${location.line}:${location.column}`),
 					);
-
 					return;
 				}
 
@@ -163,31 +168,68 @@ class LocalizeAssetsPlugin {
 					module.buildInfo.fileDependencies.add(fileDependency);
 				}
 
-				if (singleLocale) {
-					toConstantDependency(
-						parser,
-						JSON.stringify(locales[singleLocale][stringKey] || stringKey),
-					)(callExpressionNode);
-
-					this.trackStringKeys?.delete(stringKey);
-				} else {
-					if (!module.buildInfo.localized) {
-						module.buildInfo.localized = {};
-					}
-
-					if (!module.buildInfo.localized[stringKey]) {
-						module.buildInfo.localized[stringKey] = this.localeNames.map(
-							locale => locales[locale][stringKey],
-						);
-					}
-
-					const placeholder = getPlaceholder(stringKey);
-					toConstantDependency(parser, JSON.stringify(placeholder))(callExpressionNode);
-				}
+				const replacement = this.getReplacementExpr(callExpressionNode, stringKey, module);
+				toConstantDependency(parser, replacement)(callExpressionNode);
 
 				return true;
 			},
 		);
+	}
+
+	private getReplacementExpr(callExpr: SimpleCallExpression, key: string, module: Module): string {
+		if (this.singleLocale) {
+			// single locale - let's insert the localised version of the string right now,
+			// no need to use placeholder for string replacement on the asset
+
+			const locale = this.locales[this.singleLocale];
+			const localizedData = locale[key];
+
+			if (this.options.localizeCompiler) {
+				return callLocalizeCompiler(
+					this.options.localizeCompiler,
+					{
+						callNode: callExpr,
+						resolve: (stringKey: string) => this.locales[this.singleLocale!][stringKey],
+						emitWarning(message) {
+							reportModuleWarning(module, new WebpackError(message));
+						},
+						emitError(message) {
+							reportModuleError(module, new WebpackError(message));
+						},
+					},
+					this.singleLocale,
+				);
+			}
+
+			this.trackStringKeys?.delete(key);
+
+			return JSON.stringify(localizedData || key);
+		}
+
+		if (!module.buildInfo.localized) {
+			module.buildInfo.localized = {};
+		}
+
+		if (!module.buildInfo.localized[key]) {
+			module.buildInfo.localized[key] = this.localeNames.map(
+				locale => this.locales[locale][key],
+			);
+		}
+
+		// OK, we have multiple locales. Let's replace the `__()` call
+		// with a string literal containing a placeholder value.
+		// Then during asset generation we'll parse that placeholder
+		// and use it to generate localised assets.
+		//
+		// If localizeCompiler is overridden, we'll write the entire CallExpression
+		// into the placeholder so that we can re-parse it and give it to localizeCompiler later.
+		// Otherwise, we'll just write the stringKey.
+		// (This is an optimisation - avoid printing and parsing the expression if we don't need to)
+		const placeholderContent = this.options.localizeCompiler
+			? printAST(callExpr)
+			: JSON.stringify(key);
+
+		return getPlaceholder(placeholderContent);
 	}
 }
 
