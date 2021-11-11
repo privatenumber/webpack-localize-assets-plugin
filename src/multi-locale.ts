@@ -99,7 +99,7 @@ function locatePlaceholders(sourceString: string) {
 
 	for (const placeholderRange of placeholderRanges) {
 		const code = sourceString.slice(placeholderRange.start, placeholderRange.end);
-		const node = acorn.parseExpressionAt(code, 0, { ecmaVersion: 'latest', ranges: true });
+		const node = acorn.parseExpressionAt(code, 0, { ecmaVersion: 'latest' });
 
 		assertBinaryExpression(node);
 
