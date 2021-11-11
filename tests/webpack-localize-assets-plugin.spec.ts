@@ -141,8 +141,8 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			expect(buildStats.hasWarnings()).toBe(true);
 			expect(buildStats.compilation.warnings.length).toBe(2);
-			expect(buildStats.compilation.warnings[0].message).toMatch('[webpack-localize-assets-plugin] Ignoring confusing usage of localization function "__" in /src/index.js:3:7');
-			expect(buildStats.compilation.warnings[1].message).toMatch('[webpack-localize-assets-plugin] Ignoring confusing usage of localization function "__" in /src/index.js:4:7');
+			expect(buildStats.compilation.warnings[0].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:3:7');
+			expect(buildStats.compilation.warnings[1].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:4:7');
 		});
 
 		test('sourceMapForLocales - invalid locale', async () => {
@@ -333,6 +333,31 @@ describe(`Webpack ${webpack.version}`, () => {
 					],
 				);
 			});
+		});
+
+		test('default localizeCompiler to error on misuse', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': 'export default __("hello-key", "2nd arg not allowed");',
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+			expect(mRequire('/dist/index.en.js')).toBe('hello-key');
+
+			expect(buildStats.hasWarnings()).toBe(true);
+			expect(buildStats.compilation.warnings.length).toBe(1);
+			expect(buildStats.compilation.warnings[0].message).toMatch('Ignoring confusing usage of localization function: __("hello-key", "2nd arg not allowed")');
 		});
 	});
 

@@ -50,6 +50,8 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 	private readonly localizeCompiler: LocalizeCompiler<LocalizedData>;
 
+	private readonly functionName: string;
+
 	private locales: LocalesMap<LocalizedData> = {};
 
 	private fileDependencies = new Set<LocaleFilePath>();
@@ -58,7 +60,11 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 	constructor(options: Options<LocalizedData>) {
 		validateOptions(options);
+
 		this.options = options;
+
+		const functionName = options.functionName ?? '__';
+		this.functionName = functionName;
 
 		this.localeNames = Object.keys(options.locales);
 		if (this.localeNames.length === 1) {
@@ -68,10 +74,18 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		this.localizeCompiler = (
 			this.options.localizeCompiler
 				? this.options.localizeCompiler
-				: function (arguments_) {
-					const [key] = arguments_;
+				: function (callNodeArguments) {
+					const [key] = callNodeArguments;
 					const keyParsed = safeParseString(key);
 					const keyResolved = this.resolve(keyParsed);
+
+					if (
+						callNodeArguments.length > 1
+						|| typeof keyParsed !== 'string'
+					) {
+						this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${functionName}(${callNodeArguments.join(', ')})`);
+						return key;
+					}
 
 					return keyResolved ? JSON.stringify(keyResolved) : key;
 				}
@@ -152,8 +166,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 	private interceptTranslationFunctionCalls(
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const { locales, singleLocale } = this;
-		const { functionName = '__' } = this.options;
+		const { locales, singleLocale, functionName } = this;
 		const validator = localizedStringKeyValidator(locales, this.options.throwOnMissing);
 
 		onFunctionCall(

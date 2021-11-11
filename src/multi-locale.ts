@@ -135,10 +135,16 @@ function localizeAsset<LocalizedData>(
 				callNode: node,
 				resolve: key => localeData[key],
 				emitWarning: (message) => {
-					compilation.warnings.push(new WebpackError(message));
+					const hasWarning = compilation.warnings.find(warning => warning.message === message);
+					if (!hasWarning) {
+						compilation.warnings.push(new WebpackError(message));
+					}
 				},
 				emitError: (message) => {
-					compilation.errors.push(new WebpackError(message));
+					const hasError = compilation.errors.find(error => error.message === message);
+					if (!hasError) {
+						compilation.errors.push(new WebpackError(message));
+					}
 				},
 			},
 			locale,
