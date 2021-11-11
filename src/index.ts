@@ -10,6 +10,7 @@ import {
 	LocalesMap,
 	LocaleName,
 	LocaleFilePath,
+	LocalizeCompiler,
 	WP5,
 } from './types';
 import { loadLocales } from './utils/load-locales';
@@ -24,14 +25,21 @@ import {
 import { localizedStringKeyValidator } from './utils/localized-string-key-validator';
 import {
 	generateLocalizedAssets,
-	getPlaceholder,
+	markLocalizeFunction,
 	fileNameTemplatePlaceholder,
 } from './multi-locale';
-import { printAST } from './utils/print-ast';
 import { callLocalizeCompiler } from './utils/localize-compiler';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
+
+const safeParseString = (text: string) => {
+	try {
+		return JSON.parse(text);
+	} catch {
+		return null;
+	}
+};
 
 class LocalizeAssetsPlugin<LocalizedData = string> {
 	private readonly options: Options<LocalizedData>;
@@ -46,6 +54,8 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 	private trackStringKeys?: StringKeysCollection;
 
+	private localizeCompiler: LocalizeCompiler<LocalizedData>;
+
 	constructor(options: Options<LocalizedData>) {
 		validateOptions(options);
 		this.options = options;
@@ -54,6 +64,18 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		if (this.localeNames.length === 1) {
 			[this.singleLocale] = this.localeNames;
 		}
+
+		this.localizeCompiler = (
+			this.options.localizeCompiler
+				? this.options.localizeCompiler
+				: function (arguments_) {
+					const [key] = arguments_;
+					const keyParsed = safeParseString(key);
+					const keyResolved = this.resolve(keyParsed);
+
+					return keyResolved ? JSON.stringify(keyResolved) : key;
+				}
+		);
 	}
 
 	apply(compiler: Compiler) {
@@ -108,7 +130,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 						this.locales,
 						this.options.sourceMapForLocales || this.localeNames,
 						this.trackStringKeys,
-						this.options.localizeCompiler,
+						this.localizeCompiler,
 					);
 
 					// Update chunkHash based on localized content
@@ -141,9 +163,10 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				const { module } = parser.state;
 				const firstArgumentNode = callExpressionNode.arguments[0];
 
+				// Enforce minimum requirement that first argument is a string
 				if (
 					!(
-						(this.options.localizeCompiler || callExpressionNode.arguments.length === 1)
+						callExpressionNode.arguments.length > 0
 						&& firstArgumentNode.type === 'Literal'
 						&& typeof firstArgumentNode.value === 'string'
 					)
@@ -181,29 +204,18 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			// single locale - let's insert the localised version of the string right now,
 			// no need to use placeholder for string replacement on the asset
 
-			const locale = this.locales[this.singleLocale];
-			const localizedData = locale[key];
-
-			if (this.options.localizeCompiler) {
-				return callLocalizeCompiler(
-					this.options.localizeCompiler,
-					{
-						callNode: callExpr,
-						resolve: (stringKey: string) => this.locales[this.singleLocale!][stringKey],
-						emitWarning(message) {
-							reportModuleWarning(module, new WebpackError(message));
-						},
-						emitError(message) {
-							reportModuleError(module, new WebpackError(message));
-						},
-					},
-					this.singleLocale,
-				);
-			}
-
 			this.trackStringKeys?.delete(key);
 
-			return JSON.stringify(localizedData || key);
+			return callLocalizeCompiler(
+				this.localizeCompiler,
+				{
+					callNode: callExpr,
+					resolve: stringKey => this.locales[this.singleLocale!][stringKey],
+					emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
+					emitError: message => reportModuleError(module, new WebpackError(message)),
+				},
+				this.singleLocale,
+			);
 		}
 
 		if (!module.buildInfo.localized) {
@@ -225,11 +237,8 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		// into the placeholder so that we can re-parse it and give it to localizeCompiler later.
 		// Otherwise, we'll just write the stringKey.
 		// (This is an optimisation - avoid printing and parsing the expression if we don't need to)
-		const placeholderContent = this.options.localizeCompiler
-			? printAST(callExpr)
-			: JSON.stringify(key);
 
-		return getPlaceholder(placeholderContent);
+		return markLocalizeFunction(callExpr);
 	}
 }
 

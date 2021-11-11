@@ -125,8 +125,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				{
 					'/src/index.js': `
 						export default [
+							__(),
 							__(1234),
-							__('string', 'second param'),
 						];
 					`,
 				},
@@ -141,8 +141,8 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			expect(buildStats.hasWarnings()).toBe(true);
 			expect(buildStats.compilation.warnings.length).toBe(2);
-			expect(buildStats.compilation.warnings[0].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:3:7');
-			expect(buildStats.compilation.warnings[1].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:4:7');
+			expect(buildStats.compilation.warnings[0].message).toMatch('[webpack-localize-assets-plugin] Ignoring confusing usage of localization function "__" in /src/index.js:3:7');
+			expect(buildStats.compilation.warnings[1].message).toMatch('[webpack-localize-assets-plugin] Ignoring confusing usage of localization function "__" in /src/index.js:4:7');
 		});
 
 		test('sourceMapForLocales - invalid locale', async () => {
@@ -163,7 +163,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			}).rejects.toThrow('sourceMapForLocales must contain valid locales');
 		});
 
-		describe('missing locale', () => {
+		describe('missing key', () => {
 			test('warning - single locale', async () => {
 				const buildStats = await build(
 					{
@@ -441,7 +441,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const compilerCalls: [LocalizeCompilerContext, string[], string][] = [];
 			const buildStats = await build(
 				{
-					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nexport default __("hello-key");',
+					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nconst a = 1; export default __("hello-key", { a });',
 				},
 				(config) => {
 					config.plugins!.push(
@@ -656,14 +656,6 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('emits source-maps', async () => {
-			const locales = {
-				en: {
-					hello: 'Hello',
-				},
-				ja: {
-					hello: 'こんにちは',
-				},
-			};
 			const buildStats = await build(
 				{
 					'/src/index.js': 'export default __("hello-key");',
@@ -672,7 +664,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					config.devtool = 'source-map';
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
-							locales,
+							locales: localesMulti,
 						}),
 					);
 				},
@@ -681,8 +673,9 @@ describe(`Webpack ${webpack.version}`, () => {
 			const { assets } = buildStats.compilation;
 
 			expect(assets).toHaveProperty(['index.en.js.map']);
+			expect(assets).toHaveProperty(['index.es.js.map']);
 			expect(assets).toHaveProperty(['index.ja.js.map']);
-			expect(Object.keys(assets).length).toBe(4);
+			expect(Object.keys(assets).length).toBe(6);
 		});
 
 		test('only emit source-maps for specified locales', async () => {
