@@ -152,7 +152,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 	private interceptTranslationFunctionCalls(
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const { locales } = this;
+		const { locales, singleLocale } = this;
 		const { functionName = '__' } = this.options;
 		const validator = localizedStringKeyValidator(locales, this.options.throwOnMissing);
 
@@ -191,7 +191,11 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 					module.buildInfo.fileDependencies.add(fileDependency);
 				}
 
-				const replacement = this.getReplacementExpr(callExpressionNode, stringKey, module);
+				const replacement = (
+					singleLocale
+						? this.getLocalizedString(callExpressionNode, stringKey, module, singleLocale)
+						: this.getMarkedFunctionPlaceholder(callExpressionNode, stringKey, module)
+				);
 				toConstantDependency(parser, replacement)(callExpressionNode);
 
 				return true;
@@ -199,38 +203,45 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		);
 	}
 
-	private getReplacementExpr(callExpr: SimpleCallExpression, key: string, module: Module): string {
-		/**
-		 * Single locale
-		 *
-		 * Insert the localized string during Webpack JS parsing.
-		 * No need to use placeholder for string replacement on asset.
-		 */
-		const { singleLocale } = this;
-		if (singleLocale) {
-			this.trackStringKeys?.delete(key);
+	/**
+	 * For Single locale
+	 *
+	 * Insert the localized string during Webpack JS parsing.
+	 * No need to use placeholder for string replacement on asset.
+	 */
+	private getLocalizedString(
+		callNode: SimpleCallExpression,
+		key: string,
+		module: Module,
+		singleLocale: string,
+	): string {
+		this.trackStringKeys?.delete(key);
 
-			return callLocalizeCompiler(
-				this.localizeCompiler,
-				{
-					callNode: callExpr,
-					resolve: stringKey => this.locales[singleLocale][stringKey],
-					emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
-					emitError: message => reportModuleError(module, new WebpackError(message)),
-				},
-				singleLocale,
-			);
-		}
+		return callLocalizeCompiler(
+			this.localizeCompiler,
+			{
+				callNode,
+				resolve: stringKey => this.locales[singleLocale][stringKey],
+				emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
+				emitError: message => reportModuleError(module, new WebpackError(message)),
+			},
+			singleLocale,
+		);
+	}
 
-		/**
-		 * Multiple locales
-		 *
-		 * 1. Replace the `__(...)` call with a placeholder -> `asdf(...) + asdf`
-		 * 2. After the asset is generated & minified, search and replace the
-		 * placeholder with calls to localizeCompiler
-		 * 3. Repeat for each locale
-		 */
-
+	/**
+	 * For Multiple locales
+	 *
+	 * 1. Replace the `__(...)` call with a placeholder -> `asdf(...) + asdf`
+	 * 2. After the asset is generated & minified, search and replace the
+	 * placeholder with calls to localizeCompiler
+	 * 3. Repeat for each locale
+	 */
+	private getMarkedFunctionPlaceholder(
+		callNode: SimpleCallExpression,
+		key: string,
+		module: Module,
+	): string {
 		// Track used keys for hash
 		if (!module.buildInfo.localized) {
 			module.buildInfo.localized = {};
@@ -242,7 +253,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			);
 		}
 
-		return markLocalizeFunction(callExpr);
+		return markLocalizeFunction(callNode);
 	}
 }
 
