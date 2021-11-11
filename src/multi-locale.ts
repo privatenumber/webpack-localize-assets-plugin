@@ -18,7 +18,7 @@ import {
 	LocalizeCompiler,
 } from './types';
 import type { StringKeysCollection } from './utils/track-unused-localized-strings';
-import { callLocalizeCompiler } from './utils/localize-compiler';
+import { callLocalizeCompiler } from './utils/call-localize-compiler';
 import { stringifyAst } from './utils/stringify-ast';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -129,13 +129,11 @@ function localizeAsset<LocalizedData>(
 
 	// Localize strings
 	for (const { node, range } of placeholderLocations) {
-		const stringKey = (node.arguments[0] as Literal).value as string;
-
 		const localizedCode = callLocalizeCompiler(
 			localizeCompiler,
 			{
 				callNode: node,
-				resolve: (key: string) => localeData[key],
+				resolve: key => localeData[key],
 				emitWarning: (message) => {
 					compilation.warnings.push(new WebpackError(message));
 				},
@@ -153,6 +151,7 @@ function localizeAsset<LocalizedData>(
 		);
 
 		// For Webpack 5 cache hits
+		const stringKey = (node.arguments[0] as Literal).value as string;
 		trackStringKeys?.delete(stringKey);
 	}
 
@@ -287,15 +286,17 @@ export function generateLocalizedAssets<LocalizedData>(
 
 	if (isWebpack5Compilation(compilation)) {
 		/**
-		 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH,
-		 * which is where RealContentHashPlugin re-hashes assets:
+		 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH, which is where
+		 * RealContentHashPlugin re-hashes assets:
 		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
 		 *
 		 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
 		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
-		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH). PROCESS_ASSETS_STAGE_SUMMARIZE
-		 * isn't actually used by Webpack, but there seemed to be other plugins
-		 * that were relying on it to summarize assets, so it makes sense to run just before that.
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH).
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE isn't actually used by Webpack, but there seemed
+		 * to be other plugins that were relying on it to summarize assets, so it makes sense
+		 * to run just before that.
 		 *
 		 * All "process assets" stages:
 		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204

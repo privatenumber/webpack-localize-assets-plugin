@@ -28,7 +28,7 @@ import {
 	markLocalizeFunction,
 	fileNameTemplatePlaceholder,
 } from './multi-locale';
-import { callLocalizeCompiler } from './utils/localize-compiler';
+import { callLocalizeCompiler } from './utils/call-localize-compiler';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
