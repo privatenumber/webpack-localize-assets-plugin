@@ -139,7 +139,8 @@ Type:
 
 Default:
 ```ts
-function () {
+function (localizerArguments) {
+    const [key] = localizerArguments;
     const keyResolved = this.resolveKey();
     return keyResolved ? JSON.stringify(keyResolved) : key;
 }
