@@ -74,19 +74,15 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		this.localizeCompiler = (
 			this.options.localizeCompiler
 				? this.options.localizeCompiler
-				: function (callNodeArguments) {
-					const [key] = callNodeArguments;
-					const keyParsed = safeParseString(key);
-					const keyResolved = this.resolveKey(keyParsed);
+				: function (localizerArguments) {
+					const [key] = localizerArguments;
 
-					if (
-						callNodeArguments.length > 1
-						|| typeof keyParsed !== 'string'
-					) {
-						this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${functionName}(${callNodeArguments.join(', ')})`);
+					if (localizerArguments.length > 1) {
+						this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${functionName}(${localizerArguments.join(', ')})`);
 						return key;
 					}
 
+					const keyResolved = this.resolveKey();
 					return keyResolved ? JSON.stringify(keyResolved) : key;
 				}
 		);
