@@ -158,7 +158,7 @@ The name of the current locale
 
 | Name | Type | Description |
 | - | - | - |
-| `resolveKey` | `(key?: string) => string` | A function to get the localized data given a key. Defaults to the first argument passed in.           |
+| `resolveKey` | `(key?: string) => string` | A function to get the localized data given a key. Defaults to the key passed in. |
 | `emitWarning` | `(message: string) => void` | Call this function to emit a warning into the Webpack build. |
 | `emitError` | `(message: string) => void` | Call this function to emit an error into the Webpack build.  |
 | `callNode` | [`CallExpression`](https://github.com/estree/estree/blob/master/es5.md#callexpression) | [AST](https://github.com/estree/estree) node representing the original call to the localization function (eg. `__()`). |
