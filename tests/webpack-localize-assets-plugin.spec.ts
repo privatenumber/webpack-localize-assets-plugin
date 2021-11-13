@@ -4,7 +4,7 @@ import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { createFsRequire } from 'fs-require';
 import WebpackLocalizeAssetsPlugin from '../src/index';
-import { Compiler, LocalizeCompilerContext, WP5 } from '../src/types';
+import { Compiler, WP5 } from '../src/types';
 import {
 	build, watch, assertFsWithReadFileSync,
 } from './utils';

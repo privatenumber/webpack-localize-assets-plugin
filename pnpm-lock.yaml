@@ -1,7 +1,7 @@
 lockfileVersion: 5.3
 
 specifiers:
-  '@pvtnbr/eslint-config': ^0.4.1
+  '@pvtnbr/eslint-config': ^0.5.0
   '@types/estree': ^0.0.50
   '@types/jest': ^26.0.24
   '@types/mini-css-extract-plugin': ^2.4.0
@@ -40,7 +40,7 @@ dependencies:
   webpack-sources: 2.2.0
 
 devDependencies:
-  '@pvtnbr/eslint-config': 0.4.1_eslint@7.32.0+typescript@4.4.4
+  '@pvtnbr/eslint-config': 0.5.0_eslint@7.32.0+typescript@4.4.4
   '@types/jest': 26.0.24
   '@types/mini-css-extract-plugin': 2.4.0
   '@types/webpack': 4.41.31
@@ -761,8 +761,8 @@ packages:
       fastq: 1.11.0
     dev: true
 
-  /@pvtnbr/eslint-config/0.4.1_eslint@7.32.0+typescript@4.4.4:
-    resolution: {integrity: sha512-fiBueh4WLjWmXeWVUTC3UOJx/t1DGfQeFNShaCvfECMPMaKT7EUMWy7etTWHAu82ey7zKOO5V98+7FwvjCWJUQ==}
+  /@pvtnbr/eslint-config/0.5.0_eslint@7.32.0+typescript@4.4.4:
+    resolution: {integrity: sha512-vVcHoPxZ7iT8xfpqtmqXSyXaGMGC7x0cOHM46YPUHQAKzcd+u/P6w4G9woZlBWgCAhvDqfMhObyLxMJJrJfg7w==}
     peerDependencies:
       eslint: ^7.15.0
     dependencies:
@@ -921,6 +921,10 @@ packages:
 
   /@types/node/16.11.6:
     resolution: {integrity: sha512-ua7PgUoeQFjmWPcoo9khiPum3Pd60k4/2ZGXt18sm2Slk0W0xZTqt5Y0Ny1NyBiN1EVQ/+FaF9NcY4Qe6rwk5w==}
+    dev: true
+
+  /@types/node/16.11.7:
+    resolution: {integrity: sha512-QB5D2sqfSjCmTuWcBWyJ+/44bcjO7VbjSbOE0ucoVbAsSNQc4Lt6QkgkVXkTDwkL4z/beecZNDvVX15D4P8Jbw==}
     dev: true
 
   /@types/normalize-package-data/2.4.0:
@@ -1520,17 +1524,6 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /array-includes/3.1.3:
-    resolution: {integrity: sha512-gcem1KlBU7c9rB+Rq8/3PPKsK2kjqeEBa3bD5kkQo4nYlOHQCJqIJFqBXDEfwaRuYTT4E+FxA9xez7Gf/e3Q7A==}
-    engines: {node: '>= 0.4'}
-    dependencies:
-      call-bind: 1.0.2
-      define-properties: 1.1.3
-      es-abstract: 1.19.1
-      get-intrinsic: 1.1.1
-      is-string: 1.0.7
-    dev: true
-
   /array-includes/3.1.4:
     resolution: {integrity: sha512-ZTNSQkmWumEbiHO2GF4GmWxYVTiQyJy2XOTa15sdQSrvKn7l+180egQMqlrMOUMCyLMD7pmyQe4mMDUT6Behrw==}
     engines: {node: '>= 0.4'}
@@ -1875,6 +1868,18 @@ packages:
       picocolors: 1.0.0
     dev: true
 
+  /browserslist/4.17.6:
+    resolution: {integrity: sha512-uPgz3vyRTlEiCv4ee9KlsKgo2V6qPk7Jsn0KAn2OBqbqKo3iNcPEC1Ti6J4dwnz+aIRfEEEuOzC9IBk8tXUomw==}
+    engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
+    hasBin: true
+    dependencies:
+      caniuse-lite: 1.0.30001280
+      electron-to-chromium: 1.3.896
+      escalade: 3.1.1
+      node-releases: 2.0.1
+      picocolors: 1.0.0
+    dev: true
+
   /bser/2.1.1:
     resolution: {integrity: sha512-gQxTNE/GAfIIrmHLUE3oJyp5FO6HRBfhjnw4/wMmA63ZGDJnWBmgY/lyQBpnDUkGmAhbSe39tx2d/iTOAfglwQ==}
     dependencies:
@@ -1965,6 +1970,10 @@ packages:
 
   /caniuse-lite/1.0.30001271:
     resolution: {integrity: sha512-BBruZFWmt3HFdVPS8kceTBIguKxu4f99n5JNp06OlPD/luoAMIaIK5ieV5YjnBLH3Nysai9sxj9rpJj4ZisXOA==}
+    dev: true
+
+  /caniuse-lite/1.0.30001280:
+    resolution: {integrity: sha512-kFXwYvHe5rix25uwueBxC569o53J6TpnGu0BEEn+6Lhl2vsnAumRFWEBhDft1fwyo6m1r4i+RqA4+163FpeFcA==}
     dev: true
 
   /capture-exit/2.0.0:
@@ -2574,6 +2583,10 @@ packages:
     resolution: {integrity: sha512-XoAaO4CXk7FXtF2JH0PJ7KgHL1PyZ76G+NhuL337pMiOGlEWwTTSzMQyYZvxN97d9KhdLMOW8XVVk/6sN2Xflw==}
     dev: true
 
+  /electron-to-chromium/1.3.896:
+    resolution: {integrity: sha512-NcGkBVXePiuUrPLV8IxP43n1EOtdg+dudVjrfVEUd/bOqpQUFZ2diL5PPYzbgEhZFEltdXV3AcyKwGnEQ5lhMA==}
+    dev: true
+
   /elliptic/6.5.4:
     resolution: {integrity: sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==}
     dependencies:
@@ -2756,13 +2769,13 @@ packages:
       eslint: '*'
       eslint-plugin-import: '*'
     dependencies:
-      debug: 4.3.1
+      debug: 4.3.2
       eslint: 7.32.0
       eslint-plugin-import: 2.25.2_eslint@7.32.0
       glob: 7.1.7
-      is-glob: 4.0.1
+      is-glob: 4.0.3
       resolve: 1.20.0
-      tsconfig-paths: 3.9.0
+      tsconfig-paths: 3.11.0
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -2827,7 +2840,7 @@ packages:
       eslint: '>=5.0.0'
     dependencies:
       eslint: 7.32.0
-      eslint-utils: 2.1.0
+      eslint-utils: 3.0.0_eslint@7.32.0
       jsonc-eslint-parser: 1.4.1
       natural-compare: 1.4.0
     dev: true
@@ -2881,7 +2894,7 @@ packages:
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7
     dependencies:
-      array-includes: 3.1.3
+      array-includes: 3.1.4
       array.prototype.flatmap: 1.2.5
       doctrine: 2.1.0
       eslint: 7.32.0
@@ -4686,7 +4699,7 @@ packages:
     resolution: {integrity: sha512-ks3WCzsiZaOPJl/oMsDjaf0TRiSv7ctNgs0FqRr2nARsovz6AWWy4oLElwcquGSz692DzgZQrCLScPNs5YlC4g==}
     engines: {node: '>= 10.13.0'}
     dependencies:
-      '@types/node': 16.11.6
+      '@types/node': 16.11.7
       merge-stream: 2.0.0
       supports-color: 8.1.1
     dev: true
@@ -5193,11 +5206,23 @@ packages:
     engines: {node: '>= 0.6'}
     dev: true
 
+  /mime-db/1.51.0:
+    resolution: {integrity: sha512-5y8A56jg7XVQx2mbv1lu49NR4dokRnhZYTtL+KGfaa27uq4pSTXkwQkFJl4pkRMyNFz/EtYDSkiiEHx3F7UN6g==}
+    engines: {node: '>= 0.6'}
+    dev: true
+
   /mime-types/2.1.33:
     resolution: {integrity: sha512-plLElXp7pRDd0bNZHw+nMd52vRYjLwQjygaNg7ddJ2uJtTlmnTCjWuPKxVu6//AdaRuME84SvLW91sIkBqGT0g==}
     engines: {node: '>= 0.6'}
     dependencies:
       mime-db: 1.50.0
+    dev: true
+
+  /mime-types/2.1.34:
+    resolution: {integrity: sha512-6cP692WwGIs9XXdOO4++N+7qjqv0rqxxVvJ3VHPh/Sc9mVZcQP+ZGhkKiTvWMQRr2tbHkJP/Yn7Y0npb3ZBs4A==}
+    engines: {node: '>= 0.6'}
+    dependencies:
+      mime-db: 1.51.0
     dev: true
 
   /mimic-fn/2.1.0:
@@ -5448,10 +5473,6 @@ packages:
       copy-descriptor: 0.1.1
       define-property: 0.2.5
       kind-of: 3.2.2
-    dev: true
-
-  /object-inspect/1.10.2:
-    resolution: {integrity: sha512-gz58rdPpadwztRrPjZE9DZLOABUpTGdcANUgOwBFO1C+HZZhePoP83M65WGDmbpwFYJSWqavbl4SgDn4k8RYTA==}
     dev: true
 
   /object-inspect/1.11.0:
@@ -6501,7 +6522,7 @@ packages:
     dependencies:
       call-bind: 1.0.2
       get-intrinsic: 1.1.1
-      object-inspect: 1.10.2
+      object-inspect: 1.11.0
     dev: true
 
   /signal-exit/3.0.3:
@@ -6928,8 +6949,8 @@ packages:
       worker-farm: 1.7.0
     dev: true
 
-  /terser-webpack-plugin/5.2.4_webpack@5.10.1:
-    resolution: {integrity: sha512-E2CkNMN+1cho04YpdANyRrn8CyN4yMy+WdFKZIySFZrGXZxJwJP6PMNGGc/Mcr6qygQHUUqRxnAPmi0M9f00XA==}
+  /terser-webpack-plugin/5.2.5_webpack@5.10.1:
+    resolution: {integrity: sha512-3luOVHku5l0QBeYS8r4CdHYWEGMmIj3H1U64jgkdZzECcSOJAyJ9TjuqcQZvw1Y+4AOBN9SeYJPJmFn2cM4/2g==}
     engines: {node: '>= 10.13.0'}
     peerDependencies:
       '@swc/core': '*'
@@ -6945,7 +6966,6 @@ packages:
         optional: true
     dependencies:
       jest-worker: 27.3.1
-      p-limit: 3.1.0
       schema-utils: 3.1.1
       serialize-javascript: 6.0.0
       source-map: 0.6.1
@@ -7079,15 +7099,6 @@ packages:
 
   /tsconfig-paths/3.11.0:
     resolution: {integrity: sha512-7ecdYDnIdmv639mmDwslG6KQg1Z9STTz1j7Gcz0xa+nshh/gKDAHcPxRbWOsA3SPp0tXP2leTcY9Kw+NAkfZzA==}
-    dependencies:
-      '@types/json5': 0.0.29
-      json5: 1.0.1
-      minimist: 1.2.5
-      strip-bom: 3.0.0
-    dev: true
-
-  /tsconfig-paths/3.9.0:
-    resolution: {integrity: sha512-dRcuzokWhajtZWkQsDVKbWyY+jgcLC5sqJhg2PSgf4ZkH2aHPvaOY8YWGhmjb68b5qqTfasSsDO9k7RUiEmZAw==}
     dependencies:
       '@types/json5': 0.0.29
       json5: 1.0.1
@@ -7482,7 +7493,7 @@ packages:
       '@webassemblyjs/wasm-edit': 1.9.1
       '@webassemblyjs/wasm-parser': 1.9.1
       acorn: 8.5.0
-      browserslist: 4.17.5
+      browserslist: 4.17.6
       chrome-trace-event: 1.0.3
       enhanced-resolve: 5.8.3
       eslint-scope: 5.1.1
@@ -7491,12 +7502,12 @@ packages:
       graceful-fs: 4.2.8
       json-parse-better-errors: 1.0.2
       loader-runner: 4.2.0
-      mime-types: 2.1.33
+      mime-types: 2.1.34
       neo-async: 2.6.2
       pkg-dir: 5.0.0
       schema-utils: 3.1.1
       tapable: 2.2.1
-      terser-webpack-plugin: 5.2.4_webpack@5.10.1
+      terser-webpack-plugin: 5.2.5_webpack@5.10.1
       watchpack: 2.2.0
       webpack-sources: 2.3.1
     transitivePeerDependencies:

@@ -33,14 +33,6 @@ import { callLocalizeCompiler } from './utils/call-localize-compiler';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
 
-const safeParseString = (text: string) => {
-	try {
-		return JSON.parse(text);
-	} catch {
-		return null;
-	}
-};
-
 class LocalizeAssetsPlugin<LocalizedData = string> {
 	private readonly options: Options<LocalizedData>;
 

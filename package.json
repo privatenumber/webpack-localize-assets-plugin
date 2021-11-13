@@ -48,7 +48,7 @@
 		"webpack-sources": "^2.2.0"
 	},
 	"devDependencies": {
-		"@pvtnbr/eslint-config": "^0.4.1",
+		"@pvtnbr/eslint-config": "^0.5.0",
 		"@types/estree": "^0.0.50",
 		"@types/jest": "^26.0.24",
 		"@types/mini-css-extract-plugin": "^2.4.0",
