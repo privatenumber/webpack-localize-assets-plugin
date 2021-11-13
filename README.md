@@ -127,6 +127,46 @@ Default: `false`
 
 Enable to see warnings when unused string keys are found.
 
+### localizeCompiler
+Type:
+```ts
+(
+    this: LocalizeCompilerContext,
+    localizerArguments: string[],
+    localeName: string,
+) => string
+```
+
+Default:
+```ts
+function (localizerArguments) {
+    const [key] = localizerArguments;
+    const keyResolved = this.resolveKey();
+    return keyResolved ? JSON.stringify(keyResolved) : key;
+}
+```
+
+A function to generate a JS string to replace the `__()` call with. It gets called for each localize function call (eg. `__(...)`) for each locale.
+
+#### localizerArguments
+An array of strings containing JavaScript expressions. The expressions are stringified arguments of the original call. So `localizerArguments[0]` will be a JavaScript expression containing the translation key.
+
+#### localeName
+The name of the current locale
+
+#### `this` context
+
+| Name | Type | Description |
+| - | - | - |
+| `resolveKey` | `(key?: string) => string` | A function to get the localized data given a key. Defaults to the key passed in. |
+| `emitWarning` | `(message: string) => void` | Call this function to emit a warning into the Webpack build. |
+| `emitError` | `(message: string) => void` | Call this function to emit an error into the Webpack build.  |
+| `callNode` | [`CallExpression`](https://github.com/estree/estree/blob/master/es5.md#callexpression) | [AST](https://github.com/estree/estree) node representing the original call to the localization function (eg. `__()`). |
+
+`localizeCompiler` must return a string containing a JavaScript expression. The expression will be injected into the bundle in the place of the original `__()` call. The expression should represent the localized string.
+
+You can use `localizeCompiler` to do inject more localization logic (eg. pluralization).
+
 ## 💁‍♀️ FAQ
 
 ### How does this compare to [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin)?

@@ -14,11 +14,11 @@ const loadJson = <T extends {
 	return JSON.parse(stringContent);
 };
 
-export function loadLocales(
+export function loadLocales<LocalizedData>(
 	fs: any,
-	unprocessedLocales: UnprocessedLocalesMap,
+	unprocessedLocales: UnprocessedLocalesMap<LocalizedData>,
 ) {
-	const locales: LocalesMap = {};
+	const locales: LocalesMap<LocalizedData> = {};
 	const fileDependencies = new Set<LocaleFilePath>();
 
 	for (const localeName in unprocessedLocales) {

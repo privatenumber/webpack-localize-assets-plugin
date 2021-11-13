@@ -13,8 +13,8 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../../package.json');
 
-export function localizedStringKeyValidator(
-	locales: LocalesMap,
+export function localizedStringKeyValidator<LocalizedData>(
+	locales: LocalesMap<LocalizedData>,
 	throwOnMissing?: boolean,
 ) {
 	const validatedLocales = new Set<LocalizedStringKey>();

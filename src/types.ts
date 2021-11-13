@@ -1,30 +1,45 @@
 import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
+import type { SimpleCallExpression } from 'estree';
 import hasOwnProp from 'has-own-prop';
 
 export type LocaleName = string;
 export type LocaleFilePath = string;
 export type LocalizedStringKey = string;
-export type LocalizedStringValue = string;
-export type LocaleStrings = Record<LocalizedStringKey, LocalizedStringValue>;
-export type LocalesMap = Record<LocaleName, LocaleStrings>;
-export type UnprocessedLocalesMap = Record<LocaleName, LocaleFilePath | LocaleStrings>;
+export type LocaleStrings<LocalizedData> = Record<LocalizedStringKey, LocalizedData>;
+export type LocalesMap<LocalizedData> = Record<LocaleName, LocaleStrings<LocalizedData>>;
+export type UnprocessedLocalesMap<LocalizedData> = Record<
+	LocaleName,
+	LocaleFilePath | LocaleStrings<LocalizedData>
+>;
 
-export interface Options {
-	locales: UnprocessedLocalesMap;
+export type Options<LocalizedData = string> = {
+	locales: UnprocessedLocalesMap<LocalizedData>;
 	functionName?: string;
 	throwOnMissing?: boolean;
 	sourceMapForLocales?: string[];
 	warnOnUnusedString?: boolean;
+} & LocalizeCompilerOption<LocalizedData>;
+
+type LocalizeCompilerOption<LocalizedData>
+	= LocalizedData extends string // optional if the localized data is a string
+		? { localizeCompiler?: LocalizeCompiler<LocalizedData> }
+		: { localizeCompiler: LocalizeCompiler<LocalizedData> };
+
+export interface LocalizeCompilerContext<LocalizedData = string> {
+	readonly callNode: SimpleCallExpression;
+	resolveKey(stringKey?: string): LocalizedData;
+	emitWarning(message: string): void;
+	emitError(message: string): void;
 }
 
-export type PlaceholderLocations = {
-	stringKey: string;
-	index: number;
-	endIndex: number;
-}[];
+export type LocalizeCompiler<LocalizedData = string> = (
+	this: LocalizeCompilerContext<LocalizedData>,
+	functionArgments: string[],
+	localeName: string,
+) => string;
 
-export function validateOptions(options: Options): void {
+export function validateOptions<LocalizedData>(options: Options<LocalizedData>): void {
 	if (!options) {
 		throw new Error('Options are required');
 	}
