@@ -28,7 +28,7 @@ type LocalizeCompilerOption<LocalizedData>
 
 export interface LocalizeCompilerContext<LocalizedData = string> {
 	readonly callNode: SimpleCallExpression;
-	resolve(stringKey: string): LocalizedData;
+	resolveKey(stringKey?: string): LocalizedData;
 	emitWarning(message: string): void;
 	emitError(message: string): void;
 }

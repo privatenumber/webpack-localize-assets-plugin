@@ -129,11 +129,12 @@ function localizeAsset<LocalizedData>(
 
 	// Localize strings
 	for (const { node, range } of placeholderLocations) {
+		const stringKey = (node.arguments[0] as Literal).value as string;
 		const localizedCode = callLocalizeCompiler(
 			localizeCompiler,
 			{
 				callNode: node,
-				resolve: key => localeData[key],
+				resolveKey: (key = stringKey) => localeData[key],
 				emitWarning: (message) => {
 					const hasWarning = compilation.warnings.find(warning => warning.message === message);
 					if (!hasWarning) {
@@ -157,7 +158,6 @@ function localizeAsset<LocalizedData>(
 		);
 
 		// For Webpack 5 cache hits
-		const stringKey = (node.arguments[0] as Literal).value as string;
 		trackStringKeys?.delete(stringKey);
 	}
 

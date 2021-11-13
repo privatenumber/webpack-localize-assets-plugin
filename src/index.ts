@@ -77,7 +77,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				: function (callNodeArguments) {
 					const [key] = callNodeArguments;
 					const keyParsed = safeParseString(key);
-					const keyResolved = this.resolve(keyParsed);
+					const keyResolved = this.resolveKey(keyParsed);
 
 					if (
 						callNodeArguments.length > 1
@@ -234,7 +234,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			this.localizeCompiler,
 			{
 				callNode,
-				resolve: stringKey => this.locales[singleLocale][stringKey],
+				resolveKey: (stringKey = key) => this.locales[singleLocale][stringKey],
 				emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
 				emitError: message => reportModuleError(module, new WebpackError(message)),
 			},

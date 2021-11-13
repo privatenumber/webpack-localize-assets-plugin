@@ -462,77 +462,6 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
 		});
 
-		test('custom localisation compiler', async () => {
-			const compilerCalls: [LocalizeCompilerContext, string[], string][] = [];
-			const buildStats = await build(
-				{
-					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nconst a = 1; export default __("hello-key", { a });',
-				},
-				(config) => {
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesMulti,
-							localizeCompiler(callArguments, localeName) {
-								compilerCalls.push([this, callArguments, localeName]);
-								return `compiled('${this.resolve(callArguments[0].slice(1, -1))}')`;
-							},
-						}),
-					);
-				},
-			);
-
-			const { assets } = buildStats.compilation;
-			expect(Object.keys(assets).length).toBe(3);
-
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
-			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
-
-			const esBuild = mRequire('/dist/index.es.js');
-			expect(esBuild).toBe(`${localesMulti.es['hello-key']}-compiled`);
-
-			const jaBuild = mRequire('/dist/index.ja.js');
-			expect(jaBuild).toBe(`${localesMulti.ja['hello-key']}-compiled`);
-
-			const statsOutput = buildStats.toString();
-			expect(statsOutput).toMatch(/index\.en\.js/);
-			expect(statsOutput).toMatch(/index\.es\.js/);
-			expect(statsOutput).toMatch(/index\.ja\.js/);
-
-			// one __() call per locale
-			expect(compilerCalls).toHaveLength(3);
-		});
-
-		test('custom localisation compiler - single locale', async () => {
-			const buildStats = await build(
-				{
-					'/src/index.js': 'function compiled(x) { return x + "-compiled"; }\nexport default __("hello-key");',
-				},
-				(config) => {
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesMulti,
-							localizeCompiler(callArguments) {
-								return `compiled('${this.resolve(callArguments[0].slice(1, -1))}')`;
-							},
-						}),
-					);
-				},
-			);
-
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
-			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
-		});
-
 		test('works with minification and different contexts for __() usages', async () => {
 			const buildStats = await build(
 				{
@@ -1033,6 +962,96 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(statsOutput).toMatch(/index\.fn\.en\./);
 			expect(statsOutput).toMatch(/index\.fn\.es\./);
 			expect(statsOutput).toMatch(/index\.fn\.ja\./);
+		});
+	});
+
+	describe('localizeCompiler', () => {
+		test('single locale', async () => {
+			const buildStats = await build(
+				{
+					'/src/index.js': `
+					function compiled(x) {
+						return x + "-compiled";
+					}
+					export default __('hello-key');
+					`,
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+							localizeCompiler(callArguments, locale) {
+								expect(locale).toBe('en');
+								expect(this.resolveKey()).toBe('Hello');
+								return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
+							},
+						}),
+					);
+				},
+			);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
+		});
+
+		test('multi locale', async () => {
+			const compilerCalls: string[][] = [];
+			const buildStats = await build(
+				{
+					'/src/index.js': `
+					function compiled(x) {
+						return x + '-compiled';
+					}
+
+					const a = 1;
+					export default __('hello-key', { a });
+					`,
+				},
+				(config) => {
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+							localizeCompiler(callArguments, localeName) {
+								compilerCalls.push([...callArguments, localeName, this.resolveKey()]);
+								return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
+							},
+						}),
+					);
+				},
+			);
+
+			const { assets } = buildStats.compilation;
+			expect(Object.keys(assets).length).toBe(3);
+
+			const mfs = buildStats.compilation.compiler.outputFileSystem;
+			assertFsWithReadFileSync(mfs);
+
+			const mRequire = createFsRequire(mfs);
+
+			const enBuild = mRequire('/dist/index.en.js');
+			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
+
+			const esBuild = mRequire('/dist/index.es.js');
+			expect(esBuild).toBe(`${localesMulti.es['hello-key']}-compiled`);
+
+			const jaBuild = mRequire('/dist/index.ja.js');
+			expect(jaBuild).toBe(`${localesMulti.ja['hello-key']}-compiled`);
+
+			const statsOutput = buildStats.toString();
+			expect(statsOutput).toMatch(/index\.en\.js/);
+			expect(statsOutput).toMatch(/index\.es\.js/);
+			expect(statsOutput).toMatch(/index\.ja\.js/);
+
+			expect(compilerCalls).toEqual([
+				["'hello-key'", '{a}', 'en', 'Hello'],
+				["'hello-key'", '{a}', 'es', 'Hola'],
+				["'hello-key'", '{a}', 'ja', 'こんにちは'],
+			]);
 		});
 	});
 
