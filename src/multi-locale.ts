@@ -4,7 +4,6 @@ import WebpackError from 'webpack/lib/WebpackError.js';
 import { RawSourceMap } from 'source-map';
 import acorn from 'acorn';
 import type {
-	BinaryExpression,
 	Expression,
 	Literal,
 	SimpleCallExpression,
