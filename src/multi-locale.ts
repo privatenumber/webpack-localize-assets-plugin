@@ -5,6 +5,7 @@ import { RawSourceMap } from 'source-map';
 import acorn from 'acorn';
 import type {
 	BinaryExpression,
+	Expression,
 	Literal,
 	SimpleCallExpression,
 } from 'estree';
@@ -83,14 +84,20 @@ export function markLocalizeFunction(callExpression: SimpleCallExpression) {
 		throw new Error('Expected Identifier');
 	}
 
-	callExpression.callee.name = placeholderFunctionName;
-	return `${stringifyAst(callExpression)}+${placeholderFunctionName}`;
+	return `${placeholderFunctionName}(${stringifyAst(callExpression)})+${placeholderFunctionName}`;
 }
 
-function assertBinaryExpression(node: any): asserts node is BinaryExpression {
+function getOriginalCall(node: Expression): SimpleCallExpression {
 	if (node.type !== 'BinaryExpression') {
 		throw new Error('Expected BinaryExpression');
 	}
+	if (node.left.type !== 'CallExpression') {
+		throw new Error('Expected CallExpression');
+	}
+	if (node.left.arguments[0].type !== 'CallExpression') {
+		throw new Error('Expected CallExpression');
+	}
+	return node.left.arguments[0];
 }
 
 function locatePlaceholders(sourceString: string) {
@@ -99,12 +106,10 @@ function locatePlaceholders(sourceString: string) {
 
 	for (const placeholderRange of placeholderRanges) {
 		const code = sourceString.slice(placeholderRange.start, placeholderRange.end);
-		const node = acorn.parseExpressionAt(code, 0, { ecmaVersion: 'latest' });
-
-		assertBinaryExpression(node);
+		const node = acorn.parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
 
 		placeholderLocations.push({
-			node: node.left as SimpleCallExpression,
+			node: getOriginalCall(node),
 			range: placeholderRange,
 		});
 	}
