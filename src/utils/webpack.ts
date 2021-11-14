@@ -76,6 +76,17 @@ export const reportModuleWarning = (
 	}
 };
 
+export const reportModuleError = (
+	module: Module,
+	error: WebpackError,
+) => {
+	if ('addError' in module) {
+		module.addError(error);
+	} else {
+		module.errors.push(error);
+	}
+};
+
 export const onFunctionCall = (
 	normalModuleFactory: NormalModuleFactory,
 	functionName: string,

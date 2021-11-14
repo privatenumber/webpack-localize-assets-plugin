@@ -1,15 +1,16 @@
-import type { CallExpression } from 'estree';
 import WebpackError from 'webpack/lib/WebpackError.js';
-import type { javascript } from 'webpack5';
+import type { Identifier, SimpleCallExpression } from 'estree';
 import {
 	Options,
 	validateOptions,
 	Compiler,
+	Module,
 	NormalModuleFactory,
 	LocalizedStringKey,
 	LocalesMap,
 	LocaleName,
 	LocaleFilePath,
+	LocalizeCompiler,
 	WP5,
 } from './types';
 import { loadLocales } from './utils/load-locales';
@@ -19,38 +20,66 @@ import {
 	toConstantDependency,
 	reportModuleWarning,
 	onFunctionCall,
+	reportModuleError,
 } from './utils/webpack';
 import { localizedStringKeyValidator } from './utils/localized-string-key-validator';
 import {
 	generateLocalizedAssets,
-	getPlaceholder,
+	markLocalizeFunction,
 	fileNameTemplatePlaceholder,
 } from './multi-locale';
+import { callLocalizeCompiler } from './utils/call-localize-compiler';
+import { stringifyAst } from './utils/stringify-ast';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
 
-class LocalizeAssetsPlugin {
-	private readonly options: Options;
-
-	private locales: LocalesMap = {};
+class LocalizeAssetsPlugin<LocalizedData = string> {
+	private readonly options: Options<LocalizedData>;
 
 	private readonly localeNames: LocaleName[];
 
 	private readonly singleLocale?: LocaleName;
 
+	private readonly localizeCompiler: LocalizeCompiler<LocalizedData>;
+
+	private readonly functionNames: string[];
+
+	private locales: LocalesMap<LocalizedData> = {};
+
 	private fileDependencies = new Set<LocaleFilePath>();
 
 	private trackStringKeys?: StringKeysCollection;
 
-	constructor(options: Options) {
+	constructor(options: Options<LocalizedData>) {
 		validateOptions(options);
+
 		this.options = options;
+
+		const functionNames = this.options.functionNames ?? [this.options.functionName ?? '__'];
+		this.functionNames = functionNames;
 
 		this.localeNames = Object.keys(options.locales);
 		if (this.localeNames.length === 1) {
-			[this.singleLocale] = Object.keys(options.locales);
+			[this.singleLocale] = this.localeNames;
 		}
+
+		this.localizeCompiler = (
+			this.options.localizeCompiler
+				? this.options.localizeCompiler
+				: function (localizerArguments) {
+					const [key] = localizerArguments;
+
+					if (localizerArguments.length > 1) {
+						const code = stringifyAst(this.callNode);
+						this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${code})`);
+						return key;
+					}
+
+					const keyResolved = this.resolveKey();
+					return keyResolved ? JSON.stringify(keyResolved) : key;
+				}
+		);
 	}
 
 	apply(compiler: Compiler) {
@@ -103,8 +132,9 @@ class LocalizeAssetsPlugin {
 						compilation,
 						this.localeNames,
 						this.locales,
-						this.options.sourceMapForLocales,
+						this.options.sourceMapForLocales || this.localeNames,
 						this.trackStringKeys,
+						this.localizeCompiler,
 					);
 
 					// Update chunkHash based on localized content
@@ -126,21 +156,21 @@ class LocalizeAssetsPlugin {
 	private interceptTranslationFunctionCalls(
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const { singleLocale, locales } = this;
-		const functionNames = this.options.functionNames ?? [this.options.functionName ?? '__'];
+		const { locales, singleLocale, functionNames } = this;
 		const validator = localizedStringKeyValidator(locales, this.options.throwOnMissing);
 
 		const handler = (
+			parser: WP5.javascript.JavascriptParser,
+			callExpressionNode: SimpleCallExpression,
 			functionName: string,
-			parser: javascript.JavascriptParser,
-			callExpressionNode: CallExpression,
 		) => {
 			const { module } = parser.state;
 			const firstArgumentNode = callExpressionNode.arguments[0];
 
+			// Enforce minimum requirement that first argument is a string
 			if (
 				!(
-					callExpressionNode.arguments.length === 1
+					callExpressionNode.arguments.length > 0
 					&& firstArgumentNode.type === 'Literal'
 					&& typeof firstArgumentNode.value === 'string'
 				)
@@ -150,7 +180,6 @@ class LocalizeAssetsPlugin {
 					module,
 					new WebpackError(`[${name}] Ignoring confusing usage of localization function "${functionName}" in ${module.resource}:${location.line}:${location.column}`),
 				);
-
 				return;
 			}
 
@@ -166,27 +195,12 @@ class LocalizeAssetsPlugin {
 				module.buildInfo.fileDependencies.add(fileDependency);
 			}
 
-			if (singleLocale) {
-				toConstantDependency(
-					parser,
-					JSON.stringify(locales[singleLocale][stringKey] || stringKey),
-				)(callExpressionNode);
-
-				this.trackStringKeys?.delete(stringKey);
-			} else {
-				if (!module.buildInfo.localized) {
-					module.buildInfo.localized = {};
-				}
-
-				if (!module.buildInfo.localized[stringKey]) {
-					module.buildInfo.localized[stringKey] = this.localeNames.map(
-						locale => locales[locale][stringKey],
-					);
-				}
-
-				const placeholder = getPlaceholder(stringKey);
-				toConstantDependency(parser, JSON.stringify(placeholder))(callExpressionNode);
-			}
+			const replacement = (
+				singleLocale
+					? this.getLocalizedString(callExpressionNode, stringKey, module, singleLocale)
+					: this.getMarkedFunctionPlaceholder(callExpressionNode, stringKey, module)
+			);
+			toConstantDependency(parser, replacement)(callExpressionNode);
 
 			return true;
 		};
@@ -195,9 +209,62 @@ class LocalizeAssetsPlugin {
 			onFunctionCall(
 				normalModuleFactory,
 				functionName,
-				(parser, expr) => handler(functionName, parser, expr),
+				(parser, node) => handler(parser, node, functionName),
 			);
 		}
+	}
+
+	/**
+	 * For Single locale
+	 *
+	 * Insert the localized string during Webpack JS parsing.
+	 * No need to use placeholder for string replacement on asset.
+	 */
+	private getLocalizedString(
+		callNode: SimpleCallExpression,
+		key: string,
+		module: Module,
+		singleLocale: string,
+	): string {
+		this.trackStringKeys?.delete(key);
+
+		return callLocalizeCompiler(
+			this.localizeCompiler,
+			{
+				callNode,
+				resolveKey: (stringKey = key) => this.locales[singleLocale][stringKey],
+				emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
+				emitError: message => reportModuleError(module, new WebpackError(message)),
+			},
+			singleLocale,
+		);
+	}
+
+	/**
+	 * For Multiple locales
+	 *
+	 * 1. Replace the `__(...)` call with a placeholder -> `asdf(...) + asdf`
+	 * 2. After the asset is generated & minified, search and replace the
+	 * placeholder with calls to localizeCompiler
+	 * 3. Repeat for each locale
+	 */
+	private getMarkedFunctionPlaceholder(
+		callNode: SimpleCallExpression,
+		key: string,
+		module: Module,
+	): string {
+		// Track used keys for hash
+		if (!module.buildInfo.localized) {
+			module.buildInfo.localized = {};
+		}
+
+		if (!module.buildInfo.localized[key]) {
+			module.buildInfo.localized[key] = this.localeNames.map(
+				locale => this.locales[locale][key],
+			);
+		}
+
+		return markLocalizeFunction(callNode);
 	}
 }
 

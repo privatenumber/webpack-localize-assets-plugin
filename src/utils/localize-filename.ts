@@ -1,6 +1,5 @@
 import assert from 'assert';
 import {
-	Compilation,
 	LocaleName,
 	WP5,
 } from '../types';
