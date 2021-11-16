@@ -1,5 +1,5 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
-import type { Identifier, SimpleCallExpression } from 'estree';
+import type { SimpleCallExpression } from 'estree';
 import {
 	Options,
 	validateOptions,
@@ -56,7 +56,9 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 		this.options = options;
 
-		const functionNames = this.options.functionNames ?? [this.options.functionName ?? '__'];
+		const functionNames = typeof this.options.localizeCompiler === 'object'
+			? Object.keys(this.options.localizeCompiler)
+			: [this.options.functionName ?? '__'];
 		this.functionNames = functionNames;
 
 		this.localeNames = Object.keys(options.locales);

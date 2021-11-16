@@ -98,12 +98,12 @@ Or:
 }
 ```
 
-#### functionNames
-Type: `string[]`
+#### functionName
+Type: `string`
 
-Default: `['__']`
+Default: `__`
 
-An array of function names to detect localization string keys.
+The function name to use to detect localization string keys.
 
 ```js
 const message = __('helloWorld'); // => 'Hello world!'
@@ -137,6 +137,8 @@ Type:
 ) => string
 ```
 
+- or an object whose keys are strings and whose values are functions with the above type.
+
 Default:
 ```ts
 function (localizerArguments) {
@@ -147,6 +149,8 @@ function (localizerArguments) {
 ```
 
 A function to generate a JS string to replace the `__()` call with. It gets called for each localize function call (eg. `__(...)`) for each locale.
+
+If the `localizeCompiler` is an object, then each of its keys will be used as the `functionName`. This allows you to have multiple localization functions, with separate compilation logic for each of them. It's an error to use both `functionName` and the object syntax for `localizeCompiler`.
 
 #### localizerArguments
 An array of strings containing JavaScript expressions. The expressions are stringified arguments of the original call. So `localizerArguments[0]` will be a JavaScript expression containing the translation key.

@@ -79,7 +79,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			}).rejects.toThrow(/locales must contain at least one locale/);
 		});
 
-		test('empty functionNames', async () => {
+		test('empty object for localizeCompiler', async () => {
 			await expect(async () => {
 				await build(
 					{},
@@ -87,8 +87,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesSingle,
-								// this is a type error in TS. Trying to emulate a JS mistake
-								functionNames: [] as any,
+								localizeCompiler: {},
 							}),
 						);
 					},
@@ -96,7 +95,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			}).rejects.toThrow(/empty/);
 		});
 
-		test('functionName and functionNames together', async () => {
+		test('functionName and object for localizeCompiler together', async () => {
 			await expect(async () => {
 				await build(
 					{},
@@ -105,12 +104,14 @@ describe(`Webpack ${webpack.version}`, () => {
 							new WebpackLocalizeAssetsPlugin({
 								functionName: 'bar',
 								locales: localesSingle,
-								functionNames: ['foo'],
+								localizeCompiler: {
+									foo() { return ''; },
+								},
 							}),
 						);
 					},
 				);
-			}).rejects.toThrow(/both/);
+			}).rejects.toThrow(/also/);
 		});
 
 		test('can use string [locale] in source', async () => {
@@ -532,34 +533,6 @@ describe(`Webpack ${webpack.version}`, () => {
 			// Assert that asset is minified
 			expect(built.fs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
 			expect(built.fs.readFileSync('/dist/index.ja.js').toString()).not.toMatch(/\s{2,}/);
-		});
-
-		test('overriding functionNames', async () => {
-			const buildStats = await build(
-				{
-					'/src/index.js': 'export default [_f("hello-key"), _g("hello-key")]',
-				},
-				(config) => {
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesSingle,
-							functionNames: ['_f', '_g'],
-						}),
-					);
-				},
-			);
-
-			const { assets } = buildStats.compilation;
-			expect(Object.keys(assets).length).toBe(1);
-
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
-			expect(enBuild[0]).toBe(localesSingle.en['hello-key']);
-			expect(enBuild[1]).toBe(localesSingle.en['hello-key']);
 		});
 
 		test('handle CSS', async () => {
@@ -1120,6 +1093,34 @@ describe(`Webpack ${webpack.version}`, () => {
 				["'hello-key'", '{a}', 'es', 'Hola', '__'],
 				["'hello-key'", '{a}', 'ja', 'こんにちは', '__'],
 			]);
+		});
+
+		test('multiple functions', async () => {
+			const built = await build(
+				{
+					'/src/index.js': 'export default [_f("hello-key"), _g("hello-key")]',
+				},
+				(config) => {
+					configureWebpack(config);
+
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+							localizeCompiler: {
+								_f([key]) { return JSON.stringify(`_f:${this.resolveKey(JSON.parse(key))}`); },
+								_g([key]) { return JSON.stringify(`_g:${this.resolveKey(JSON.parse(key))}`); },
+							},
+						}),
+					);
+				},
+			);
+
+			const { assets } = built.stats.compilation;
+			expect(Object.keys(assets).length).toBe(1);
+
+			const enBuild = built.require('/dist/index.en.js');
+			expect(enBuild[0]).toBe(`_f:${localesSingle.en['hello-key']}`);
+			expect(enBuild[1]).toBe(`_g:${localesSingle.en['hello-key']}`);
 		});
 	});
 

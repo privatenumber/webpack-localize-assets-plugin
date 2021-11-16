@@ -16,7 +16,6 @@ export type UnprocessedLocalesMap<LocalizedData> = Record<
 export type Options<LocalizedData = string> = {
 	locales: UnprocessedLocalesMap<LocalizedData>;
 	functionName?: string;
-	functionNames?: string[];
 	throwOnMissing?: boolean;
 	sourceMapForLocales?: string[];
 	warnOnUnusedString?: boolean;
@@ -34,7 +33,12 @@ export interface LocalizeCompilerContext<LocalizedData = string> {
 	emitError(message: string): void;
 }
 
-export type LocalizeCompiler<LocalizedData = string> = (
+/** either a function or an object of functions */
+export type LocalizeCompiler<LocalizedData = string> =
+	LocalizeCompilerFunction<LocalizedData>
+	| Record<string, LocalizeCompilerFunction<LocalizedData>>
+
+export type LocalizeCompilerFunction<LocalizedData = string> = (
 	this: LocalizeCompilerContext<LocalizedData>,
 	functionArgments: string[],
 	localeName: string,
@@ -54,11 +58,13 @@ export function validateOptions<LocalizedData>(options: Options<LocalizedData>):
 		&& options.sourceMapForLocales.some(locale => !hasOwnProp(options.locales, locale))) {
 		throw new Error('sourceMapForLocales must contain valid locales');
 	}
-	if (options.functionNames && options.functionNames.length === 0) {
-		throw new Error('FunctionNames can\'t be empty');
-	}
-	if (options.functionName && options.functionNames) {
-		throw new Error('Can\'t specify both functionName and functionNames');
+	if (typeof options.localizeCompiler === 'object') {
+		if (Object.keys(options.localizeCompiler).length === 0) {
+			throw new Error('localizeCompiler can\'t be an empty object');
+		}
+		if (options.functionName) {
+			throw new Error('Can\'t use an object for localizeCompiler and also specify functionName');
+		}
 	}
 }
 
