@@ -1,3 +1,4 @@
+import type { Identifier } from 'estree';
 import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
@@ -989,6 +990,7 @@ describe(`Webpack ${webpack.version}`, () => {
 							locales: localesSingle,
 							localizeCompiler(callArguments, locale) {
 								expect(locale).toBe('en');
+								expect((this.callNode.callee as Identifier).name).toBe('__');
 								expect(this.resolveKey()).toBe('Hello');
 								return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
 							},
@@ -1021,7 +1023,12 @@ describe(`Webpack ${webpack.version}`, () => {
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 							localizeCompiler(callArguments, localeName) {
-								compilerCalls.push([...callArguments, localeName, this.resolveKey()]);
+								compilerCalls.push([
+									...callArguments,
+									localeName,
+									this.resolveKey(),
+									(this.callNode.callee as Identifier).name,
+								]);
 								return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
 							},
 						}),
@@ -1047,9 +1054,9 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(statsOutput).toMatch(/index\.ja\.js/);
 
 			expect(compilerCalls).toEqual([
-				["'hello-key'", '{a}', 'en', 'Hello'],
-				["'hello-key'", '{a}', 'es', 'Hola'],
-				["'hello-key'", '{a}', 'ja', 'こんにちは'],
+				["'hello-key'", '{a}', 'en', 'Hello', '__'],
+				["'hello-key'", '{a}', 'es', 'Hola', '__'],
+				["'hello-key'", '{a}', 'ja', 'こんにちは', '__'],
 			]);
 		});
 	});
