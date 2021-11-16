@@ -1,13 +1,11 @@
-import webpack, { Configuration } from 'webpack';
+import type { Identifier } from 'estree';
+import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
-import { createFsRequire } from 'fs-require';
+import { build, watch, DefaultWebpackConfig } from 'webpack-test-utils';
 import WebpackLocalizeAssetsPlugin from '../src/index';
 import { Compiler, WP5 } from '../src/types';
-import {
-	build, watch, assertFsWithReadFileSync,
-} from './utils';
 
 const localesEmpty = {};
 const localesSingle = {
@@ -30,6 +28,10 @@ const localesMulti = {
 	},
 };
 
+function configureWebpack(config: DefaultWebpackConfig) {
+	config.output.filename = '[name].[locale].js';
+}
+
 describe(`Webpack ${webpack.version}`, () => {
 	const isWebpack5 = webpack.version?.startsWith('5.');
 
@@ -39,13 +41,13 @@ describe(`Webpack ${webpack.version}`, () => {
 				await build(
 					{},
 					(config) => {
-						config.plugins!.push(
+						config.plugins.push(
 							// @ts-expect-error testing no option
 							new WebpackLocalizeAssetsPlugin(),
 						);
 					},
 				);
-			}).rejects.toThrow(/required/);
+			}).rejects.toThrow(/Options are required/);
 		});
 
 		test('no option.locales', async () => {
@@ -53,13 +55,13 @@ describe(`Webpack ${webpack.version}`, () => {
 				await build(
 					{},
 					(config) => {
-						config.plugins!.push(
+						config.plugins.push(
 							// @ts-expect-error testing no option.locales
 							new WebpackLocalizeAssetsPlugin({}),
 						);
 					},
 				);
-			}).rejects.toThrow(/required/);
+			}).rejects.toThrow(/Locales are required/);
 		});
 
 		test('no locales', async () => {
@@ -67,7 +69,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				await build(
 					{},
 					(config) => {
-						config.plugins!.push(
+						config.plugins.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesEmpty,
 							}),
@@ -112,12 +114,14 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('can use string [locale] in source', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default "[locale]";',
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -125,24 +129,18 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
+			const enBuild = built.require('/dist/index.en.js');
 			expect(enBuild).toBe('[locale]');
 		});
 
 		test('can use string [locale] in name multiple times', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default "[locale]";',
 				},
 				(config) => {
-					config.output!.filename = '[name].[locale].[locale].js';
-					config.plugins!.push(
+					config.output.filename = '[name].[locale].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -150,12 +148,12 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 			expect(assets).toHaveProperty(['index.en.en.js']);
 		});
 
 		test('warn on confusing function usage', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': `
 						export default [
@@ -165,7 +163,9 @@ describe(`Webpack ${webpack.version}`, () => {
 					`,
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -173,10 +173,10 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			expect(buildStats.hasWarnings()).toBe(true);
-			expect(buildStats.compilation.warnings.length).toBe(2);
-			expect(buildStats.compilation.warnings[0].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:3:7');
-			expect(buildStats.compilation.warnings[1].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:4:7');
+			expect(built.stats.hasWarnings()).toBe(true);
+			expect(built.stats.compilation.warnings.length).toBe(2);
+			expect(built.stats.compilation.warnings[0].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:3:7');
+			expect(built.stats.compilation.warnings[1].message).toMatch('Ignoring confusing usage of localization function "__" in /src/index.js:4:7');
 		});
 
 		test('sourceMapForLocales - invalid locale', async () => {
@@ -186,7 +186,9 @@ describe(`Webpack ${webpack.version}`, () => {
 						'/src/index.js': '',
 					},
 					(config) => {
-						config.plugins!.push(
+						configureWebpack(config);
+
+						config.plugins.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesSingle,
 								sourceMapForLocales: ['non-existent-locale'],
@@ -199,12 +201,14 @@ describe(`Webpack ${webpack.version}`, () => {
 
 		describe('missing key', () => {
 			test('warning - single locale', async () => {
-				const buildStats = await build(
+				const built = await build(
 					{
 						'/src/index.js': 'export default __("bad key");',
 					},
 					(config) => {
-						config.plugins!.push(
+						configureWebpack(config);
+
+						config.plugins.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesSingle,
 							}),
@@ -212,25 +216,22 @@ describe(`Webpack ${webpack.version}`, () => {
 					},
 				);
 
-				const mfs = buildStats.compilation.compiler.outputFileSystem;
-				assertFsWithReadFileSync(mfs);
+				expect(built.require('/dist/index.en.js')).toBe('bad key');
 
-				const mRequire = createFsRequire(mfs);
-
-				expect(mRequire('/dist/index.en.js')).toBe('bad key');
-
-				expect(buildStats.hasWarnings()).toBe(true);
-				expect(buildStats.compilation.warnings.length).toBe(1);
-				expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en');
+				expect(built.stats.hasWarnings()).toBe(true);
+				expect(built.stats.compilation.warnings.length).toBe(1);
+				expect(built.stats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en');
 			});
 
 			test('warning - multi locale', async () => {
-				const buildStats = await build(
+				const built = await build(
 					{
 						'/src/index.js': 'export default __("bad key");',
 					},
 					(config) => {
-						config.plugins!.push(
+						configureWebpack(config);
+
+						config.plugins.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesMulti,
 							}),
@@ -238,34 +239,33 @@ describe(`Webpack ${webpack.version}`, () => {
 					},
 				);
 
-				const mfs = buildStats.compilation.compiler.outputFileSystem;
-				assertFsWithReadFileSync(mfs);
+				expect(built.require('/dist/index.en.js')).toBe('bad key');
 
-				const mRequire = createFsRequire(mfs);
-
-				expect(mRequire('/dist/index.en.js')).toBe('bad key');
-
-				expect(buildStats.hasWarnings()).toBe(true);
-				expect(buildStats.compilation.warnings.length).toBe(1);
-				expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en, es, ja');
+				const { warnings } = built.stats.compilation;
+				expect(warnings.length).toBe(1);
+				expect(warnings[0].message).toMatch('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en, es, ja');
 			});
 
 			test('throwOnMissing', async () => {
-				await expect(async () => {
-					await build(
-						{
-							'/src/index.js': 'export default __("bad key");',
-						},
-						(config) => {
-							config.plugins!.push(
-								new WebpackLocalizeAssetsPlugin({
-									locales: localesMulti,
-									throwOnMissing: true,
-								}),
-							);
-						},
-					);
-				}).rejects.toThrow('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en, es, ja');
+				const built = await build(
+					{
+						'/src/index.js': 'export default __("bad key");',
+					},
+					(config) => {
+						configureWebpack(config);
+
+						config.plugins.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesMulti,
+								throwOnMissing: true,
+							}),
+						);
+					},
+				);
+
+				const { errors } = built.stats.compilation;
+				expect(errors.length).toBe(1);
+				expect(errors[0].message).toMatch('Missing localization for key "bad key" used in /src/index.js:1:15 from locales: en, es, ja');
 			});
 
 			test('missing [locale] from filename', async () => {
@@ -275,8 +275,8 @@ describe(`Webpack ${webpack.version}`, () => {
 							'/src/index.js': '',
 						},
 						(config) => {
-							config.output!.filename = '[name].js';
-							config.plugins!.push(
+							config.output.filename = '[name].js';
+							config.plugins.push(
 								new WebpackLocalizeAssetsPlugin({
 									locales: localesSingle,
 								}),
@@ -293,8 +293,10 @@ describe(`Webpack ${webpack.version}`, () => {
 							'/src/index.js': '',
 						},
 						(config) => {
-							config.output!.chunkFilename = '[name].js';
-							config.plugins!.push(
+							configureWebpack(config);
+
+							config.output.chunkFilename = '[name].js';
+							config.plugins.push(
 								new WebpackLocalizeAssetsPlugin({
 									locales: localesSingle,
 								}),
@@ -305,77 +307,89 @@ describe(`Webpack ${webpack.version}`, () => {
 			});
 
 			test('watch - should re-warn on compile', async () => {
-				const buildStats = await watch(
+				const watching = watch(
 					{
 						'/src/index.js': 'export default __("missing-key-1");',
 					},
 					(config) => {
-						config.plugins!.push(
+						configureWebpack(config);
+
+						config.plugins.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesSingle,
 							}),
 						);
 					},
-					[
-						(mfs, stats) => {
-							expect(stats.compilation.warnings.length).toBe(1);
-							expect(stats.compilation.warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:15 from locales: en');
-
-							assertFsWithReadFileSync(mfs);
-							mfs.writeFileSync('/src/index.js', 'export default [__("missing-key-1"), __("missing-key-2")];');
-						},
-						(mfs, stats) => {
-							expect(stats.compilation.warnings.length).toBe(2);
-							expect(stats.compilation.warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:16 from locales: en');
-							expect(stats.compilation.warnings[1].message).toMatch('Missing localization for key "missing-key-2" used in /src/index.js:1:37 from locales: en');
-
-							assertFsWithReadFileSync(mfs);
-							mfs.writeFileSync('/src/index.js', 'export default __("missing-key-1");');
-						},
-					],
 				);
 
-				expect(buildStats.compilation.warnings.length).toBe(1);
-				expect(buildStats.compilation.warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:15 from locales: en');
+				let stats = await watching.build(true);
+
+				let { warnings } = stats.compilation;
+				expect(warnings.length).toBe(1);
+				expect(warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:15 from locales: en');
+
+				watching.fs.writeFileSync('/src/index.js', 'export default [__("missing-key-1"), __("missing-key-2")];');
+
+				stats = await watching.build(true);
+				warnings = stats.compilation.warnings;
+
+				expect(warnings.length).toBe(2);
+				expect(warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:16 from locales: en');
+				expect(warnings[1].message).toMatch('Missing localization for key "missing-key-2" used in /src/index.js:1:37 from locales: en');
+
+				watching.fs.writeFileSync('/src/index.js', 'export default __("missing-key-1");');
+
+				stats = await watching.build(true);
+				warnings = stats.compilation.warnings;
+
+				expect(warnings.length).toBe(1);
+				expect(warnings[0].message).toMatch('Missing localization for key "missing-key-1" used in /src/index.js:1:15 from locales: en');
+
+				await watching.close();
 			});
 
 			test('watch - unused', async () => {
-				await watch(
+				const watching = watch(
 					{
 						'/src/index.js': 'export default true;',
 					},
 					(config) => {
-						config.plugins!.push(
+						configureWebpack(config);
+
+						config.plugins.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesMulti,
 								warnOnUnusedString: true,
 							}),
 						);
 					},
-					[
-						(mfs, stats) => {
-							expect(stats.compilation.warnings.length).toBe(2);
-							expect(stats.compilation.warnings[0].message).toMatch('Unused string key "hello-key"');
-							expect(stats.compilation.warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
-
-							assertFsWithReadFileSync(mfs);
-							mfs.writeFileSync('/src/index.js', 'export default [__("hello-key"), __("stringWithQuotes")];');
-						},
-						(mfs, stats) => {
-							expect(stats.compilation.warnings.length).toBe(0);
-						},
-					],
 				);
+
+				let stats = await watching.build(true);
+
+				const { warnings } = stats.compilation;
+				expect(warnings.length).toBe(2);
+				expect(warnings[0].message).toMatch('Unused string key "hello-key"');
+				expect(warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
+
+				watching.fs.writeFileSync('/src/index.js', 'export default [__("hello-key"), __("stringWithQuotes")];');
+
+				stats = await watching.build(true);
+				expect(stats.compilation.warnings.length).toBe(0);
+
+				await watching.close();
 			});
 		});
 
 		test('default localizeCompiler to error on misuse', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default __("hello-key", "2nd arg not allowed");',
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -383,26 +397,24 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
+			expect(built.require('/dist/index.en.js')).toBe('hello-key');
 
-			const mRequire = createFsRequire(mfs);
-			expect(mRequire('/dist/index.en.js')).toBe('hello-key');
-
-			expect(buildStats.hasWarnings()).toBe(true);
-			expect(buildStats.compilation.warnings.length).toBe(1);
-			expect(buildStats.compilation.warnings[0].message).toMatch('Ignoring confusing usage of localization function: __("hello-key", "2nd arg not allowed")');
+			const { warnings } = built.stats.compilation;
+			expect(warnings.length).toBe(1);
+			expect(warnings[0].message).toMatch('Ignoring confusing usage of localization function: __("hello-key", "2nd arg not allowed")');
 		});
 	});
 
 	describe('passing', () => {
 		test('single locale', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default __("hello-key");',
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -410,28 +422,25 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 			expect(Object.keys(assets).length).toBe(1);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
+			const enBuild = built.require('/dist/index.en.js');
 			expect(enBuild).toBe(localesMulti.en['hello-key']);
 
-			const statsOutput = buildStats.toString();
+			const statsOutput = built.stats.toString();
 			expect(statsOutput).toMatch(/index\.en\.js/);
 		});
 
 		test('multi locale', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default __("hello-key");',
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -439,38 +448,35 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 			expect(Object.keys(assets).length).toBe(3);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
+			const enBuild = built.require('/dist/index.en.js');
 			expect(enBuild).toBe(localesMulti.en['hello-key']);
 
-			const esBuild = mRequire('/dist/index.es.js');
+			const esBuild = built.require('/dist/index.es.js');
 			expect(esBuild).toBe(localesMulti.es['hello-key']);
 
-			const jaBuild = mRequire('/dist/index.ja.js');
+			const jaBuild = built.require('/dist/index.ja.js');
 			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
 
-			const statsOutput = buildStats.toString();
+			const statsOutput = built.stats.toString();
 			expect(statsOutput).toMatch(/index\.en\.js/);
 			expect(statsOutput).toMatch(/index\.es\.js/);
 			expect(statsOutput).toMatch(/index\.ja\.js/);
 		});
 
 		test('localize assets with chunks', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default import("./async-import").then(module => module.default);',
 					'/src/async-import.js': 'export default import("./async-import2").then(module => module.default);',
 					'/src/async-import2.js': 'export default __("hello-key");',
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -478,26 +484,21 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 			expect(Object.keys(assets).length).toBe(9);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = await mRequire('/dist/index.en.js');
+			const enBuild = await built.require('/dist/index.en.js');
 			expect(enBuild).toBe(localesMulti.en['hello-key']);
 
-			const esBuild = await mRequire('/dist/index.es.js');
+			const esBuild = await built.require('/dist/index.es.js');
 			expect(esBuild).toBe(localesMulti.es['hello-key']);
 
-			const jaBuild = await mRequire('/dist/index.ja.js');
+			const jaBuild = await built.require('/dist/index.ja.js');
 			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
 		});
 
 		test('works with minification and different contexts for __() usages', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': `
 						export default {
@@ -510,8 +511,10 @@ describe(`Webpack ${webpack.version}`, () => {
 					`,
 				},
 				(config) => {
-					config.optimization!.minimize = true;
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.optimization.minimize = true;
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -519,12 +522,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = await mRequire('/dist/index.en.js');
+			const enBuild = await built.require('/dist/index.en.js');
 			expect(enBuild.test1).toBe(`${localesMulti.en['hello-key']} world and "quotes"`);
 			expect(enBuild.test2).toBe(localesMulti.en['hello-key'].length);
 			expect(enBuild.test3).toEqual([localesMulti.en['hello-key'], localesMulti.en.stringWithQuotes]);
@@ -532,8 +530,8 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(enBuild.test5).toBe('hello');
 
 			// Assert that asset is minified
-			expect(mfs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
-			expect(mfs.readFileSync('/dist/index.ja.js').toString()).not.toMatch(/\s{2,}/);
+			expect(built.fs.readFileSync('/dist/index.en.js').toString()).not.toMatch(/\s{2,}/);
+			expect(built.fs.readFileSync('/dist/index.ja.js').toString()).not.toMatch(/\s{2,}/);
 		});
 
 		test('overriding functionNames', async () => {
@@ -565,13 +563,15 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('handle CSS', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'import "./style.css";',
 					'/src/style.css': 'body { color: red; }',
 				},
 				(config) => {
-					config.module!.rules.push({
+					configureWebpack(config);
+
+					config.module.rules.push({
 						test: /\.css$/,
 						use: [
 							MiniCssExtractPlugin.loader,
@@ -579,7 +579,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						],
 					});
 
-					config.plugins!.push(
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -590,20 +590,22 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 
 			expect(assets).toHaveProperty(['index.en.css']);
 			expect(assets).toHaveProperty(['index.ja.css']);
 		});
 
 		test('handle CSS without localization', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'import "./style.css";',
 					'/src/style.css': 'body { color: red; }',
 				},
 				(config) => {
-					config.module!.rules.push({
+					configureWebpack(config);
+
+					config.module.rules.push({
 						test: /\.css$/,
 						use: [
 							MiniCssExtractPlugin.loader,
@@ -611,7 +613,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						],
 					});
 
-					config.plugins!.push(
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -620,7 +622,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 
 			expect(assets).toHaveProperty(['index.css']);
 		});
@@ -661,7 +663,9 @@ describe(`Webpack ${webpack.version}`, () => {
 					'/src/index.js': 'export default __("hello-key");',
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -672,13 +676,15 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('emits source-maps', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default __("hello-key");',
 				},
 				(config) => {
+					configureWebpack(config);
+
 					config.devtool = 'source-map';
-					config.plugins!.push(
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -686,7 +692,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 
 			expect(assets).toHaveProperty(['index.en.js.map']);
 			expect(assets).toHaveProperty(['index.es.js.map']);
@@ -695,13 +701,15 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 
 		test('only emit source-maps for specified locales', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default __("hello-key");',
 				},
 				(config) => {
+					configureWebpack(config);
+
 					config.devtool = 'source-map';
-					config.plugins!.push(
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 							sourceMapForLocales: ['en'],
@@ -710,19 +718,21 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 			expect(Object.keys(assets).length).toBe(4);
 			expect(assets).toHaveProperty(['index.en.js.map']);
 			expect(assets).not.toHaveProperty(['index.ja.js.map']);
 		});
 
 		test('warn on warnOnUnusedString', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default true',
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 							warnOnUnusedString: true,
@@ -731,24 +741,26 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			expect(buildStats.hasWarnings()).toBe(true);
-			expect(buildStats.compilation.warnings.length).toBe(2);
-			expect(buildStats.compilation.warnings[0].message).toMatch('Unused string key "hello-key"');
-			expect(buildStats.compilation.warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
+			expect(built.stats.hasWarnings()).toBe(true);
+			expect(built.stats.compilation.warnings.length).toBe(2);
+			expect(built.stats.compilation.warnings[0].message).toMatch('Unused string key "hello-key"');
+			expect(built.stats.compilation.warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
 		});
 
 		test('works with WebpackManifestPlugin', async () => {
 			const hasLocale = /\.(?:en|es|ja)\.\w{2}(?:\.map)?$/;
 			const localeNames = Object.keys(localesMulti);
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'import "./style.css";',
 					'/src/style.css': 'body { color: red; }',
 				},
 				(config) => {
+					configureWebpack(config);
+
 					config.devtool = 'source-map';
 
-					config.module!.rules.push({
+					config.module.rules.push({
 						test: /\.css$/,
 						use: [
 							MiniCssExtractPlugin.loader,
@@ -756,7 +768,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						],
 					});
 
-					config.plugins!.push(
+					config.plugins.push(
 						new MiniCssExtractPlugin() as any,
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
@@ -770,24 +782,19 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-			const manifestEn = mRequire('/dist/manifest.en.json');
-
+			const manifestEn = built.require('/dist/manifest.en.json');
 			expect(manifestEn).toMatchObject({
 				'index.css': 'index.css',
 				'index.js': 'index.en.js',
 			});
 
-			const manifestEs = mRequire('/dist/manifest.es.json');
+			const manifestEs = built.require('/dist/manifest.es.json');
 			expect(manifestEs).toMatchObject({
 				'index.css': 'index.css',
 				'index.js': 'index.es.js',
 			});
 
-			const manifestJa = mRequire('/dist/manifest.ja.json');
+			const manifestJa = built.require('/dist/manifest.ja.json');
 			expect(manifestJa).toMatchObject({
 				'index.css': 'index.css',
 				'index.js': 'index.ja.js',
@@ -799,42 +806,35 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 			const cacheDirectory = tempy.directory();
-			const configure = (config: Configuration) => {
+			const configure = (config: DefaultWebpackConfig) => {
+				configureWebpack(config);
+
 				config.cache = {
 					type: 'filesystem',
 					cacheDirectory,
 				};
 
-				config.plugins!.push(
+				config.plugins.push(
 					new WebpackLocalizeAssetsPlugin({
 						locales: localesMulti,
 					}),
 				);
 			};
 
-			const buildAStats = await build(
+			const builtA = await build(
 				volume,
 				configure,
 			);
 
-			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsA);
-
-			const mRequireA = createFsRequire(mfsA);
-			const indexEnA = mRequireA('/dist/index.en.js');
+			const indexEnA = builtA.require('/dist/index.en.js');
 			expect(indexEnA).toBe('Hello');
 
-			const buildBStats = await build(
+			const builtB = await build(
 				volume,
 				configure,
 			);
 
-			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsB);
-
-			const mRequireB = createFsRequire(mfsB);
-			const indexEnB = mRequireB('/dist/index.en.js');
-
+			const indexEnB = builtB.require('/dist/index.en.js');
 			expect(indexEnB).toBe(indexEnA);
 		});
 
@@ -842,12 +842,15 @@ describe(`Webpack ${webpack.version}`, () => {
 			const volume = {
 				'/src/index.js': 'export default __("hello-key");',
 			};
-			const configure = (config: Configuration) => {
+
+			const configure = (config: DefaultWebpackConfig) => {
+				configureWebpack(config);
+
 				config.cache = {
 					type: 'filesystem',
 				};
 
-				config.plugins!.push(
+				config.plugins.push(
 					new WebpackLocalizeAssetsPlugin({
 						locales: localesMulti,
 						warnOnUnusedString: true,
@@ -855,23 +858,23 @@ describe(`Webpack ${webpack.version}`, () => {
 				);
 			};
 
-			const buildAStats = await build(
+			const builtA = await build(
 				volume,
 				configure,
 			);
 
-			expect(buildAStats.hasWarnings()).toBe(true);
-			expect(buildAStats.compilation.warnings.length).toBe(1);
-			expect(buildAStats.compilation.warnings[0].message).toMatch('Unused string key "stringWithQuotes"');
+			const { warnings: warningsA } = builtA.stats.compilation;
+			expect(warningsA.length).toBe(1);
+			expect(warningsA[0].message).toMatch('Unused string key "stringWithQuotes"');
 
-			const buildBStats = await build(
+			const builtB = await build(
 				volume,
 				configure,
 			);
 
-			expect(buildBStats.hasWarnings()).toBe(true);
-			expect(buildBStats.compilation.warnings.length).toBe(1);
-			expect(buildBStats.compilation.warnings[0].message).toMatch('Unused string key "stringWithQuotes"');
+			const { warnings: warningsB } = builtB.stats.compilation;
+			expect(warningsB.length).toBe(1);
+			expect(warningsB[0].message).toMatch('Unused string key "stringWithQuotes"');
 		});
 
 		test('dynamically load relative locale json path', async () => {
@@ -879,13 +882,15 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			process.chdir('/');
 
-			await watch(
+			const watching = watch(
 				{
 					'/src/index.js': 'export default __("hello-key") + " " + __("world-key");',
 					'/src/locales/en.json': JSON.stringify(localesSingle.en),
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								en: './src/locales/en.json',
@@ -893,59 +898,59 @@ describe(`Webpack ${webpack.version}`, () => {
 						}),
 					);
 				},
-				[
-					(mfs, stats) => {
-						expect(stats.compilation.warnings.length).toBe(1);
-						expect(stats.compilation.warnings[0].message).toMatch('Missing localization for key "world-key" used in /src/index.js:1:39 from locales: en');
-
-						assertFsWithReadFileSync(mfs);
-
-						const mRequire = createFsRequire(mfs);
-						const enBuild = mRequire('/dist/index.en.js');
-						expect(enBuild).toBe('Hello world-key');
-
-						mfs.writeFileSync('/src/locales/en.json', JSON.stringify({
-							...localesSingle.en,
-							'world-key': 'World',
-						}));
-					},
-					(mfs, stats) => {
-						expect(stats.hasWarnings()).toBe(false);
-
-						assertFsWithReadFileSync(mfs);
-
-						const mRequire = createFsRequire(mfs);
-						const enBuild = mRequire('/dist/index.en.js');
-						expect(enBuild).toBe('Hello World');
-
-						mfs.writeFileSync('/src/locales/en.json', JSON.stringify({
-							'world-key': 'World',
-						}));
-					},
-					(mfs, stats) => {
-						expect(stats.compilation.warnings.length).toBe(1);
-						expect(stats.compilation.warnings[0].message).toMatch('Missing localization for key "hello-key" used in /src/index.js:1:15 from locales: en');
-
-						assertFsWithReadFileSync(mfs);
-
-						const mRequire = createFsRequire(mfs);
-						const enBuild = mRequire('/dist/index.en.js');
-						expect(enBuild).toBe('hello-key World');
-					},
-				],
 			);
+
+			let stats = await watching.build(true);
+
+			let { warnings } = stats.compilation;
+			expect(warnings.length).toBe(1);
+			expect(warnings[0].message).toMatch('Missing localization for key "world-key" used in /src/index.js:1:39 from locales: en');
+
+			let enBuild = watching.require('/dist/index.en.js');
+			expect(enBuild).toBe('Hello world-key');
+
+			watching.fs.writeFileSync('/src/locales/en.json', JSON.stringify({
+				...localesSingle.en,
+				'world-key': 'World',
+			}));
+
+			stats = await watching.build(true);
+
+			expect(stats.hasWarnings()).toBe(false);
+
+			delete watching.require.cache['/dist/index.en.js'];
+			enBuild = watching.require('/dist/index.en.js');
+			expect(enBuild).toBe('Hello World');
+
+			watching.fs.writeFileSync('/src/locales/en.json', JSON.stringify({
+				'world-key': 'World',
+			}));
+
+			stats = await watching.build(true);
+			warnings = stats.compilation.warnings;
+
+			expect(warnings.length).toBe(1);
+			expect(warnings[0].message).toMatch('Missing localization for key "hello-key" used in /src/index.js:1:15 from locales: en');
+
+			delete watching.require.cache['/dist/index.en.js'];
+			enBuild = watching.require('/dist/index.en.js');
+			expect(enBuild).toBe('hello-key World');
+
+			await watching.close();
 
 			process.chdir(originalCwd);
 		});
 
 		test('warnOnUnusedString to work with json path', async () => {
-			const buildStatsMissing = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default true;',
 					'/src/locales/en.json': JSON.stringify(localesSingle.en),
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								en: '/src/locales/en.json',
@@ -956,8 +961,9 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			expect(buildStatsMissing.compilation.warnings.length).toBe(1);
-			expect(buildStatsMissing.compilation.warnings[0].message).toMatch('Unused string key "hello-key"');
+			const { warnings } = built.stats.compilation;
+			expect(warnings.length).toBe(1);
+			expect(warnings[0].message).toMatch('Unused string key "hello-key"');
 
 			const buildStatsUsed = await build(
 				{
@@ -965,7 +971,9 @@ describe(`Webpack ${webpack.version}`, () => {
 					'/src/locales/en.json': JSON.stringify(localesSingle.en),
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								en: '/src/locales/en.json',
@@ -976,25 +984,27 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			expect(buildStatsUsed.compilation.warnings.length).toBe(0);
+			expect(buildStatsUsed.stats.compilation.warnings.length).toBe(0);
 		});
 
 		test('function filename with Wepback placeholder', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': 'export default __("hello-key");',
 				},
 				(config) => {
 					if (isWebpack5) {
-						config!.output!.filename = () => '[name].fn.[locale].[fullhash].js';
 						// @ts-expect-error Webpack 5 config
-						config!.output!.chunkFilename = () => '[name].fn.[locale].[fullhash].js';
+						config.output.filename = () => '[name].fn.[locale].[fullhash].js';
+						// @ts-expect-error Webpack 5 config
+						config.output.chunkFilename = () => '[name].fn.[locale].[fullhash].js';
 					} else {
-						config!.output!.filename = () => '[name].fn.[locale].[hash].js';
-						config!.output!.chunkFilename = '[name].fn.[locale].[hash].js';
+						// @ts-expect-error Webpack 5 config
+						config.output.filename = () => '[name].fn.[locale].[hash].js';
+						config.output.chunkFilename = '[name].fn.[locale].[hash].js';
 					}
 
-					config.plugins!.push(
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -1002,25 +1012,21 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 			expect(Object.keys(assets).length).toBe(3);
 
-			const { hash } = buildStats;
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
+			const { hash } = built.stats;
 
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire(`/dist/index.fn.en.${hash}.js`);
+			const enBuild = built.require(`/dist/index.fn.en.${hash}.js`);
 			expect(enBuild).toBe(localesMulti.en['hello-key']);
 
-			const esBuild = mRequire(`/dist/index.fn.es.${hash}.js`);
+			const esBuild = built.require(`/dist/index.fn.es.${hash}.js`);
 			expect(esBuild).toBe(localesMulti.es['hello-key']);
 
-			const jaBuild = mRequire(`/dist/index.fn.ja.${hash}.js`);
+			const jaBuild = built.require(`/dist/index.fn.ja.${hash}.js`);
 			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
 
-			const statsOutput = buildStats.toString();
+			const statsOutput = built.stats.toString();
 			expect(statsOutput).toMatch(/index\.fn\.en\./);
 			expect(statsOutput).toMatch(/index\.fn\.es\./);
 			expect(statsOutput).toMatch(/index\.fn\.ja\./);
@@ -1029,7 +1035,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 	describe('localizeCompiler', () => {
 		test('single locale', async () => {
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': `
 					function compiled(x) {
@@ -1039,11 +1045,14 @@ describe(`Webpack ${webpack.version}`, () => {
 					`,
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 							localizeCompiler(callArguments, locale) {
 								expect(locale).toBe('en');
+								expect((this.callNode.callee as Identifier).name).toBe('__');
 								expect(this.resolveKey()).toBe('Hello');
 								return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
 							},
@@ -1052,18 +1061,13 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
+			const enBuild = built.require('/dist/index.en.js');
 			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
 		});
 
 		test('multi locale', async () => {
 			const compilerCalls: string[][] = [];
-			const buildStats = await build(
+			const built = await build(
 				{
 					'/src/index.js': `
 					function compiled(x) {
@@ -1075,11 +1079,18 @@ describe(`Webpack ${webpack.version}`, () => {
 					`,
 				},
 				(config) => {
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 							localizeCompiler(callArguments, localeName) {
-								compilerCalls.push([...callArguments, localeName, this.resolveKey()]);
+								compilerCalls.push([
+									...callArguments,
+									localeName,
+									this.resolveKey(),
+									(this.callNode.callee as Identifier).name,
+								]);
 								return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
 							},
 						}),
@@ -1087,32 +1098,27 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const { assets } = buildStats.compilation;
+			const { assets } = built.stats.compilation;
 			expect(Object.keys(assets).length).toBe(3);
 
-			const mfs = buildStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfs);
-
-			const mRequire = createFsRequire(mfs);
-
-			const enBuild = mRequire('/dist/index.en.js');
+			const enBuild = built.require('/dist/index.en.js');
 			expect(enBuild).toBe(`${localesMulti.en['hello-key']}-compiled`);
 
-			const esBuild = mRequire('/dist/index.es.js');
+			const esBuild = built.require('/dist/index.es.js');
 			expect(esBuild).toBe(`${localesMulti.es['hello-key']}-compiled`);
 
-			const jaBuild = mRequire('/dist/index.ja.js');
+			const jaBuild = built.require('/dist/index.ja.js');
 			expect(jaBuild).toBe(`${localesMulti.ja['hello-key']}-compiled`);
 
-			const statsOutput = buildStats.toString();
+			const statsOutput = built.stats.toString();
 			expect(statsOutput).toMatch(/index\.en\.js/);
 			expect(statsOutput).toMatch(/index\.es\.js/);
 			expect(statsOutput).toMatch(/index\.ja\.js/);
 
 			expect(compilerCalls).toEqual([
-				["'hello-key'", '{a}', 'en', 'Hello'],
-				["'hello-key'", '{a}', 'es', 'Hola'],
-				["'hello-key'", '{a}', 'ja', 'こんにちは'],
+				["'hello-key'", '{a}', 'en', 'Hello', '__'],
+				["'hello-key'", '{a}', 'es', 'Hola', '__'],
+				["'hello-key'", '{a}', 'ja', 'こんにちは', '__'],
 			]);
 		});
 	});
@@ -1123,11 +1129,13 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 
-			const buildAStats = await build(
+			const builtA = await build(
 				volume,
 				(config) => {
-					config.output!.filename = '[name].[chunkhash].[locale].js';
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.output.filename = '[name].[chunkhash].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -1135,18 +1143,18 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetFilenameA = Object.keys(buildAStats.compilation.assets)[0];
-			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsA);
-			const mRequireA = createFsRequire(mfsA);
-			const enBuildA = mRequireA(`/dist/${assetFilenameA}`);
+			const assetFilenameA = Object.keys(builtA.stats.compilation.assets)[0];
+
+			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
 			expect(enBuildA).toBe('Hello');
 
-			const buildBStats = await build(
+			const builtB = await build(
 				volume,
 				(config) => {
-					config.output!.filename = '[name].[chunkhash].[locale].js';
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.output.filename = '[name].[chunkhash].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								...localesSingle,
@@ -1159,12 +1167,9 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetFilenameB = Object.keys(buildBStats.compilation.assets)[0];
+			const assetFilenameB = Object.keys(builtB.stats.compilation.assets)[0];
 
-			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsB);
-			const mRequireB = createFsRequire(mfsB);
-			const enBuildB = mRequireB(`/dist/${assetFilenameB}`);
+			const enBuildB = builtB.require(`/dist/${assetFilenameB}`);
 			expect(enBuildB).toBe('Wazzup');
 
 			expect(assetFilenameA).not.toBe(assetFilenameB);
@@ -1175,11 +1180,13 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 
-			const buildAStats = await build(
+			const builtA = await build(
 				volume,
 				(config) => {
-					config.output!.filename = '[name].[chunkhash].[locale].js';
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.output.filename = '[name].[chunkhash].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -1187,18 +1194,18 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetFilenameA = Object.keys(buildAStats.compilation.assets)[0];
-			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsA);
-			const mRequireA = createFsRequire(mfsA);
-			const enBuildA = mRequireA(`/dist/${assetFilenameA}`);
+			const assetFilenameA = Object.keys(builtA.stats.compilation.assets)[0];
+
+			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
 			expect(enBuildA).toBe('Hello');
 
-			const buildBStats = await build(
+			const builtB = await build(
 				volume,
 				(config) => {
-					config.output!.filename = '[name].[chunkhash].[locale].js';
-					config.plugins!.push(
+					configureWebpack(config);
+
+					config.output.filename = '[name].[chunkhash].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								...localesMulti,
@@ -1212,13 +1219,10 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetsB = Object.keys(buildBStats.compilation.assets);
+			const assetsB = Object.keys(builtB.stats.compilation.assets);
 			const assetFilenameB = assetsB[0];
 
-			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsB);
-			const mRequireB = createFsRequire(mfsB);
-			const enBuildB = mRequireB(`/dist/${assetFilenameB}`);
+			const enBuildB = builtB.require(`/dist/${assetFilenameB}`);
 			expect(enBuildB).toBe('Wazzup');
 
 			expect(assetFilenameA).not.toBe(assetFilenameB);
@@ -1235,11 +1239,11 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 
-			const buildAStats = await build(
+			const builtA = await build(
 				volume,
 				(config) => {
-					config.output!.filename = '[name].[contenthash].[locale].js';
-					config.plugins!.push(
+					config.output.filename = '[name].[contenthash].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -1247,18 +1251,16 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetFilenameA = Object.keys(buildAStats.compilation.assets)[0];
-			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsA);
-			const mRequireA = createFsRequire(mfsA);
-			const enBuildA = mRequireA(`/dist/${assetFilenameA}`);
+			const assetFilenameA = Object.keys(builtA.stats.compilation.assets)[0];
+
+			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
 			expect(enBuildA).toBe('Hello');
 
-			const buildBStats = await build(
+			const builtB = await build(
 				volume,
 				(config) => {
-					config.output!.filename = '[name].[contenthash].[locale].js';
-					config.plugins!.push(
+					config.output.filename = '[name].[contenthash].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								...localesSingle,
@@ -1271,12 +1273,9 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetFilenameB = Object.keys(buildBStats.compilation.assets)[0];
+			const assetFilenameB = Object.keys(builtB.stats.compilation.assets)[0];
 
-			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsB);
-			const mRequireB = createFsRequire(mfsB);
-			const enBuildB = mRequireB(`/dist/${assetFilenameB}`);
+			const enBuildB = builtB.require(`/dist/${assetFilenameB}`);
 			expect(enBuildB).toBe('Wazzup');
 
 			expect(assetFilenameA).not.toBe(assetFilenameB);
@@ -1288,11 +1287,11 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 
-			const buildAStats = await build(
+			const builtA = await build(
 				volume,
 				(config) => {
-					config.output!.filename = '[name].[contenthash].[locale].js';
-					config.plugins!.push(
+					config.output.filename = '[name].[contenthash].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -1300,19 +1299,17 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetsA = Object.keys(buildAStats.compilation.assets);
+			const assetsA = Object.keys(builtA.stats.compilation.assets);
 			const [assetFilenameA] = assetsA;
-			const mfsA = buildAStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsA);
-			const mRequireA = createFsRequire(mfsA);
-			const enBuildA = mRequireA(`/dist/${assetFilenameA}`);
+
+			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
 			expect(enBuildA).toBe('Hello');
 
-			const buildBStats = await build(
+			const builtB = await build(
 				volume,
 				(config) => {
-					config.output!.filename = '[name].[contenthash].[locale].js';
-					config.plugins!.push(
+					config.output.filename = '[name].[contenthash].[locale].js';
+					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								...localesMulti,
@@ -1326,13 +1323,10 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
-			const assetsB = Object.keys(buildBStats.compilation.assets);
+			const assetsB = Object.keys(builtB.stats.compilation.assets);
 			const [assetFilenameB] = assetsB;
 
-			const mfsB = buildBStats.compilation.compiler.outputFileSystem;
-			assertFsWithReadFileSync(mfsB);
-			const mRequireB = createFsRequire(mfsB);
-			const enBuildB = mRequireB(`/dist/${assetFilenameB}`);
+			const enBuildB = builtB.require(`/dist/${assetFilenameB}`);
 			expect(enBuildB).toBe('Wazzup');
 
 			expect(assetFilenameA).not.toBe(assetFilenameB);

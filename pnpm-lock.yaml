@@ -29,6 +29,7 @@ specifiers:
   webpack: 4.42.0
   webpack-manifest-plugin: ^3.1.1
   webpack-sources: ^2.2.0
+  webpack-test-utils: ^1.1.0
   webpack5: npm:webpack@5.10.1
 
 dependencies:
@@ -62,6 +63,7 @@ devDependencies:
   unionfs: 4.4.0
   webpack: 4.42.0
   webpack-manifest-plugin: 3.1.1_webpack@4.42.0
+  webpack-test-utils: 1.1.0_webpack@4.42.0
   webpack5: /webpack/5.10.1
 
 packages:
@@ -3445,6 +3447,10 @@ packages:
     resolution: {integrity: sha512-3guiAJ1t2nM1sUc0rGxAr32b9hyoZz0zGn+8KV/poUEUOCMe8g3rHgjgfbgRaz19SN6s/WMDI8F5fdNnm7kseA==}
     dev: true
 
+  /fs-require/1.4.0:
+    resolution: {integrity: sha512-ZytCzc6QAE0lprblNErZJuDVNoT0JPRSBCUXIMrIB0mLlwcAppbE5fqUyqC8zhgrrR3+whvpKLxOqtk8EnSbeA==}
+    dev: true
+
   /fs-write-stream-atomic/1.0.10:
     resolution: {integrity: sha1-tH31NJPvkR33VzHnCp3tAYnbQMk=}
     dependencies:
@@ -5137,6 +5143,13 @@ packages:
 
   /memfs/3.2.2:
     resolution: {integrity: sha512-RE0CwmIM3CEvpcdK3rZ19BC4E6hv9kADkMN5rPduRak58cNArWLi/9jFLsa4rhsjfVxMP3v0jO7FHXq7SvFY5Q==}
+    engines: {node: '>= 4.0.0'}
+    dependencies:
+      fs-monkey: 1.0.3
+    dev: true
+
+  /memfs/3.3.0:
+    resolution: {integrity: sha512-BEE62uMfKOavX3iG7GYX43QJ+hAeeWnwIAuJ/R6q96jaMtiLzhsxHJC8B1L7fK7Pt/vXDRwb3SG/yBpNGDPqzg==}
     engines: {node: '>= 4.0.0'}
     dependencies:
       fs-monkey: 1.0.3
@@ -7444,6 +7457,17 @@ packages:
     dependencies:
       source-list-map: 2.0.1
       source-map: 0.6.1
+    dev: true
+
+  /webpack-test-utils/1.1.0_webpack@4.42.0:
+    resolution: {integrity: sha512-zJaJZsa3v8jFx41uiVSF6V/8wd4zuX/DtDZkm7t8f8WlxP0W3Iwj3BikZx4C45EX7+yTUBWmKbkknoSsaIhFmw==}
+    peerDependencies:
+      webpack: ^4.40.0 || ^5.0.0
+    dependencies:
+      fs-require: 1.4.0
+      memfs: 3.3.0
+      unionfs: 4.4.0
+      webpack: 4.42.0
     dev: true
 
   /webpack/4.42.0:

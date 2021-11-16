@@ -243,7 +243,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 	/**
 	 * For Multiple locales
 	 *
-	 * 1. Replace the `__(...)` call with a placeholder -> `asdf(...) + asdf`
+	 * 1. Replace the `__(...)` call with a placeholder -> `asdf(__(...)) + asdf`
 	 * 2. After the asset is generated & minified, search and replace the
 	 * placeholder with calls to localizeCompiler
 	 * 3. Repeat for each locale
