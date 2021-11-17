@@ -56,11 +56,6 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 		this.options = options;
 
-		const functionNames = typeof this.options.localizeCompiler === 'object'
-			? Object.keys(this.options.localizeCompiler)
-			: [this.options.functionName ?? '__'];
-		this.functionNames = functionNames;
-
 		this.localeNames = Object.keys(options.locales);
 		if (this.localeNames.length === 1) {
 			[this.singleLocale] = this.localeNames;
@@ -69,19 +64,23 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		this.localizeCompiler = (
 			this.options.localizeCompiler
 				? this.options.localizeCompiler
-				: function (localizerArguments) {
-					const [key] = localizerArguments;
+				: {
+					[this.options.functionName ?? '__'](localizerArguments) {
+						const [key] = localizerArguments;
 
-					if (localizerArguments.length > 1) {
-						const code = stringifyAst(this.callNode);
-						this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${code})`);
-						return key;
-					}
+						if (localizerArguments.length > 1) {
+							const code = stringifyAst(this.callNode);
+							this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${code})`);
+							return key;
+						}
 
-					const keyResolved = this.resolveKey();
-					return keyResolved ? JSON.stringify(keyResolved) : key;
+						const keyResolved = this.resolveKey();
+						return keyResolved ? JSON.stringify(keyResolved) : key;
+					},
 				}
 		);
+
+		this.functionNames = Object.keys(this.localizeCompiler);
 	}
 
 	apply(compiler: Compiler) {

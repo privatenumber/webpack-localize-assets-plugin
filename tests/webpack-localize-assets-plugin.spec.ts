@@ -95,7 +95,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			}).rejects.toThrow(/empty/);
 		});
 
-		test('functionName and object for localizeCompiler together', async () => {
+		test('functionName and localizeCompiler together', async () => {
 			await expect(async () => {
 				await build(
 					{},
@@ -1023,11 +1023,13 @@ describe(`Webpack ${webpack.version}`, () => {
 					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
-							localizeCompiler(callArguments, locale) {
-								expect(locale).toBe('en');
-								expect((this.callNode.callee as Identifier).name).toBe('__');
-								expect(this.resolveKey()).toBe('Hello');
-								return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
+							localizeCompiler: {
+								__(callArguments, locale) {
+									expect(locale).toBe('en');
+									expect((this.callNode.callee as Identifier).name).toBe('__');
+									expect(this.resolveKey()).toBe('Hello');
+									return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
+								},
 							},
 						}),
 					);
@@ -1057,14 +1059,16 @@ describe(`Webpack ${webpack.version}`, () => {
 					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
-							localizeCompiler(callArguments, localeName) {
-								compilerCalls.push([
-									...callArguments,
-									localeName,
-									this.resolveKey(),
-									(this.callNode.callee as Identifier).name,
-								]);
-								return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
+							localizeCompiler: {
+								__(callArguments, localeName) {
+									compilerCalls.push([
+										...callArguments,
+										localeName,
+										this.resolveKey(),
+										(this.callNode.callee as Identifier).name,
+									]);
+									return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
+								},
 							},
 						}),
 					);

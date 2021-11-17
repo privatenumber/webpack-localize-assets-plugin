@@ -130,27 +130,28 @@ Enable to see warnings when unused string keys are found.
 ### localizeCompiler
 Type:
 ```ts
-(
+Record<
+  string,
+  (
     this: LocalizeCompilerContext,
     localizerArguments: string[],
     localeName: string,
-) => string
+  ) => string
+>
 ```
-
-- or an object whose keys are strings and whose values are functions with the above type.
 
 Default:
 ```ts
-function (localizerArguments) {
+{
+  __(localizerArguments) {
     const [key] = localizerArguments;
     const keyResolved = this.resolveKey();
     return keyResolved ? JSON.stringify(keyResolved) : key;
+  }
 }
 ```
 
-A function to generate a JS string to replace the `__()` call with. It gets called for each localize function call (eg. `__(...)`) for each locale.
-
-If the `localizeCompiler` is an object, then each of its keys will be used as the `functionName`. This allows you to have multiple localization functions, with separate compilation logic for each of them. It's an error to use both `functionName` and the object syntax for `localizeCompiler`.
+An object of functions to generate a JS string to replace the `__()` call with. Each of the object's keys defines a `functionName`, and the corresponding function gets called for each localize function call (eg. `__(...)`) for each locale. This allows you to have multiple localization functions, with separate compilation logic for each of them. It's an error to use both `functionName` and `localizeCompiler`.
 
 #### localizerArguments
 An array of strings containing JavaScript expressions. The expressions are stringified arguments of the original call. So `localizerArguments[0]` will be a JavaScript expression containing the translation key.
