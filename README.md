@@ -131,7 +131,7 @@ Enable to see warnings when unused string keys are found.
 Type:
 ```ts
 Record<
-  string,
+  string, // localizer function name (eg. __)
   (
     this: LocalizeCompilerContext,
     localizerArguments: string[],
@@ -151,7 +151,9 @@ Default:
 }
 ```
 
-An object of functions to generate a JS string to replace the `__()` call with. Each of the object's keys defines a `functionName`, and the corresponding function gets called for each localize function call (eg. `__(...)`) for each locale. This allows you to have multiple localization functions, with separate compilation logic for each of them. It's an error to use both `functionName` and `localizeCompiler`.
+An object of functions to generate a JS string to replace the `__()` call with. The object key is the localize function name, and its function gets called for each localize function call (eg. `__(...)`) for each locale. This allows you to have multiple localization functions, with separate compilation logic for each of them.
+
+Note, you cannot use both `functionName` and `localizeCompiler`. Simply set the function name as a key in the `localizeCompiler` object instead.
 
 #### localizerArguments
 An array of strings containing JavaScript expressions. The expressions are stringified arguments of the original call. So `localizerArguments[0]` will be a JavaScript expression containing the translation key.
