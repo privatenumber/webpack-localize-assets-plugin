@@ -12,6 +12,7 @@ import {
 	LocaleFilePath,
 	LocalizeCompiler,
 	WP5,
+	LocalizeCompilerContext,
 } from './types';
 import { loadLocales } from './utils/load-locales';
 import { interpolateLocaleToFileName } from './utils/localize-filename';
@@ -29,9 +30,12 @@ import {
 	fileNameTemplatePlaceholder,
 } from './multi-locale';
 import { callLocalizeCompiler } from './utils/call-localize-compiler';
+import { stringifyAst } from './utils/stringify-ast';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
+
+const defaultLocalizerName = '__';
 
 class LocalizeAssetsPlugin<LocalizedData = string> {
 	private readonly options: Options<LocalizedData>;
@@ -42,7 +46,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 	private readonly localizeCompiler: LocalizeCompiler<LocalizedData>;
 
-	private readonly functionName: string;
+	private readonly functionNames: string[];
 
 	private locales: LocalesMap<LocalizedData> = {};
 
@@ -55,9 +59,6 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 		this.options = options;
 
-		const functionName = options.functionName ?? '__';
-		this.functionName = functionName;
-
 		this.localeNames = Object.keys(options.locales);
 		if (this.localeNames.length === 1) {
 			[this.singleLocale] = this.localeNames;
@@ -66,18 +67,12 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		this.localizeCompiler = (
 			this.options.localizeCompiler
 				? this.options.localizeCompiler
-				: function (localizerArguments) {
-					const [key] = localizerArguments;
-
-					if (localizerArguments.length > 1) {
-						this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${functionName}(${localizerArguments.join(', ')})`);
-						return key;
-					}
-
-					const keyResolved = this.resolveKey();
-					return keyResolved ? JSON.stringify(keyResolved) : key;
+				: {
+					[this.options.functionName ?? defaultLocalizerName]: defaultLocalizeCompilerFunction,
 				}
 		);
+
+		this.functionNames = Object.keys(this.localizeCompiler);
 	}
 
 	apply(compiler: Compiler) {
@@ -154,54 +149,62 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 	private interceptTranslationFunctionCalls(
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const { locales, singleLocale, functionName } = this;
+		const { locales, singleLocale, functionNames } = this;
 		const validator = localizedStringKeyValidator(locales, this.options.throwOnMissing);
 
-		onFunctionCall(
-			normalModuleFactory,
-			functionName,
-			(parser, callExpressionNode) => {
-				const { module } = parser.state;
-				const firstArgumentNode = callExpressionNode.arguments[0];
+		const handler = (
+			parser: WP5.javascript.JavascriptParser,
+			callExpressionNode: SimpleCallExpression,
+			functionName: string,
+		) => {
+			const { module } = parser.state;
+			const firstArgumentNode = callExpressionNode.arguments[0];
 
-				// Enforce minimum requirement that first argument is a string
-				if (
-					!(
-						callExpressionNode.arguments.length > 0
-						&& firstArgumentNode.type === 'Literal'
-						&& typeof firstArgumentNode.value === 'string'
-					)
-				) {
-					const location = callExpressionNode.loc!.start;
-					reportModuleWarning(
-						module,
-						new WebpackError(`[${name}] Ignoring confusing usage of localization function "${functionName}" in ${module.resource}:${location.line}:${location.column}`),
-					);
-					return;
-				}
-
-				const stringKey: LocalizedStringKey = firstArgumentNode.value;
-
-				validator.assertValidLocaleString(
-					stringKey,
+			// Enforce minimum requirement that first argument is a string
+			if (
+				!(
+					callExpressionNode.arguments.length > 0
+					&& firstArgumentNode.type === 'Literal'
+					&& typeof firstArgumentNode.value === 'string'
+				)
+			) {
+				const location = callExpressionNode.loc!.start;
+				reportModuleWarning(
 					module,
-					callExpressionNode,
+					new WebpackError(`[${name}] Ignoring confusing usage of localization function "${functionName}" in ${module.resource}:${location.line}:${location.column}`),
 				);
+				return;
+			}
 
-				for (const fileDependency of this.fileDependencies) {
-					module.buildInfo.fileDependencies.add(fileDependency);
-				}
+			const stringKey: LocalizedStringKey = firstArgumentNode.value;
 
-				const replacement = (
-					singleLocale
-						? this.getLocalizedString(callExpressionNode, stringKey, module, singleLocale)
-						: this.getMarkedFunctionPlaceholder(callExpressionNode, stringKey, module)
-				);
-				toConstantDependency(parser, replacement)(callExpressionNode);
+			validator.assertValidLocaleString(
+				stringKey,
+				module,
+				callExpressionNode,
+			);
 
-				return true;
-			},
-		);
+			for (const fileDependency of this.fileDependencies) {
+				module.buildInfo.fileDependencies.add(fileDependency);
+			}
+
+			const replacement = (
+				singleLocale
+					? this.getLocalizedString(callExpressionNode, stringKey, module, singleLocale)
+					: this.getMarkedFunctionPlaceholder(callExpressionNode, stringKey, module)
+			);
+			toConstantDependency(parser, replacement)(callExpressionNode);
+
+			return true;
+		};
+
+		for (const functionName of functionNames) {
+			onFunctionCall(
+				normalModuleFactory,
+				functionName,
+				(parser, node) => handler(parser, node, functionName),
+			);
+		}
 	}
 
 	/**
@@ -256,6 +259,29 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 		return markLocalizeFunction(callNode);
 	}
+
+	static defaultLocalizeCompiler: LocalizeCompiler = {
+		[defaultLocalizerName]: defaultLocalizeCompilerFunction,
+	};
+}
+
+function defaultLocalizeCompilerFunction(
+	this: LocalizeCompilerContext,
+	localizerArguments: string[],
+) {
+	const [key] = localizerArguments;
+
+	if (localizerArguments.length > 1) {
+		let code = stringifyAst(this.callNode);
+		if (code.length > 80) {
+			code = `${code.slice(0, 80)}…`;
+		}
+		this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${code})`);
+		return key;
+	}
+
+	const keyResolved = this.resolveKey();
+	return keyResolved ? JSON.stringify(keyResolved) : key;
 }
 
 export = LocalizeAssetsPlugin;

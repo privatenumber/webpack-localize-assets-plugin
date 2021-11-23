@@ -33,11 +33,13 @@ export interface LocalizeCompilerContext<LocalizedData = string> {
 	emitError(message: string): void;
 }
 
-export type LocalizeCompiler<LocalizedData = string> = (
-	this: LocalizeCompilerContext<LocalizedData>,
-	functionArgments: string[],
-	localeName: string,
-) => string;
+export interface LocalizeCompiler<LocalizedData = string> {
+	[functionName: string]: (
+		this: LocalizeCompilerContext<LocalizedData>,
+		functionArgments: string[],
+		localeName: string,
+	) => string;
+}
 
 export function validateOptions<LocalizedData>(options: Options<LocalizedData>): void {
 	if (!options) {
@@ -52,6 +54,14 @@ export function validateOptions<LocalizedData>(options: Options<LocalizedData>):
 	if (options.sourceMapForLocales
 		&& options.sourceMapForLocales.some(locale => !hasOwnProp(options.locales, locale))) {
 		throw new Error('sourceMapForLocales must contain valid locales');
+	}
+	if (options.localizeCompiler) {
+		if (Object.keys(options.localizeCompiler).length === 0) {
+			throw new Error('localizeCompiler can\'t be an empty object');
+		}
+		if (options.functionName) {
+			throw new Error('Can\'t use localizeCompiler and also specify functionName');
+		}
 	}
 }
 
