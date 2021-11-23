@@ -69,7 +69,10 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 						const [key] = localizerArguments;
 
 						if (localizerArguments.length > 1) {
-							const code = stringifyAst(this.callNode);
+							let code = stringifyAst(this.callNode);
+							if (code.length > 80) {
+								code = `${code.slice(0, 80)}…`;
+							}
 							this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${code})`);
 							return key;
 						}
