@@ -12,6 +12,7 @@ import {
 	LocaleFilePath,
 	LocalizeCompiler,
 	WP5,
+	LocalizeCompilerContext,
 } from './types';
 import { loadLocales } from './utils/load-locales';
 import { interpolateLocaleToFileName } from './utils/localize-filename';
@@ -65,21 +66,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			this.options.localizeCompiler
 				? this.options.localizeCompiler
 				: {
-					[this.options.functionName ?? '__'](localizerArguments) {
-						const [key] = localizerArguments;
-
-						if (localizerArguments.length > 1) {
-							let code = stringifyAst(this.callNode);
-							if (code.length > 80) {
-								code = `${code.slice(0, 80)}…`;
-							}
-							this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${code})`);
-							return key;
-						}
-
-						const keyResolved = this.resolveKey();
-						return keyResolved ? JSON.stringify(keyResolved) : key;
-					},
+					[this.options.functionName ?? '__']: defaultLocalizeCompilerFunction,
 				}
 		);
 
@@ -270,6 +257,29 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 		return markLocalizeFunction(callNode);
 	}
+
+	static defaultLocalizeCompiler: LocalizeCompiler = {
+		__: defaultLocalizeCompilerFunction,
+	};
+}
+
+function defaultLocalizeCompilerFunction(
+	this: LocalizeCompilerContext,
+	localizerArguments: string[],
+) {
+	const [key] = localizerArguments;
+
+	if (localizerArguments.length > 1) {
+		let code = stringifyAst(this.callNode);
+		if (code.length > 80) {
+			code = `${code.slice(0, 80)}…`;
+		}
+		this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${code})`);
+		return key;
+	}
+
+	const keyResolved = this.resolveKey();
+	return keyResolved ? JSON.stringify(keyResolved) : key;
 }
 
 export = LocalizeAssetsPlugin;
