@@ -28,26 +28,26 @@ In `webpack.config.js`:
 + const LocalizeAssetsPlugin = require('webpack-localize-assets-plugin')
 
   const locales = {
-    en: { ... },
-    es: { ... },
-    ja: { ... },
-    ...
+      en: { ... },
+      es: { ... },
+      ja: { ... },
+      ...
   }
 
   module.exports = {
-    ...,
-
-   output: {
-+     filename: '[name].[locale].js',
-      ...
-   },
-
-    plugins: [
       ...,
-+     new LocalizeAssetsPlugin({
-+       locales
-+     })
-    ]
+
+      output: {
++         filename: '[name].[locale].js',
+          ...
+      },
+
+      plugins: [
+          ...,
++         new LocalizeAssetsPlugin({
++             locales
++         })
+      ]
   }
 ```
 
@@ -59,9 +59,9 @@ Required
 Type:
 ```ts
 {
-  [locale: string]: string | {
-    [stringKey: string]: string;
-  };
+    [locale: string]: string | {
+        [stringKey: string]: string;
+    };
 }
 ```
 
@@ -74,9 +74,9 @@ Using a JSON path has the advantage of automatically detecting changes across co
 Example:
 ```json5
 {
-  en: './locales/en.json',
-  es: './locales/es.json',
-  ...
+    en: './locales/en.json',
+    es: './locales/es.json',
+    ...
 }
 ```
 
@@ -84,17 +84,17 @@ Or:
 
 ```json5
 {
-  en: {
-    helloWorld: 'Hello World!',
-    goodbyeWorld: 'Goodbye World!',
+    en: {
+        helloWorld: 'Hello World!',
+        goodbyeWorld: 'Goodbye World!',
+        ...
+    },
+    es: {
+        helloWorld: '¡Hola Mundo!',
+        goodbyeWorld: '¡Adiós Mundo!',
+        ...
+    },
     ...
-  },
-  es: {
-    helloWorld: '¡Hola Mundo!',
-    goodbyeWorld: '¡Adiós Mundo!',
-    ...
-  },
-  ...
 }
 ```
 
@@ -131,23 +131,23 @@ Enable to see warnings when unused string keys are found.
 Type:
 ```ts
 Record<
-  string, // localizer function name (eg. __)
-  (
-    this: LocalizeCompilerContext,
-    localizerArguments: string[],
-    localeName: string,
-  ) => string
+    string, // localizer function name (eg. __)
+    (
+        this: LocalizeCompilerContext,
+        localizerArguments: string[],
+        localeName: string,
+    ) => string
 >
 ```
 
 Default:
 ```ts
 {
-  __(localizerArguments) {
-    const [key] = localizerArguments;
-    const keyResolved = this.resolveKey();
-    return keyResolved ? JSON.stringify(keyResolved) : key;
-  }
+    __(localizerArguments) {
+        const [key] = localizerArguments;
+        const keyResolved = this.resolveKey();
+        return keyResolved ? JSON.stringify(keyResolved) : key;
+    }
 }
 ```
 
