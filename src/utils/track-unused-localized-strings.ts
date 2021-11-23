@@ -11,7 +11,7 @@ const { name } = require('../../package.json');
 
 export type StringKeysCollection = Set<LocalizedStringKey>;
 
-export function getAllLocalizedStringKeys(locales: LocalesMap) {
+export function getAllLocalizedStringKeys<LocalizedData>(locales: LocalesMap<LocalizedData>) {
 	const allStringKeys: StringKeysCollection = new Set();
 
 	for (const localeName in locales) {

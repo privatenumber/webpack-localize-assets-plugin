@@ -1,22 +1,56 @@
 import MagicString from 'magic-string';
 import { RawSource, SourceMapSource, SourceAndMapResult } from 'webpack-sources';
+import WebpackError from 'webpack/lib/WebpackError.js';
 import { RawSourceMap } from 'source-map';
-import {
-	isWebpack5Compilation,
-	deleteAsset,
-} from './utils/webpack';
+import acorn from 'acorn';
+import type {
+	Expression,
+	Literal,
+	SimpleCallExpression,
+} from 'estree';
+import { isWebpack5Compilation, deleteAsset } from './utils/webpack';
 import { sha256 } from './utils/sha256';
-import * as base64 from './utils/base64';
 import {
 	Compilation,
 	LocalesMap,
 	LocaleName,
 	WP5,
+	LocalizeCompiler,
 } from './types';
 import type { StringKeysCollection } from './utils/track-unused-localized-strings';
+import { callLocalizeCompiler } from './utils/call-localize-compiler';
+import { stringifyAst } from './utils/stringify-ast';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
+
+type Range = {
+	start: number;
+	end?: number;
+};
+
+function findSubstringRanges(
+	string: string,
+	substring: string,
+) {
+	const ranges: Range[] = [];
+	let range: Range | null = null;
+	let index = string.indexOf(substring);
+
+	while (index > -1) {
+		if (!range) {
+			range = { start: index };
+		} else {
+			range.end = index + substring.length;
+			ranges.push(range);
+			range = null;
+		}
+
+		index = string.indexOf(substring, index + 1);
+	}
+
+	return ranges;
+}
 
 function findSubstringLocations(
 	string: string,
@@ -24,20 +58,17 @@ function findSubstringLocations(
 ): number[] {
 	const indices: number[] = [];
 	let index = string.indexOf(substring);
-
 	while (index > -1) {
 		indices.push(index);
 		index = string.indexOf(substring, index + 1);
 	}
-
 	return indices;
 }
 
-type PlaceholderLocations = {
-	stringKey: string;
-	index: number;
-	endIndex: number;
-}[];
+export type PlaceholderLocation = {
+	range: Range;
+	node: SimpleCallExpression;
+};
 
 export const fileNameTemplatePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
 
@@ -45,64 +76,93 @@ const fileNameTemplatePlaceholderPattern = new RegExp(fileNameTemplatePlaceholde
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-const placeholderPrefix = sha256('localize-assets-plugin-placeholder-prefix').slice(0, 8);
-const placeholderSuffix = '|';
+const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-plugin-placeholder').slice(0, 8)}`;
 
-const locatePlaceholders = (sourceString: string) => {
-	const placeholderLocations: PlaceholderLocations = [];
+export function markLocalizeFunction(callExpression: SimpleCallExpression) {
+	if (callExpression.callee.type !== 'Identifier') {
+		throw new Error('Expected Identifier');
+	}
 
-	const possibleLocations = findSubstringLocations(sourceString, placeholderPrefix);
-	for (const placeholderIndex of possibleLocations) {
-		const placeholderStartIndex = placeholderIndex + placeholderPrefix.length;
-		const placeholderSuffixIndex = sourceString.indexOf(placeholderSuffix, placeholderStartIndex);
+	return `${placeholderFunctionName}(${stringifyAst(callExpression)})+${placeholderFunctionName}`;
+}
 
-		if (placeholderSuffixIndex === -1) {
-			continue;
-		}
+function getOriginalCall(node: Expression): SimpleCallExpression {
+	if (node.type !== 'BinaryExpression') {
+		throw new Error('Expected BinaryExpression');
+	}
+	if (node.left.type !== 'CallExpression') {
+		throw new Error('Expected CallExpression');
+	}
+	if (node.left.arguments[0].type !== 'CallExpression') {
+		throw new Error('Expected CallExpression');
+	}
+	return node.left.arguments[0];
+}
 
-		const placeholder = sourceString.slice(
-			placeholderStartIndex,
-			placeholderSuffixIndex,
-		);
+function locatePlaceholders(sourceString: string) {
+	const placeholderRanges = findSubstringRanges(sourceString, placeholderFunctionName);
+	const placeholderLocations: PlaceholderLocation[] = [];
 
-		const stringKey = base64.decode(placeholder);
-		if (stringKey) {
-			placeholderLocations.push({
-				stringKey,
-				index: placeholderIndex,
-				endIndex: placeholderSuffixIndex + placeholderSuffix.length,
-			});
-		}
+	for (const placeholderRange of placeholderRanges) {
+		const code = sourceString.slice(placeholderRange.start, placeholderRange.end);
+		const node = acorn.parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
+
+		placeholderLocations.push({
+			node: getOriginalCall(node),
+			range: placeholderRange,
+		});
 	}
 
 	return placeholderLocations;
-};
+}
 
-function localizeAsset(
-	locales: LocalesMap,
+function localizeAsset<LocalizedData>(
+	locales: LocalesMap<LocalizedData>,
 	locale: LocaleName,
 	assetName: string,
-	placeholderLocations: PlaceholderLocations,
+	placeholderLocations: PlaceholderLocation[],
 	fileNamePlaceholderLocations: number[],
 	source: string,
-	map: RawSourceMap | null,
-	trackStringKeys?: StringKeysCollection,
+	map: RawSourceMap | null | false,
+	compilation: Compilation,
+	localizeCompiler: LocalizeCompiler<LocalizedData>,
+	trackStringKeys: StringKeysCollection | undefined,
 ) {
 	const localeData = locales[locale];
 	const magicStringInstance = new MagicString(source);
 
 	// Localize strings
-	for (const { stringKey, index, endIndex } of placeholderLocations) {
-		const localizedString = JSON.stringify(localeData[stringKey] || stringKey).slice(1, -1);
+	for (const { node, range } of placeholderLocations) {
+		const stringKey = (node.arguments[0] as Literal).value as string;
+		const localizedCode = callLocalizeCompiler(
+			localizeCompiler,
+			{
+				callNode: node,
+				resolveKey: (key = stringKey) => localeData[key],
+				emitWarning: (message) => {
+					const hasWarning = compilation.warnings.find(warning => warning.message === message);
+					if (!hasWarning) {
+						compilation.warnings.push(new WebpackError(message));
+					}
+				},
+				emitError: (message) => {
+					const hasError = compilation.errors.find(error => error.message === message);
+					if (!hasError) {
+						compilation.errors.push(new WebpackError(message));
+					}
+				},
+			},
+			locale,
+		);
+
+		magicStringInstance.overwrite(
+			range.start,
+			range.end!,
+			localizedCode,
+		);
 
 		// For Webpack 5 cache hits
 		trackStringKeys?.delete(stringKey);
-
-		magicStringInstance.overwrite(
-			index,
-			endIndex,
-			localizedString,
-		);
 	}
 
 	// Localize chunk requests
@@ -134,12 +194,13 @@ function localizeAsset(
 	return new RawSource(localizedCode);
 }
 
-export function generateLocalizedAssets(
+export function generateLocalizedAssets<LocalizedData>(
 	compilation: Compilation,
 	localeNames: LocaleName[],
-	locales: LocalesMap,
-	sourceMapForLocales?: LocaleName[],
-	trackStringKeys?: StringKeysCollection,
+	locales: LocalesMap<LocalizedData>,
+	sourceMapForLocales: LocaleName[],
+	trackStringKeys: StringKeysCollection | undefined,
+	localizeCompiler: LocalizeCompiler<LocalizedData>,
 ) {
 	const generateLocalizedAssetsHandler = async () => {
 		const assetsWithInfo = (compilation as WP5.Compilation).getAssets()
@@ -168,7 +229,7 @@ export function generateLocalizedAssets(
 						{ locale },
 					);
 
-					// Add localce to hash for RealContentHashPlugin plugin
+					// Add locale to hash for RealContentHashPlugin plugin
 					if (newInfo.contenthash) {
 						let { contenthash } = newInfo;
 
@@ -196,11 +257,9 @@ export function generateLocalizedAssets(
 						placeholderLocations,
 						fileNamePlaceholderLocations,
 						sourceString,
-						(
-							(!sourceMapForLocales || sourceMapForLocales.includes(locale))
-								? map
-								: null
-						),
+						sourceMapForLocales.includes(locale) && map,
+						compilation,
+						localizeCompiler,
 						trackStringKeys,
 					);
 
@@ -235,26 +294,27 @@ export function generateLocalizedAssets(
 		}));
 	};
 
-	// Apply after minification since we don't want to
-	// duplicate the costs of that for each asset
 	if (isWebpack5Compilation(compilation)) {
+		/**
+		 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH, which is where
+		 * RealContentHashPlugin re-hashes assets:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH).
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE isn't actually used by Webpack, but there seemed
+		 * to be other plugins that were relying on it to summarize assets, so it makes sense
+		 * to run just before that.
+		 *
+		 * All "process assets" stages:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
+		 */
 		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
-
 		compilation.hooks.processAssets.tapPromise(
 			{
 				name,
-
-				/**
-				 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
-				 * which is where RealContentHashPlugin re-hashes assets:
-				 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
-				 *
-				 * PROCESS_ASSETS_STAGE_SUMMARIZE isn't actually used by Webpack, but there seemed to be
-				 * other plugins that were relying on it to summarize assets.
-				 *
-				 * All "process assets" stages:
-				 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
-				 */
 				stage: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
 				additionalAssets: true,
 			},
@@ -268,7 +328,3 @@ export function generateLocalizedAssets(
 		);
 	}
 }
-
-export const getPlaceholder = (
-	value: string,
-) => placeholderPrefix + base64.encode(value) + placeholderSuffix;
