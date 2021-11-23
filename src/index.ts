@@ -35,6 +35,8 @@ import { stringifyAst } from './utils/stringify-ast';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
 
+const defaultLocalizerName = '__';
+
 class LocalizeAssetsPlugin<LocalizedData = string> {
 	private readonly options: Options<LocalizedData>;
 
@@ -66,7 +68,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			this.options.localizeCompiler
 				? this.options.localizeCompiler
 				: {
-					[this.options.functionName ?? '__']: defaultLocalizeCompilerFunction,
+					[this.options.functionName ?? defaultLocalizerName]: defaultLocalizeCompilerFunction,
 				}
 		);
 
@@ -259,7 +261,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 	}
 
 	static defaultLocalizeCompiler: LocalizeCompiler = {
-		__: defaultLocalizeCompilerFunction,
+		[defaultLocalizerName]: defaultLocalizeCompilerFunction,
 	};
 }
 
