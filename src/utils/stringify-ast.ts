@@ -1,4 +1,4 @@
-import astring from 'astring';
+import * as astring from 'astring';
 import type { Node } from 'estree';
 
 const astringOptions = Object.freeze({ indent: '', lineEnd: '' });
