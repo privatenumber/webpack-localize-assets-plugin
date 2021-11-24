@@ -8,24 +8,20 @@ specifiers:
   '@types/webpack': ^4.41.31
   '@types/webpack-manifest-plugin': ^3.0.5
   acorn: ^8.5.0
-  aggregate-error: ^4.0.0
   astring: ^1.7.5
   css-loader: ^5.2.4
   es-jest: ^1.2.0
   eslint: ^7.32.0
   esno: ^0.5.0
-  fs-require: ^1.0.0
   has-own-prop: ^2.0.0
   husky: ^4.3.8
   jest: ^27.3.1
   lint-staged: ^10.5.4
   magic-string: ^0.25.7
-  memfs: ^3.2.2
   mini-css-extract-plugin: ^1.6.0
   source-map: ^0.7.3
   tempy: ^1.0.1
   typescript: ^4.4.4
-  unionfs: ^4.4.0
   webpack: 4.42.0
   webpack-manifest-plugin: ^3.1.1
   webpack-sources: ^2.2.0
@@ -46,21 +42,17 @@ devDependencies:
   '@types/mini-css-extract-plugin': 2.4.0
   '@types/webpack': 4.41.31
   '@types/webpack-manifest-plugin': 3.0.5
-  aggregate-error: 4.0.0
   css-loader: 5.2.4_webpack@4.42.0
   es-jest: 1.2.0
   eslint: 7.32.0
   esno: 0.5.0
-  fs-require: 1.0.0
   husky: 4.3.8
   jest: 27.3.1
   lint-staged: 10.5.4
-  memfs: 3.2.2
   mini-css-extract-plugin: 1.6.0_webpack@4.42.0
   source-map: 0.7.3
   tempy: 1.0.1
   typescript: 4.4.4
-  unionfs: 4.4.0
   webpack: 4.42.0
   webpack-manifest-plugin: 3.1.1_webpack@4.42.0
   webpack-test-utils: 1.1.0_webpack@4.42.0
@@ -1572,14 +1564,6 @@ packages:
       indent-string: 4.0.0
     dev: true
 
-  /aggregate-error/4.0.0:
-    resolution: {integrity: sha512-8DGp7zUt1E9k0NE2q4jlXHk+V3ORErmwolEdRz9iV+LKJ40WhMHh92cxAvhqV2I+zEn/gotIoqoMs0NjF3xofg==}
-    engines: {node: '>=12'}
-    dependencies:
-      clean-stack: 4.0.0
-      indent-string: 5.0.0
-    dev: true
-
   /ajv-errors/1.0.1_ajv@6.12.6:
     resolution: {integrity: sha512-DCRfO/4nQ+89p/RK43i8Ezd41EqdGIU4ld7nGF8OQ14oc/we5rEntLCUa7+jrn3nn83BosfwZA0wb4pon2o8iQ==}
     peerDependencies:
@@ -2249,13 +2233,6 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
-  /clean-stack/4.0.0:
-    resolution: {integrity: sha512-MonulJftObGAfadTeQ1Do359xzN6cLyQRIYrdhvhHkrIg7xRrg2fiML443Q1ANke3ANu1GB3XkROVX6ili2uog==}
-    engines: {node: '>=12'}
-    dependencies:
-      escape-string-regexp: 5.0.0
-    dev: true
-
   /cli-cursor/3.1.0:
     resolution: {integrity: sha512-I/zHAwsKf9FqGoXM4WWRACob9+SNukZTd94DWF57E4toouRulbCxcUh6RKUEOQlYTHJnzkPMySvPNaaSLNfLZw==}
     engines: {node: '>=8'}
@@ -2873,11 +2850,6 @@ packages:
   /escape-string-regexp/4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
-    dev: true
-
-  /escape-string-regexp/5.0.0:
-    resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
-    engines: {node: '>=12'}
     dev: true
 
   /escodegen/2.0.0:
@@ -3564,10 +3536,6 @@ packages:
     resolution: {integrity: sha512-cybjIfiiE+pTWicSCLFHSrXZ6EilF30oh91FDP9S2B051prEa7QWfrVTQm10/dDpswBDXZugPa1Ogu8Yh+HV0Q==}
     dev: true
 
-  /fs-require/1.0.0:
-    resolution: {integrity: sha512-3guiAJ1t2nM1sUc0rGxAr32b9hyoZz0zGn+8KV/poUEUOCMe8g3rHgjgfbgRaz19SN6s/WMDI8F5fdNnm7kseA==}
-    dev: true
-
   /fs-require/1.4.0:
     resolution: {integrity: sha512-ZytCzc6QAE0lprblNErZJuDVNoT0JPRSBCUXIMrIB0mLlwcAppbE5fqUyqC8zhgrrR3+whvpKLxOqtk8EnSbeA==}
     dev: true
@@ -3982,11 +3950,6 @@ packages:
   /indent-string/4.0.0:
     resolution: {integrity: sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==}
     engines: {node: '>=8'}
-    dev: true
-
-  /indent-string/5.0.0:
-    resolution: {integrity: sha512-m6FAo/spmsW2Ab2fU35JTYwtOKa2yAwXSwgjSv1TJzh4Mh7mC3lzAOVLBprb72XsTrgkEIsl7YrFNAiDiRhIGg==}
-    engines: {node: '>=12'}
     dev: true
 
   /infer-owner/1.0.4:
@@ -5267,13 +5230,6 @@ packages:
       hash-base: 3.1.0
       inherits: 2.0.4
       safe-buffer: 5.2.1
-    dev: true
-
-  /memfs/3.2.2:
-    resolution: {integrity: sha512-RE0CwmIM3CEvpcdK3rZ19BC4E6hv9kADkMN5rPduRak58cNArWLi/9jFLsa4rhsjfVxMP3v0jO7FHXq7SvFY5Q==}
-    engines: {node: '>= 4.0.0'}
-    dependencies:
-      fs-monkey: 1.0.3
     dev: true
 
   /memfs/3.3.0:
