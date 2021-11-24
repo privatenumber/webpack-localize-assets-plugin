@@ -7,8 +7,8 @@ specifiers:
   '@types/mini-css-extract-plugin': ^2.4.0
   '@types/webpack': ^4.41.32
   '@types/webpack-manifest-plugin': ^3.0.5
-  acorn: ^8.5.0
-  astring: ^1.7.5
+  acorn: ^8.6.0
+  astring: ^1.8.1
   css-loader: ^5.2.4
   es-jest: ^1.5.0
   eslint: ^7.32.0
@@ -30,8 +30,8 @@ specifiers:
 
 dependencies:
   '@types/estree': 0.0.50
-  acorn: 8.5.0
-  astring: 1.7.5
+  acorn: 8.6.0
+  astring: 1.8.1
   has-own-prop: 2.0.0
   magic-string: 0.25.7
   webpack-sources: 2.2.0
@@ -1362,17 +1362,10 @@ packages:
     hasBin: true
     dev: true
 
-  /acorn/8.5.0:
-    resolution: {integrity: sha512-yXbYeFy+jUuYd3/CDcg2NkIYE991XYX/bje7LmjJigUciaeO1JR4XxXgCIV1/Zc/dRuFEyw1L0pbA+qynJkW5Q==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
-    dev: false
-
   /acorn/8.6.0:
     resolution: {integrity: sha512-U1riIR+lBSNi3IbxtaHOIKdH8sLFv3NYfNv8sg7ZsNhcfl4HF2++BfqqrNAxoCLQW1iiylOj76ecnaUxz+z9yw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-    dev: true
 
   /agent-base/6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
@@ -1572,8 +1565,8 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /astring/1.7.5:
-    resolution: {integrity: sha512-lobf6RWXb8c4uZ7Mdq0U12efYmpD1UFnyOWVJPTa3ukqZrMopav+2hdNu0hgBF0JIBFK9QgrBDfwYvh3DFJDAA==}
+  /astring/1.8.1:
+    resolution: {integrity: sha512-Aj3mbwVzj7Vve4I/v2JYOPFkCGM2YS7OqQTNSxmUR+LECRpokuPgAYghePgr6SALDo5bD5DlfbSaYjOzGJZOLQ==}
     hasBin: true
     dev: false
 
