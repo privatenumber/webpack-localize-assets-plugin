@@ -4,7 +4,7 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { build, watch, DefaultWebpackConfig } from 'webpack-test-utils';
-import WebpackLocalizeAssetsPlugin from '../src/index';
+import WebpackLocalizeAssetsPlugin from '../dist/index.js';
 import { Compiler, WP5 } from '../src/types';
 
 const localesEmpty = {};

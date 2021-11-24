@@ -27,6 +27,7 @@
 		"lint": "eslint .",
 		"build": "tsc",
 		"typecheck": "tsc --noEmit",
+		"pretest": "npm run build",
 		"test": "npm run test:wp4 && npm run test:wp5",
 		"test:wp4": "jest",
 		"test:wp5": "WEBPACK=5 jest"

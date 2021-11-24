@@ -2,7 +2,7 @@ import MagicString from 'magic-string';
 import { RawSource, SourceMapSource, SourceAndMapResult } from 'webpack-sources';
 import WebpackError from 'webpack/lib/WebpackError.js';
 import { RawSourceMap } from 'source-map';
-import acorn from 'acorn';
+import { parseExpressionAt } from 'acorn';
 import type {
 	Expression,
 	Literal,
@@ -105,7 +105,7 @@ function locatePlaceholders(sourceString: string) {
 
 	for (const placeholderRange of placeholderRanges) {
 		const code = sourceString.slice(placeholderRange.start, placeholderRange.end);
-		const node = acorn.parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
+		const node = parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
 
 		placeholderLocations.push({
 			node: getOriginalCall(node),
