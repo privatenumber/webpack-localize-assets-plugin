@@ -5,7 +5,6 @@ module.exports = {
 	transformIgnorePatterns: [
 		'node_modules/.pnpm(?!/(aggregate-error|indent-string|clean-stack|escape-string-regexp))',
 	],
-	testEnvironment: 'node',
 	moduleNameMapper: useWebpack5
 		? {
 			'^webpack$': 'webpack5',
