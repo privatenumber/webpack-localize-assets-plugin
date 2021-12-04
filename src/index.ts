@@ -132,7 +132,9 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 					// Update chunkHash based on localized content
 					compilation.hooks.chunkHash.tap(name, (chunk, hash) => {
-						const modules = chunk.getModules();
+						const modules = compilation.chunkGraph // WP5
+							? compilation.chunkGraph.getChunkModules(chunk)
+							: chunk.getModules();
 						const localizedModules = modules
 							.map(module => module.buildInfo.localized)
 							.filter(Boolean);
