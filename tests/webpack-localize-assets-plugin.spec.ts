@@ -1359,7 +1359,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			const assets = Object.keys(built.stats.compilation.assets);
 			const indexAsset = assets.find(a => a.includes('index') && a.includes('.en.js'));
 
-			expect(() => built.require(`/dist/${indexAsset}`)).not.toThrow();
+			expect(await built.require(`/dist/${indexAsset}`)).toBe(localesMulti.en['hello-key']);
 		});
 	});
 });
