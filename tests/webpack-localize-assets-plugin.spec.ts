@@ -1337,5 +1337,29 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assetFilenameA).not.toBe(assetFilenameB);
 			expect(assetsB[1]).toBe(assetsA[1]);
 		});
+
+		(isWebpack5 ? test : test.skip)('async chunks', async () => {
+			const built = await build(
+				{
+					'/src/index.js': 'export default import("./async-import").then(module => module.default);',
+					'/src/async-import.js': 'export default import("./async-import2").then(module => module.default);',
+					'/src/async-import2.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					config.output.filename = '[name].[contenthash].[locale].js';
+
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+
+			const assets = Object.keys(built.stats.compilation.assets);
+			const indexAsset = assets.find(a => a.includes('index') && a.includes('.en.js'));
+
+			expect(await built.require(`/dist/${indexAsset}`)).toBe(localesMulti.en['hello-key']);
+		});
 	});
 });
