@@ -24,6 +24,9 @@ import { stringifyAst } from './utils/stringify-ast';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
 
+type ContentHash = string;
+type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
+
 type Range = {
 	start: number;
 	end?: number;
@@ -122,6 +125,7 @@ function localizeAsset<LocalizedData>(
 	assetName: string,
 	placeholderLocations: PlaceholderLocation[],
 	fileNamePlaceholderLocations: number[],
+	contentHashReplacements: [Range, string][],
 	source: string,
 	map: RawSourceMap | null | false,
 	compilation: Compilation,
@@ -174,6 +178,14 @@ function localizeAsset<LocalizedData>(
 		);
 	}
 
+	for (const [range, replacement] of contentHashReplacements) {
+		magicStringInstance.overwrite(
+			range.start,
+			range.end!,
+			replacement,
+		);
+	}
+
 	const localizedCode = magicStringInstance.toString();
 
 	if (map) {
@@ -206,6 +218,27 @@ export function generateLocalizedAssets<LocalizedData>(
 		const assetsWithInfo = (compilation as WP5.Compilation).getAssets()
 			.filter(asset => asset.name.includes(fileNameTemplatePlaceholder));
 
+		const contentHashMap: ContentHashMap = new Map(
+			assetsWithInfo
+				.flatMap((asset) => {
+					// Add locale to hash for RealContentHashPlugin plugin
+					const { contenthash } = asset.info;
+					if (!contenthash) {
+						return [];
+					}
+					const contentHashArray = Array.isArray(contenthash)
+						? contenthash
+						: [contenthash];
+					return contentHashArray.map(chash => [
+						chash,
+						new Map(localeNames.map(locale => [
+							locale,
+							sha256(chash + locale).slice(0, chash.length),
+						])),
+					]);
+				}),
+		);
+
 		await Promise.all(assetsWithInfo.map(async (asset) => {
 			const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
 			const localizedAssetNames: string[] = [];
@@ -217,8 +250,20 @@ export function generateLocalizedAssets<LocalizedData>(
 					sourceString,
 					fileNameTemplatePlaceholder,
 				);
+				const contentHashLocations = [...contentHashMap.entries()]
+					.flatMap(([hash, hashesByLocale]) => findSubstringLocations(sourceString, hash)
+						.map(loc => [
+							{ start: loc, end: loc + hash.length },
+							hashesByLocale,
+						] as [Range, Map<LocaleName, string>]));
 
 				await Promise.all(localeNames.map(async (locale) => {
+					const contentHashReplacements = contentHashLocations.map(([range, hashesByLocale]) => [
+						range,
+						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+						hashesByLocale.get(locale)!,
+					] as [Range, string]);
+
 					let newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
 
 					// object spread breaks types
@@ -231,21 +276,20 @@ export function generateLocalizedAssets<LocalizedData>(
 
 					// Add locale to hash for RealContentHashPlugin plugin
 					if (newInfo.contenthash) {
-						let { contenthash } = newInfo;
-
+						const { contenthash } = newInfo;
 						if (Array.isArray(contenthash)) {
-							contenthash = contenthash.map((chash) => {
-								const newContentHash = sha256(chash + locale).slice(0, chash.length);
+							const newContentHashes = [];
+							for (const chash of contenthash) {
+								const newContentHash = contentHashMap.get(chash)?.get(locale) ?? chash;
+								newContentHashes.push(newContentHash);
 								newAssetName = newAssetName.replace(chash, newContentHash);
-								return newContentHash;
-							});
+							}
+							newInfo.contenthash = newContentHashes;
 						} else {
-							const newContentHash = sha256(contenthash + locale).slice(0, contenthash.length);
+							const newContentHash = contentHashMap.get(contenthash)?.get(locale) ?? contenthash;
 							newAssetName = newAssetName.replace(contenthash, newContentHash);
-							contenthash = newContentHash;
+							newInfo.contenthash = newContentHash;
 						}
-
-						newInfo.contenthash = contenthash;
 					}
 
 					localizedAssetNames.push(newAssetName);
@@ -256,6 +300,7 @@ export function generateLocalizedAssets<LocalizedData>(
 						newAssetName,
 						placeholderLocations,
 						fileNamePlaceholderLocations,
+						contentHashReplacements,
 						sourceString,
 						sourceMapForLocales.includes(locale) && map,
 						compilation,
