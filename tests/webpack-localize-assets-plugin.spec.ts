@@ -1128,6 +1128,57 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 	});
 
+	describe('throwOnMissingLocaleInFileName', () => {
+		test('single locale', async () => {
+			const built = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					configureWebpack(config);
+
+					config.output.filename = '[name].js';
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+							throwOnMissingLocaleInFileName: false,
+						}),
+					);
+				},
+			);
+
+			const { assets } = built.stats.compilation;
+			expect(Object.keys(assets).length).toBe(1);
+
+			const enBuild = built.require('/dist/index.js');
+			expect(enBuild).toBe(localesMulti.en['hello-key']);
+
+			const statsOutput = built.stats.toString();
+			expect(statsOutput).toMatch(/index\.js/);
+		});
+
+		test('multi locale, option is ignored', async () => {
+			await expect(async () => {
+				await build(
+					{
+						'/src/index.js': 'export default __("hello-key");',
+					},
+					(config) => {
+						configureWebpack(config);
+
+						config.output.filename = '[name].js';
+						config.plugins.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesMulti,
+								throwOnMissingLocaleInFileName: false,
+							}),
+						);
+					},
+				);
+			}).rejects.toThrow('output.filename must include [locale]');
+		});
+	});
+
 	describe('chunkhash', () => {
 		test('single locale', async () => {
 			const volume = {

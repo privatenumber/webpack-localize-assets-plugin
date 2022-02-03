@@ -105,7 +105,11 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				}
 
 				if (this.singleLocale) {
-					interpolateLocaleToFileName(compilation, this.singleLocale);
+					interpolateLocaleToFileName(
+						compilation,
+						this.singleLocale,
+						this.options.throwOnMissingLocaleInFileName,
+					);
 				} else {
 					/**
 					 * The reason why we replace "[locale]" with a placeholder instead of

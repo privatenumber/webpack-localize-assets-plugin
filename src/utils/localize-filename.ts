@@ -13,15 +13,18 @@ const { name } = require('../../package.json');
 export const interpolateLocaleToFileName = (
 	compilation: WP5.Compilation,
 	replaceWith: LocaleName,
+	throwOnMissingLocaleInFileName = true,
 ) => {
 	const { filename, chunkFilename } = compilation.outputOptions;
 
-	if (typeof filename === 'string') {
-		assert(filename.includes('[locale]'), 'output.filename must include [locale]');
-	}
+	if (throwOnMissingLocaleInFileName) {
+		if (typeof filename === 'string') {
+			assert(filename.includes('[locale]'), 'output.filename must include [locale]');
+		}
 
-	if (typeof chunkFilename === 'string') {
-		assert(chunkFilename.includes('[locale]'), 'output.chunkFilename must include [locale]');
+		if (typeof chunkFilename === 'string') {
+			assert(chunkFilename.includes('[locale]'), 'output.chunkFilename must include [locale]');
+		}
 	}
 
 	const interpolateHook = (
