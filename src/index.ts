@@ -118,7 +118,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 					 * The placeholder is a unique enough string to guarantee that we're not accidentally
 					 * replacing `[locale]` if it happens to be in the source JS.
 					 */
-					interpolateLocaleToFileName(compilation, fileNameTemplatePlaceholder);
+					interpolateLocaleToFileName(compilation, fileNameTemplatePlaceholder, true);
 
 					// Create localized assets by swapping out placeholders with localized strings
 					generateLocalizedAssets(
