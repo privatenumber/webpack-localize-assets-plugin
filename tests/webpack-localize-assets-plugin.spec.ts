@@ -413,8 +413,6 @@ describe(`Webpack ${webpack.version}`, () => {
 					'/src/index.js': 'export default __("hello-key");',
 				},
 				(config) => {
-					configureWebpack(config);
-
 					config.plugins.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
@@ -426,11 +424,11 @@ describe(`Webpack ${webpack.version}`, () => {
 			const { assets } = built.stats.compilation;
 			expect(Object.keys(assets).length).toBe(1);
 
-			const enBuild = built.require('/dist/index.en.js');
+			const enBuild = built.require('/dist/index.js');
 			expect(enBuild).toBe(localesMulti.en['hello-key']);
 
 			const statsOutput = built.stats.toString();
-			expect(statsOutput).toMatch(/index\.en\.js/);
+			expect(statsOutput).toMatch(/index\.js/);
 		});
 
 		test('multi locale', async () => {
@@ -465,33 +463,6 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(statsOutput).toMatch(/index\.en\.js/);
 			expect(statsOutput).toMatch(/index\.es\.js/);
 			expect(statsOutput).toMatch(/index\.ja\.js/);
-		});
-
-		test('single locale without [locale] in filename', async () => {
-			const built = await build(
-				{
-					'/src/index.js': 'export default __("hello-key");',
-				},
-				(config) => {
-					configureWebpack(config);
-
-					config.output.filename = '[name].js';
-					config.plugins.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesSingle,
-						}),
-					);
-				},
-			);
-
-			const { assets } = built.stats.compilation;
-			expect(Object.keys(assets).length).toBe(1);
-
-			const enBuild = built.require('/dist/index.js');
-			expect(enBuild).toBe(localesMulti.en['hello-key']);
-
-			const statsOutput = built.stats.toString();
-			expect(statsOutput).toMatch(/index\.js/);
 		});
 
 		test('localize assets with chunks', async () => {
