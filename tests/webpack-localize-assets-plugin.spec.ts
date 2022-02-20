@@ -649,6 +649,28 @@ describe(`Webpack ${webpack.version}`, () => {
 			);
 		});
 
+		test('unused locale with minification', async () => {
+			const built = await build(
+				{
+					'/src/index.js': '__("hello-key")',
+				},
+				(config) => {
+					configureWebpack(config);
+
+					config.optimization.minimize = true;
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+
+			const { assets } = built.stats.compilation;
+
+			expect(Object.keys(assets)).toStrictEqual(['index.en.js', 'index.es.js', 'index.ja.js']);
+		});
+
 		test('devtool eval', async () => {
 			const built = await build(
 				{
