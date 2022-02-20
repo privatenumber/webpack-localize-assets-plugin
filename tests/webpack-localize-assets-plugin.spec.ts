@@ -646,6 +646,28 @@ describe(`Webpack ${webpack.version}`, () => {
 			);
 		});
 
+		test('devtool eval', async () => {
+			const built = await build(
+				{
+					'/src/index.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					configureWebpack(config);
+
+					config.devtool = 'eval';
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+
+			const { assets } = built.stats.compilation;
+
+			expect(Object.keys(assets)).toStrictEqual(['index.en.js', 'index.es.js', 'index.ja.js']);
+		});
+
 		test('emits source-maps', async () => {
 			const built = await build(
 				{

@@ -107,7 +107,10 @@ function locatePlaceholders(sourceString: string) {
 	const placeholderLocations: PlaceholderLocation[] = [];
 
 	for (const placeholderRange of placeholderRanges) {
-		const code = sourceString.slice(placeholderRange.start, placeholderRange.end);
+		const code = sourceString
+			.slice(placeholderRange.start, placeholderRange.end)
+			.replace(/\\"/g, '"'); // In devtools: eval, so unescape \" used in eval("...")
+
 		const node = parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
 
 		placeholderLocations.push({
