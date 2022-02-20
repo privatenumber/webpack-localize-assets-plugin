@@ -521,6 +521,9 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 			);
 
+			expect(built.stats.hasWarnings()).toBe(false);
+			expect(built.stats.hasErrors()).toBe(false);
+
 			const enBuild = await built.require('/dist/index.en.js');
 			expect(enBuild.test1).toBe(`${localesMulti.en['hello-key']} world and "quotes"`);
 			expect(enBuild.test2).toBe(localesMulti.en['hello-key'].length);
