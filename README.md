@@ -176,6 +176,18 @@ You can use `localizeCompiler` to do inject more localization logic (eg. plurali
 
 ## 💁‍♀️ FAQ
 
+### How does this work and how is it so fast?
+This plugin has two modes: _Single-locale_ and _Multi-locale_.
+
+In _Single-locale mode_, it works just like [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin). It replaces the localization calls with localized strings during Webpack's module parsing stage. Since there is only one locale, localization only needs to be done once at the earliest possible stage.
+
+In _Multi-locale mode_, it inserts placeholders instead of the localized strings at the module parsing stage. After minification, all assets are duplicated for each locale and the placeholders are replaced with the localized strings via find-and-replace.
+
+The speed gains come from:
+- Applying localization to minified assets. By doing so, we can avoid re-minifying the assets for each locale.
+- Using find-and-replace to localize. Find-and-replace is literally just looking for a pattern in a string and replacing it, so there is no AST parsing costs incurred for each locale.
+
+
 ### How does this compare to [i18n-webpack-plugin](https://github.com/webpack-contrib/i18n-webpack-plugin)?
 
 _First of all, thank you to i18n-webpack-plugin for the original idea and implementation and serving the community._

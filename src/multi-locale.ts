@@ -90,16 +90,37 @@ export function markLocalizeFunction(callExpression: SimpleCallExpression) {
 }
 
 function getOriginalCall(node: Expression): SimpleCallExpression {
-	if (node.type !== 'BinaryExpression') {
-		throw new Error('Expected BinaryExpression');
+	if (node.type === 'BinaryExpression') {
+		if (node.left.type !== 'CallExpression') {
+			throw new Error('Expected CallExpression');
+		}
+
+		if (node.left.arguments[0].type !== 'CallExpression') {
+			throw new Error('Expected CallExpression');
+		}
+
+		return node.left.arguments[0];
 	}
-	if (node.left.type !== 'CallExpression') {
-		throw new Error('Expected CallExpression');
+
+	/*
+	If the localized value is not used anywhere (eg. assigned to a variable)
+	Terser converts the + operator to a , because it has no effect
+	*/
+	if (node.type === 'SequenceExpression') {
+		const [firstExpression] = node.expressions;
+
+		if (firstExpression.type !== 'CallExpression') {
+			throw new Error('Expected CallExpression');
+		}
+
+		if (firstExpression.arguments[0].type !== 'CallExpression') {
+			throw new Error('Expected CallExpression');
+		}
+
+		return firstExpression.arguments[0];
 	}
-	if (node.left.arguments[0].type !== 'CallExpression') {
-		throw new Error('Expected CallExpression');
-	}
-	return node.left.arguments[0];
+
+	throw new Error('Expected BinaryExpression or SequenceExpression');
 }
 
 function locatePlaceholders(sourceString: string) {
@@ -107,7 +128,10 @@ function locatePlaceholders(sourceString: string) {
 	const placeholderLocations: PlaceholderLocation[] = [];
 
 	for (const placeholderRange of placeholderRanges) {
-		const code = sourceString.slice(placeholderRange.start, placeholderRange.end);
+		const code = sourceString
+			.slice(placeholderRange.start, placeholderRange.end)
+			.replace(/\\"/g, '"'); // In devtools: eval, so unescape \" used in eval("...")
+
 		const node = parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
 
 		placeholderLocations.push({
