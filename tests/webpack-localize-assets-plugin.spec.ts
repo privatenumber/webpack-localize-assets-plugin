@@ -691,6 +691,10 @@ describe(`Webpack ${webpack.version}`, () => {
 			const { assets } = built.stats.compilation;
 
 			expect(Object.keys(assets)).toStrictEqual(['index.en.js', 'index.es.js', 'index.ja.js']);
+			
+			let enBuild = built.require('/dist/index.en.js');
+			
+			expect(enBuild).toBe('Hello');
 		});
 
 		test('emits source-maps', async () => {
