@@ -71,6 +71,7 @@ function findSubstringLocations(
 export type PlaceholderLocation = {
 	range: Range;
 	node: SimpleCallExpression;
+	escapeDoubleQuotes: boolean;
 };
 
 export const fileNameTemplatePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
@@ -128,15 +129,27 @@ function locatePlaceholders(sourceString: string) {
 	const placeholderLocations: PlaceholderLocation[] = [];
 
 	for (const placeholderRange of placeholderRanges) {
-		const code = sourceString
-			.slice(placeholderRange.start, placeholderRange.end)
-			.replace(/\\"/g, '"'); // In devtools: eval, so unescape \" used in eval("...")
+		let code = sourceString.slice(placeholderRange.start, placeholderRange.end);
+		const escapedDoubleQuotesPattern = /\\"/g;
+		const escapeDoubleQuotes = escapedDoubleQuotesPattern.test(code);
+
+		if (escapeDoubleQuotes) {
+			/**
+			 * When devtools: 'eval', the entire module is wrapped in an eval("")
+			 * so double quotes are escaped. For example: __(\\"hello-key\\")
+			 *
+			 * The double quotes need to be unescaped for it to be parsable
+			 */
+
+			code = code.replace(escapedDoubleQuotesPattern, '"');
+		}
 
 		const node = parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
 
 		placeholderLocations.push({
 			node: getOriginalCall(node),
 			range: placeholderRange,
+			escapeDoubleQuotes,
 		});
 	}
 
@@ -160,9 +173,9 @@ function localizeAsset<LocalizedData>(
 	const magicStringInstance = new MagicString(source);
 
 	// Localize strings
-	for (const { node, range } of placeholderLocations) {
+	for (const { node, range, escapeDoubleQuotes } of placeholderLocations) {
 		const stringKey = (node.arguments[0] as Literal).value as string;
-		const localizedCode = callLocalizeCompiler(
+		let localizedCode = callLocalizeCompiler(
 			localizeCompiler,
 			{
 				callNode: node,
@@ -182,6 +195,10 @@ function localizeAsset<LocalizedData>(
 			},
 			locale,
 		);
+
+		if (escapeDoubleQuotes) {
+			localizedCode = JSON.stringify(localizedCode).slice(1, -1);
+		}
 
 		magicStringInstance.overwrite(
 			range.start,

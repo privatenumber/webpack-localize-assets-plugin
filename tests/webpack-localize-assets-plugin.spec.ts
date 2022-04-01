@@ -674,7 +674,7 @@ describe(`Webpack ${webpack.version}`, () => {
 		test('devtool eval', async () => {
 			const built = await build(
 				{
-					'/src/index.js': 'export default __("hello-key");',
+					'/src/index.js': 'export default [__("hello-key"), __("stringWithQuotes")];',
 				},
 				(config) => {
 					configureWebpack(config);
@@ -691,6 +691,9 @@ describe(`Webpack ${webpack.version}`, () => {
 			const { assets } = built.stats.compilation;
 
 			expect(Object.keys(assets)).toStrictEqual(['index.en.js', 'index.es.js', 'index.ja.js']);
+
+			const enBuild = built.require('/dist/index.en.js');
+			expect(enBuild).toEqual([localesMulti.en['hello-key'], localesMulti.en.stringWithQuotes]);
 		});
 
 		test('emits source-maps', async () => {
