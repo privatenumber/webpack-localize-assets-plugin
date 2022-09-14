@@ -1072,8 +1072,11 @@ describe(`Webpack ${webpack.version}`, () => {
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 							localizeCompiler: {
-								__(callArguments, locale) {
+								__(callArguments, locale, localeData) {
 									expect(locale).toBe('en');
+									expect(localeData).toMatchObject({
+                    'hello-key': 'Hello',
+                  });
 									expect((this.callNode.callee as Identifier).name).toBe('__');
 									expect(this.resolveKey()).toBe('Hello');
 									return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
@@ -1108,10 +1111,11 @@ describe(`Webpack ${webpack.version}`, () => {
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 							localizeCompiler: {
-								__(callArguments, localeName) {
+								__(callArguments, localeName, localeData) {
 									compilerCalls.push([
 										...callArguments,
 										localeName,
+                    JSON.stringify(localeData),
 										this.resolveKey(),
 										(this.callNode.callee as Identifier).name,
 									]);
@@ -1141,9 +1145,9 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(statsOutput).toMatch(/index\.ja\.js/);
 
 			expect(compilerCalls).toEqual([
-				["'hello-key'", '{a}', 'en', 'Hello', '__'],
-				["'hello-key'", '{a}', 'es', 'Hola', '__'],
-				["'hello-key'", '{a}', 'ja', 'こんにちは', '__'],
+				["'hello-key'", '{a}', 'en', "{\"hello-key\":\"Hello\",\"stringWithQuotes\":\"\\\"quotes\\\"\"}", 'Hello', '__'],
+				["'hello-key'", '{a}', 'es', "{\"hello-key\":\"Hola\",\"stringWithQuotes\":\"\\\"quotes\\\"\"}", 'Hola', '__'],
+				["'hello-key'", '{a}', 'ja', "{\"hello-key\":\"こんにちは\",\"stringWithQuotes\":\"\\\"quotes\\\"\"}", 'こんにちは', '__'],
 			]);
 		});
 

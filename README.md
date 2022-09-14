@@ -142,6 +142,7 @@ type LocalizeCompiler = {
         this: LocalizeCompilerContext,
         localizerArguments: string[],
         localeName: string,
+        localeData: LocaleStrings<LocalizedData>,
     ) => string
 }
 ```
@@ -149,7 +150,7 @@ type LocalizeCompiler = {
 Default:
 ```ts
 const localizeCompiler = {
-    __(localizerArguments) {
+    __(localizerArguments, localeName, localeData) {
         const [key] = localizerArguments
         const keyResolved = this.resolveKey()
         return keyResolved ? JSON.stringify(keyResolved) : key
