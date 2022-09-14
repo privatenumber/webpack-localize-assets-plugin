@@ -1075,8 +1075,8 @@ describe(`Webpack ${webpack.version}`, () => {
 								__(callArguments, locale, localeData) {
 									expect(locale).toBe('en');
 									expect(localeData).toMatchObject({
-                    'hello-key': 'Hello',
-                  });
+										'hello-key': 'Hello',
+									});
 									expect((this.callNode.callee as Identifier).name).toBe('__');
 									expect(this.resolveKey()).toBe('Hello');
 									return `compiled('${this.resolveKey(callArguments[0].slice(1, -1))}')`;
@@ -1115,7 +1115,7 @@ describe(`Webpack ${webpack.version}`, () => {
 									compilerCalls.push([
 										...callArguments,
 										localeName,
-                    JSON.stringify(localeData),
+										JSON.stringify(localeData),
 										this.resolveKey(),
 										(this.callNode.callee as Identifier).name,
 									]);

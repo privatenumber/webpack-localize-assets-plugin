@@ -1,17 +1,17 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import type { SimpleCallExpression } from 'estree';
 import {
-  Options,
-  validateOptions,
-  Compiler,
-  Module,
-  NormalModuleFactory,
-  LocalizedStringKey,
-  LocalesMap,
-  LocaleName,
-  LocaleFilePath,
-  LocalizeCompiler,
-  WP5,
+	Options,
+	validateOptions,
+	Compiler,
+	Module,
+	NormalModuleFactory,
+	LocalizedStringKey,
+	LocalesMap,
+	LocaleName,
+	LocaleFilePath,
+	LocalizeCompiler,
+	WP5,
 	LocalizeCompilerContext,
 } from './types';
 import { loadLocales } from './utils/load-locales';
@@ -232,7 +232,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				emitError: message => reportModuleError(module, new WebpackError(message)),
 			},
 			singleLocale,
-      this.locales[singleLocale]
+			this.locales[singleLocale]
 		);
 	}
 
