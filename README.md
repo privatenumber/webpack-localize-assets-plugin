@@ -58,10 +58,10 @@ Required
 
 Type:
 ```ts
-{
+type Locales = {
     [locale: string]: string | {
-        [stringKey: string]: string;
-    };
+        [stringKey: string]: string
+    }
 }
 ```
 
@@ -72,30 +72,36 @@ The key should be the locale name, and the value can either be _the path to the 
 Using a JSON path has the advantage of automatically detecting changes across compilations, which is useful in development.
 
 Example:
-```json5
-{
-    en: './locales/en.json',
-    es: './locales/es.json',
-    ...
-}
+```js
+new LocalizeAssetsPlugin({
+    locales: {
+        en: './locales/en.json',
+        es: './locales/es.json'
+        // ...
+    }
+    // ...
+})
 ```
 
 Or:
 
-```json5
-{
-    en: {
-        helloWorld: 'Hello World!',
-        goodbyeWorld: 'Goodbye World!',
-        ...
-    },
-    es: {
-        helloWorld: '¡Hola Mundo!',
-        goodbyeWorld: '¡Adiós Mundo!',
-        ...
-    },
-    ...
-}
+```js
+new LocalizeAssetsPlugin({
+    locales: {
+        en: {
+            helloWorld: 'Hello World!',
+            goodbyeWorld: 'Goodbye World!'
+            // ...
+        },
+        es: {
+            helloWorld: '¡Hola Mundo!',
+            goodbyeWorld: '¡Adiós Mundo!'
+            // ...
+        }
+        // ...
+    }
+    // ...
+})
 ```
 
 #### functionName
@@ -106,7 +112,7 @@ Default: `__`
 The function name to use to detect localization string keys.
 
 ```js
-const message = __('helloWorld'); // => 'Hello world!'
+const message = __('helloWorld') // => 'Hello world!'
 ```
 #### throwOnMissing
 Type: `boolean`
@@ -130,23 +136,23 @@ Enable to see warnings when unused string keys are found.
 ### localizeCompiler
 Type:
 ```ts
-Record<
-    string, // localizer function name (eg. __)
-    (
+type LocalizeCompiler = {
+    // localizer function name (eg. __)
+    [functionName: string]: (
         this: LocalizeCompilerContext,
         localizerArguments: string[],
         localeName: string,
     ) => string
->
+}
 ```
 
 Default:
 ```ts
-{
+const localizeCompiler = {
     __(localizerArguments) {
-        const [key] = localizerArguments;
-        const keyResolved = this.resolveKey();
-        return keyResolved ? JSON.stringify(keyResolved) : key;
+        const [key] = localizerArguments
+        const keyResolved = this.resolveKey()
+        return keyResolved ? JSON.stringify(keyResolved) : key
     }
 }
 ```
