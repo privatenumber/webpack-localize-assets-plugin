@@ -27,15 +27,12 @@
 		"lint": "eslint .",
 		"build": "tsc",
 		"typecheck": "tsc --noEmit",
-		"pretest": "npm run build",
-		"test": "npm run test:wp4 && npm run test:wp5",
+		"test": "pnpm build && pnpm test:wp4 && pnpm test:wp5",
 		"test:wp4": "jest",
 		"test:wp5": "WEBPACK=5 jest"
 	},
-	"husky": {
-		"hooks": {
-			"pre-commit": "npm run build && lint-staged && npm test"
-		}
+	"simple-git-hooks": {
+		"pre-commit": "pnpm build && pnpm lint-staged && pnpm test"
 	},
 	"lint-staged": {
 		"*.{js,ts}": "eslint"
@@ -62,10 +59,10 @@
 		"css-loader": "^5.2.4",
 		"es-jest": "^1.5.0",
 		"eslint": "^8.23.1",
-		"husky": "^4.3.8",
 		"jest": "^27.3.1",
 		"lint-staged": "^12.1.2",
 		"mini-css-extract-plugin": "^1.6.0",
+		"simple-git-hooks": "^2.8.0",
 		"tempy": "^1.0.1",
 		"typescript": "^4.5.2",
 		"webpack": "4.42.0",
