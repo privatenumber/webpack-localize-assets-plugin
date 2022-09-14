@@ -1145,9 +1145,9 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(statsOutput).toMatch(/index\.ja\.js/);
 
 			expect(compilerCalls).toEqual([
-				["'hello-key'", '{a}', 'en', "{\"hello-key\":\"Hello\",\"stringWithQuotes\":\"\\\"quotes\\\"\"}", 'Hello', '__'],
-				["'hello-key'", '{a}', 'es', "{\"hello-key\":\"Hola\",\"stringWithQuotes\":\"\\\"quotes\\\"\"}", 'Hola', '__'],
-				["'hello-key'", '{a}', 'ja', "{\"hello-key\":\"こんにちは\",\"stringWithQuotes\":\"\\\"quotes\\\"\"}", 'こんにちは', '__'],
+				["'hello-key'", '{a}', 'en', '{"hello-key":"Hello","stringWithQuotes":"\\"quotes\\""}', 'Hello', '__'],
+				["'hello-key'", '{a}', 'es', '{"hello-key":"Hola","stringWithQuotes":"\\"quotes\\""}', 'Hola', '__'],
+				["'hello-key'", '{a}', 'ja', '{"hello-key":"こんにちは","stringWithQuotes":"\\"quotes\\""}', 'こんにちは', '__'],
 			]);
 		});
 

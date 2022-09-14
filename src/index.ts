@@ -232,7 +232,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				emitError: message => reportModuleError(module, new WebpackError(message)),
 			},
 			singleLocale,
-			this.locales[singleLocale]
+			this.locales[singleLocale],
 		);
 	}
 
