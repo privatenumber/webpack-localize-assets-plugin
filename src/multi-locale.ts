@@ -132,6 +132,7 @@ function locatePlaceholders(sourceString: string) {
 		let code = sourceString.slice(placeholderRange.start, placeholderRange.end);
 		const escapedDoubleQuotesPattern = /\\"/g;
 		const escapeDoubleQuotes = escapedDoubleQuotesPattern.test(code);
+
 		if (escapeDoubleQuotes) {
 			/**
 			 * When devtools: 'eval', the entire module is wrapped in an eval("")
