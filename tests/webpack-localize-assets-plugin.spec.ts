@@ -939,7 +939,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 			expect(stats.hasWarnings()).toBe(false);
 
-			delete watching.require.cache['/dist/index.en.js'];
+			delete watching.require.cache[watching.require.resolve('/dist/index.en.js')];
 			enBuild = watching.require('/dist/index.en.js');
 			expect(enBuild).toBe('Hello World');
 
@@ -953,7 +953,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(warnings.length).toBe(1);
 			expect(warnings[0].message).toMatch('Missing localization for key "hello-key" used in /src/index.js:1:15 from locales: en');
 
-			delete watching.require.cache['/dist/index.en.js'];
+			delete watching.require.cache[watching.require.resolve('/dist/index.en.js')];
 			enBuild = watching.require('/dist/index.en.js');
 			expect(enBuild).toBe('hello-key World');
 
