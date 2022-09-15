@@ -160,7 +160,11 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		const {
 			locales, singleLocale, functionNames, nestedKeys,
 		} = this;
-		const validator = localizedStringKeyValidator(locales, this.options.throwOnMissing);
+		const validator = localizedStringKeyValidator(
+			locales,
+			this.options.throwOnMissing,
+			this.nestedKeys,
+		);
 
 		const handler = (
 			parser: WP5.javascript.JavascriptParser,
@@ -237,7 +241,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 				callNode,
 				resolveKey: (stringKey = key) => {
 					const localeData = this.locales[singleLocale];
-					if (localeData[stringKey]) {
+					if (localeData[stringKey] || !this.nestedKeys) {
 						return localeData[stringKey];
 					}
 					return getNestedKey(stringKey, localeData);

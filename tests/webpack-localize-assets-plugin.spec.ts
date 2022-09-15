@@ -1433,7 +1433,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("error.notFound");',
 			};
 
-			const builtA = await build(
+			const built = await build(
 				volume,
 				(config) => {
 					configureWebpack(config);
@@ -1445,9 +1445,12 @@ describe(`Webpack ${webpack.version}`, () => {
 					);
 				},
 			);
-			const assetFilenameA = Object.keys(builtA.stats.compilation.assets)[0];
-			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
-			expect(enBuildA).toBe('Message not found!');
+
+			expect(built.stats.hasWarnings()).toBe(false);
+
+			const assetFilename = Object.keys(built.stats.compilation.assets)[0];
+			const enBuild = built.require(`/dist/${assetFilename}`);
+			expect(enBuild).toBe('Message not found!');
 		});
 		test('locale with nested JSON path and nestedKeys not enabled', async () => {
 			const volume = {
