@@ -20,6 +20,7 @@ import {
 import type { StringKeysCollection } from './utils/track-unused-localized-strings';
 import { callLocalizeCompiler } from './utils/call-localize-compiler';
 import { stringifyAst } from './utils/stringify-ast';
+import { getNestedKey } from './utils/get-nested-key';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
@@ -168,6 +169,7 @@ function localizeAsset<LocalizedData>(
 	compilation: Compilation,
 	localizeCompiler: LocalizeCompiler<LocalizedData>,
 	trackStringKeys: StringKeysCollection | undefined,
+	nestedKeys: boolean,
 ) {
 	const localeData = locales[locale];
 	const magicStringInstance = new MagicString(source);
@@ -179,7 +181,12 @@ function localizeAsset<LocalizedData>(
 			localizeCompiler,
 			{
 				callNode: node,
-				resolveKey: (key = stringKey) => localeData[key],
+				resolveKey: (key = stringKey) => {
+					if (localeData[key] || !nestedKeys) {
+						return localeData[key];
+					}
+					return getNestedKey(key, localeData);
+				},
 				emitWarning: (message) => {
 					const hasWarning = compilation.warnings.find(warning => warning.message === message);
 					if (!hasWarning) {
@@ -254,6 +261,7 @@ export function generateLocalizedAssets<LocalizedData>(
 	sourceMapForLocales: LocaleName[],
 	trackStringKeys: StringKeysCollection | undefined,
 	localizeCompiler: LocalizeCompiler<LocalizedData>,
+	nestedKeys: boolean,
 ) {
 	const generateLocalizedAssetsHandler = async () => {
 		const assetsWithInfo = (compilation as WP5.Compilation).getAssets()
@@ -347,6 +355,7 @@ export function generateLocalizedAssets<LocalizedData>(
 						compilation,
 						localizeCompiler,
 						trackStringKeys,
+						nestedKeys,
 					);
 
 					// @ts-expect-error Outdated @type

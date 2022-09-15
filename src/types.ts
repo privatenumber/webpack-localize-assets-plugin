@@ -19,6 +19,7 @@ export type Options<LocalizedData = string> = {
 	throwOnMissing?: boolean;
 	sourceMapForLocales?: string[];
 	warnOnUnusedString?: boolean;
+	nestedKeys?: boolean;
 } & LocalizeCompilerOption<LocalizedData>;
 
 type LocalizeCompilerOption<LocalizedData>

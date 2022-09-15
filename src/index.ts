@@ -31,6 +31,7 @@ import {
 } from './multi-locale';
 import { callLocalizeCompiler } from './utils/call-localize-compiler';
 import { stringifyAst } from './utils/stringify-ast';
+import { getNestedKey } from './utils/get-nested-key';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../package.json');
@@ -47,6 +48,8 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 	private readonly localizeCompiler: LocalizeCompiler<LocalizedData>;
 
 	private readonly functionNames: string[];
+
+	private readonly nestedKeys: boolean;
 
 	private locales: LocalesMap<LocalizedData> = {};
 
@@ -73,6 +76,8 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		);
 
 		this.functionNames = Object.keys(this.localizeCompiler);
+
+		this.nestedKeys = this.options.nestedKeys || false;
 	}
 
 	apply(compiler: Compiler) {
@@ -128,6 +133,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 						this.options.sourceMapForLocales || this.localeNames,
 						this.trackStringKeys,
 						this.localizeCompiler,
+						this.nestedKeys,
 					);
 
 					// Update chunkHash based on localized content
@@ -151,7 +157,9 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 	private interceptTranslationFunctionCalls(
 		normalModuleFactory: NormalModuleFactory,
 	) {
-		const { locales, singleLocale, functionNames } = this;
+		const {
+			locales, singleLocale, functionNames, nestedKeys,
+		} = this;
 		const validator = localizedStringKeyValidator(locales, this.options.throwOnMissing);
 
 		const handler = (
@@ -193,7 +201,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			const replacement = (
 				singleLocale
 					? this.getLocalizedString(callExpressionNode, stringKey, module, singleLocale)
-					: this.getMarkedFunctionPlaceholder(callExpressionNode, stringKey, module)
+					: this.getMarkedFunctionPlaceholder(callExpressionNode, stringKey, module, nestedKeys)
 			);
 			toConstantDependency(parser, replacement)(callExpressionNode);
 
@@ -227,7 +235,13 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			this.localizeCompiler,
 			{
 				callNode,
-				resolveKey: (stringKey = key) => this.locales[singleLocale][stringKey],
+				resolveKey: (stringKey = key) => {
+					const localeData = this.locales[singleLocale];
+					if (localeData[stringKey]) {
+						return localeData[stringKey];
+					}
+					return getNestedKey(stringKey, localeData);
+				},
 				emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
 				emitError: message => reportModuleError(module, new WebpackError(message)),
 			},
@@ -247,6 +261,7 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		callNode: SimpleCallExpression,
 		key: string,
 		module: Module,
+		nestedKeys: boolean,
 	): string {
 		// Track used keys for hash
 		if (!module.buildInfo.localized) {
@@ -255,7 +270,13 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 
 		if (!module.buildInfo.localized[key]) {
 			module.buildInfo.localized[key] = this.localeNames.map(
-				locale => this.locales[locale][key],
+				(locale) => {
+					const localeData = this.locales[locale];
+					if (localeData[key] || !nestedKeys) {
+						return localeData[key];
+					}
+					return getNestedKey(key, localeData);
+				},
 			);
 		}
 
