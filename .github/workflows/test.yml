@@ -27,7 +27,7 @@ jobs:
         run_install: true
 
     - name: Test
-      run: npm run test
+      run: pnpm test
 
     - name: Lint
-      run: npm run lint
+      run: pnpm lint
