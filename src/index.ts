@@ -64,13 +64,9 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			[this.singleLocale] = this.localeNames;
 		}
 
-		this.localizeCompiler = (
-			this.options.localizeCompiler
-				? this.options.localizeCompiler
-				: {
-					[this.options.functionName ?? defaultLocalizerName]: defaultLocalizeCompilerFunction,
-				}
-		);
+		this.localizeCompiler = this.options.localizeCompiler ?? {
+			[this.options.functionName ?? defaultLocalizerName]: defaultLocalizeCompilerFunction,
+		};
 
 		this.functionNames = Object.keys(this.localizeCompiler);
 	}
