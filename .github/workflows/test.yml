@@ -2,9 +2,8 @@ name: Test
 
 on:
   push:
-    branches: [develop]
+    branches: develop
   pull_request:
-    branches: [master, develop]
 
 jobs:
   test:
@@ -31,3 +30,6 @@ jobs:
 
     - name: Lint
       run: pnpm lint
+
+    - name: Type check
+      run: pnpm type-check

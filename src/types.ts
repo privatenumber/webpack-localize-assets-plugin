@@ -2,30 +2,15 @@ import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
 import type { SimpleCallExpression } from 'estree';
 import hasOwnProp from 'has-own-prop';
-
-export type LocaleName = string;
-export type LocaleFilePath = string;
-export type LocalizedStringKey = string;
-export type LocaleStrings<LocalizedData> = Record<LocalizedStringKey, LocalizedData>;
-export type LocalesMap<LocalizedData> = Record<LocaleName, LocaleStrings<LocalizedData>>;
-export type UnprocessedLocalesMap<LocalizedData> = Record<
+import type {
 	LocaleName,
-	LocaleFilePath | LocaleStrings<LocalizedData>
->;
+	LocaleStrings,
+	Options,
+} from './types-options';
 
-export type Options<LocalizedData = string> = {
-	locales: UnprocessedLocalesMap<LocalizedData>;
-	functionName?: string;
-	throwOnMissing?: boolean;
-	sourceMapForLocales?: string[];
-	warnOnUnusedString?: boolean;
-} & LocalizeCompilerOption<LocalizedData>;
+export * from './types-options';
 
-type LocalizeCompilerOption<LocalizedData>
-	= LocalizedData extends string // optional if the localized data is a string
-		? { localizeCompiler?: LocalizeCompiler<LocalizedData> }
-		: { localizeCompiler: LocalizeCompiler<LocalizedData> };
-
+export type LocalesMap<LocalizedData> = Record<LocaleName, LocaleStrings<LocalizedData>>;
 export interface LocalizeCompilerContext<LocalizedData = string> {
 	readonly callNode: SimpleCallExpression;
 	resolveKey(stringKey?: string): LocalizedData;
