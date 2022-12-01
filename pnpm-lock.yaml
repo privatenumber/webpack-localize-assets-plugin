@@ -26,7 +26,7 @@ specifiers:
   webpack: 4.42.0
   webpack-manifest-plugin: ^3.1.1
   webpack-sources: ^2.2.0
-  webpack-test-utils: ^1.1.0
+  webpack-test-utils: ^2.0.0
   webpack5: npm:webpack@5.10.1
 
 dependencies:
@@ -57,7 +57,7 @@ devDependencies:
   typescript: 4.9.3
   webpack: 4.42.0
   webpack-manifest-plugin: 3.1.1_webpack@4.42.0
-  webpack-test-utils: 1.1.0_webpack@4.42.0
+  webpack-test-utils: 2.0.0_webpack@4.42.0
   webpack5: /webpack/5.10.1
 
 packages:
@@ -3736,8 +3736,8 @@ packages:
     resolution: {integrity: sha512-cybjIfiiE+pTWicSCLFHSrXZ6EilF30oh91FDP9S2B051prEa7QWfrVTQm10/dDpswBDXZugPa1Ogu8Yh+HV0Q==}
     dev: true
 
-  /fs-require/1.4.0:
-    resolution: {integrity: sha512-ZytCzc6QAE0lprblNErZJuDVNoT0JPRSBCUXIMrIB0mLlwcAppbE5fqUyqC8zhgrrR3+whvpKLxOqtk8EnSbeA==}
+  /fs-require/1.5.0:
+    resolution: {integrity: sha512-TguC+1YCkfBeohSKz/CKjArD0zry2ns0aqejCLVncy2ZHpCM9hJqpuzBu0EgzEPKRgL8CLNmw0Jpmi+m7gtaDQ==}
     dev: true
 
   /fs-write-stream-atomic/1.0.10:
@@ -5462,8 +5462,8 @@ packages:
     resolution: {integrity: sha512-AW4DRS3QbBayY/jJmD8437V1Gombjf8RSOUCMFBuo5iHi58AGEgVCKQ+ezHkZZDpAQS75hcBMpLqjpJTjtUL7w==}
     dev: true
 
-  /memfs/3.3.0:
-    resolution: {integrity: sha512-BEE62uMfKOavX3iG7GYX43QJ+hAeeWnwIAuJ/R6q96jaMtiLzhsxHJC8B1L7fK7Pt/vXDRwb3SG/yBpNGDPqzg==}
+  /memfs/3.4.12:
+    resolution: {integrity: sha512-BcjuQn6vfqP+k100e0E9m61Hyqa//Brp+I3f0OBmN0ATHlFA8vx3Lt8z57R3u2bPqe3WGDBC+nF72fTH7isyEw==}
     engines: {node: '>= 4.0.0'}
     dependencies:
       fs-monkey: 1.0.3
@@ -7716,13 +7716,13 @@ packages:
       source-map: 0.6.1
     dev: true
 
-  /webpack-test-utils/1.1.0_webpack@4.42.0:
-    resolution: {integrity: sha512-zJaJZsa3v8jFx41uiVSF6V/8wd4zuX/DtDZkm7t8f8WlxP0W3Iwj3BikZx4C45EX7+yTUBWmKbkknoSsaIhFmw==}
+  /webpack-test-utils/2.0.0_webpack@4.42.0:
+    resolution: {integrity: sha512-zrXKWKxLydoCfDzUQY6DhQbkoiL1NfN/7e5Kn1ZUM9pLs2pVxZ1M6N7pHjAkJD63ZDOtIyKOsPbMX1ae47Ht/A==}
     peerDependencies:
       webpack: ^4.40.0 || ^5.0.0
     dependencies:
-      fs-require: 1.4.0
-      memfs: 3.3.0
+      fs-require: 1.5.0
+      memfs: 3.4.12
       unionfs: 4.4.0
       webpack: 4.42.0
     dev: true
