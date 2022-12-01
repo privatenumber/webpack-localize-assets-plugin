@@ -26,7 +26,7 @@
 	"scripts": {
 		"lint": "eslint .",
 		"build": "tsc",
-		"typecheck": "tsc --noEmit",
+		"type-check": "tsc --noEmit",
 		"test": "pnpm build && pnpm test:wp4 && pnpm test:wp5",
 		"test:wp4": "pnpm --use-node-version=12.22.12 exec jest",
 		"test:wp5": "WEBPACK=5 pnpm --use-node-version=12.22.12 exec jest"
