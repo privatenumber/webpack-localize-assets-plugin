@@ -3,12 +3,10 @@ import {
 	LocaleName,
 	WP5,
 } from '../types';
+import { name } from '../../package.json';
 import {
 	isWebpack5Compilation,
 } from './webpack';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../../package.json');
 
 export const interpolateLocaleToFileName = (
 	compilation: WP5.Compilation,

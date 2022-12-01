@@ -1,5 +1,6 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import type { SimpleCallExpression } from 'estree';
+import { name } from '../package.json';
 import {
 	Options,
 	validateOptions,
@@ -30,9 +31,6 @@ import {
 } from './multi-locale';
 import { callLocalizeCompiler } from './utils/call-localize-compiler';
 import { stringifyAst } from './utils/stringify-ast';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../package.json');
 
 const defaultLocalizerName = '__';
 
@@ -281,4 +279,4 @@ function defaultLocalizeCompilerFunction(
 	return keyResolved ? JSON.stringify(keyResolved) : key;
 }
 
-export = LocalizeAssetsPlugin;
+export default LocalizeAssetsPlugin;

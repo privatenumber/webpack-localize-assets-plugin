@@ -7,6 +7,7 @@
 		"outDir": "dist",
 		"strict": true,
 		"skipLibCheck": true,
+		"resolveJsonModule": true,
 
 		// Node 12
 		"module": "commonjs",
