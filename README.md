@@ -133,6 +133,13 @@ Default: `false`
 
 Enable to see warnings when unused string keys are found.
 
+#### nestedKeys
+Type: `boolean`
+
+Default: `false`
+
+Enable to used nested JSON `{ hello : { world : 'Hello World' } }`: `hello.world` = `Hello World`
+
 ### localizeCompiler
 Type:
 ```ts

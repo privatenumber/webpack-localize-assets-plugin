@@ -27,6 +27,30 @@ const localesMulti = {
 		stringWithQuotes: '"quotes"',
 	},
 };
+const localesNestedJSON = {
+	en: {
+		error: {
+			notFound: 'Message not found!',
+			'not.found': 'Message not found!',
+			'string.validate': {
+				'not.found': 'Message not found!',
+			},
+		},
+		'message.valid': 'Message valid!',
+		ok: 'Ok',
+	},
+	de: {
+		error: {
+			notFound: 'Nachricht nicht gefunden!',
+			'not.found': 'Nachricht nicht gefunden!',
+			'string.validate': {
+				'not.found': 'Nachricht nicht gefunden!',
+			},
+		},
+		'message.valid': 'Nachricht valid!',
+		ok: 'Ok',
+	},
+};
 
 function configureWebpack(config: DefaultWebpackConfig) {
 	config.output.filename = '[name].[locale].js';
@@ -1408,6 +1432,120 @@ describe(`Webpack ${webpack.version}`, () => {
 			const indexAsset = assets.find(a => a.includes('index') && a.includes('.en.js'));
 
 			expect(await built.require(`/dist/${indexAsset}`)).toBe(localesMulti.en['hello-key']);
+		});
+	});
+
+	describe('nested JSON', () => {
+		test('locale with nested JSON path', async () => {
+			const volume = {
+				'/src/index.js': 'export default __("error.notFound");',
+			};
+
+			const built = await build(
+				volume,
+				(config) => {
+					configureWebpack(config);
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesNestedJSON,
+							nestedKeys: true,
+						}),
+					);
+				},
+			);
+
+			expect(built.stats.hasWarnings()).toBe(false);
+
+			const assetFilename = Object.keys(built.stats.compilation.assets)[0];
+			const enBuild = built.require(`/dist/${assetFilename}`);
+			expect(enBuild).toBe('Message not found!');
+		});
+		test('locale with partial nested JSON path', async () => {
+			const volume = {
+				'/src/index.js': 'export default [__("error.not.found"), __("error.string.validate.not.found")];',
+			};
+
+			const built = await build(
+				volume,
+				(config) => {
+					configureWebpack(config);
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesNestedJSON,
+							nestedKeys: true,
+						}),
+					);
+				},
+			);
+
+			console.log(built.stats.compilation.warnings);
+			expect(built.stats.hasWarnings()).toBe(false);
+
+			const assetFilename = Object.keys(built.stats.compilation.assets)[0];
+			const enBuild = built.require(`/dist/${assetFilename}`);
+			expect(enBuild).toEqual(['Message not found!', 'Message not found!']);
+		});
+		test('locale with nested JSON path and nestedKeys not enabled', async () => {
+			const volume = {
+				'/src/index.js': 'export default __("error.notFound");',
+			};
+
+			const builtA = await build(
+				volume,
+				(config) => {
+					configureWebpack(config);
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesNestedJSON,
+						}),
+					);
+				},
+			);
+			const assetFilenameA = Object.keys(builtA.stats.compilation.assets)[0];
+			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
+			expect(enBuildA).toBe('error.notFound');
+		});
+		test('locale with . in the name but is no nested JSON path', async () => {
+			const volume = {
+				'/src/index.js': 'export default __("message.valid");',
+			};
+
+			const builtA = await build(
+				volume,
+				(config) => {
+					configureWebpack(config);
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesNestedJSON,
+							nestedKeys: true,
+						}),
+					);
+				},
+			);
+			const assetFilenameA = Object.keys(builtA.stats.compilation.assets)[0];
+			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
+			expect(enBuildA).toBe('Message valid!');
+		});
+		test('locale with no nested JSON path', async () => {
+			const volume = {
+				'/src/index.js': 'export default __("ok");',
+			};
+
+			const builtA = await build(
+				volume,
+				(config) => {
+					configureWebpack(config);
+					config.plugins.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesNestedJSON,
+							nestedKeys: true,
+						}),
+					);
+				},
+			);
+			const assetFilenameA = Object.keys(builtA.stats.compilation.assets)[0];
+			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
+			expect(enBuildA).toBe('Ok');
 		});
 	});
 });

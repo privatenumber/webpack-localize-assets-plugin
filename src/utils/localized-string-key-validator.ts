@@ -9,6 +9,7 @@ import {
 import {
 	reportModuleWarning,
 } from './webpack';
+import { getNestedKey } from './get-nested-key';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { name } = require('../../package.json');
@@ -16,6 +17,7 @@ const { name } = require('../../package.json');
 export function localizedStringKeyValidator<LocalizedData>(
 	locales: LocalesMap<LocalizedData>,
 	throwOnMissing?: boolean,
+	nestedKeys?: boolean,
 ) {
 	const validatedLocales = new Set<LocalizedStringKey>();
 
@@ -32,7 +34,13 @@ export function localizedStringKeyValidator<LocalizedData>(
 			validatedLocales.add(stringKey);
 
 			const keyMissingFromLocales = Object.keys(locales).filter(
-				locale => !hasOwnProp(locales[locale], stringKey),
+				(locale) => {
+					const localeData = locales[locale];
+					if (localeData[stringKey] || !nestedKeys) {
+						return !hasOwnProp(locales[locale], stringKey);
+					}
+					return !getNestedKey(stringKey, localeData);
+				},
 			);
 			const isMissingFromLocales = keyMissingFromLocales.length > 0;
 
