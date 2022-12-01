@@ -3,9 +3,9 @@ import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
-import { build, watch, DefaultWebpackConfig } from 'webpack-test-utils';
+import { build, watch } from 'webpack-test-utils';
 import WebpackLocalizeAssetsPlugin from '..';
-import { Compiler, WP5 } from '../src/types';
+import type { Compiler, Compilation } from 'webpack5';
 
 const localesEmpty = {};
 const localesSingle = {
@@ -28,8 +28,8 @@ const localesMulti = {
 	},
 };
 
-function configureWebpack(config: DefaultWebpackConfig) {
-	config.output.filename = '[name].[locale].js';
+function configureWebpack(config: webpack.Configuration) {
+	config.output!.filename = '[name].[locale].js';
 }
 
 describe(`Webpack ${webpack.version}`, () => {
@@ -41,7 +41,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				await build(
 					{},
 					(config) => {
-						config.plugins.push(
+						config.plugins!.push(
 							// @ts-expect-error testing no option
 							new WebpackLocalizeAssetsPlugin(),
 						);
@@ -55,7 +55,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				await build(
 					{},
 					(config) => {
-						config.plugins.push(
+						config.plugins!.push(
 							// @ts-expect-error testing no option.locales
 							new WebpackLocalizeAssetsPlugin({}),
 						);
@@ -69,7 +69,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				await build(
 					{},
 					(config) => {
-						config.plugins.push(
+						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesEmpty,
 							}),
@@ -122,7 +122,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -140,8 +140,8 @@ describe(`Webpack ${webpack.version}`, () => {
 					'/src/index.js': 'export default "[locale]";',
 				},
 				(config) => {
-					config.output.filename = '[name].[locale].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[locale].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -166,7 +166,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -189,7 +189,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					(config) => {
 						configureWebpack(config);
 
-						config.plugins.push(
+						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesSingle,
 								sourceMapForLocales: ['non-existent-locale'],
@@ -209,7 +209,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					(config) => {
 						configureWebpack(config);
 
-						config.plugins.push(
+						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesSingle,
 							}),
@@ -232,7 +232,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					(config) => {
 						configureWebpack(config);
 
-						config.plugins.push(
+						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesMulti,
 							}),
@@ -255,7 +255,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					(config) => {
 						configureWebpack(config);
 
-						config.plugins.push(
+						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesMulti,
 								throwOnMissing: true,
@@ -276,8 +276,8 @@ describe(`Webpack ${webpack.version}`, () => {
 							'/src/index.js': '',
 						},
 						(config) => {
-							config.output.filename = '[name].js';
-							config.plugins.push(
+							config.output!.filename = '[name].js';
+							config.plugins!.push(
 								new WebpackLocalizeAssetsPlugin({
 									locales: localesMulti,
 								}),
@@ -296,8 +296,8 @@ describe(`Webpack ${webpack.version}`, () => {
 						(config) => {
 							configureWebpack(config);
 
-							config.output.chunkFilename = '[name].js';
-							config.plugins.push(
+							config.output!.chunkFilename = '[name].js';
+							config.plugins!.push(
 								new WebpackLocalizeAssetsPlugin({
 									locales: localesMulti,
 								}),
@@ -315,7 +315,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					(config) => {
 						configureWebpack(config);
 
-						config.plugins.push(
+						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesSingle,
 							}),
@@ -357,7 +357,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					(config) => {
 						configureWebpack(config);
 
-						config.plugins.push(
+						config.plugins!.push(
 							new WebpackLocalizeAssetsPlugin({
 								locales: localesMulti,
 								warnOnUnusedString: true,
@@ -390,7 +390,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -413,7 +413,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					'/src/index.js': 'export default __("hello-key");',
 				},
 				(config) => {
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -439,7 +439,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -475,7 +475,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -512,8 +512,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.optimization.minimize = true;
-					config.plugins.push(
+					config.optimization!.minimize = true;
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -545,7 +545,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.module.rules.push({
+					config.module!.rules.push({
 						test: /\.css$/,
 						use: [
 							MiniCssExtractPlugin.loader,
@@ -553,7 +553,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						],
 					});
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -579,7 +579,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.module.rules.push({
+					config.module!.rules.push({
 						test: /\.css$/,
 						use: [
 							MiniCssExtractPlugin.loader,
@@ -587,7 +587,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						],
 					});
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -605,8 +605,8 @@ describe(`Webpack ${webpack.version}`, () => {
 			const FakeMinifier = {
 				name: 'FakeMinfier',
 
-				apply(compiler: Compiler) {
-					compiler.hooks.compilation.tap(FakeMinifier.name, (compilation) => {
+				apply(compiler: any) {
+					(compiler as Compiler).hooks.compilation.tap(FakeMinifier.name, (compilation) => {
 						const checkAssets = () => {
 							const assets = Object.keys(compilation.assets);
 							expect(assets.length).toBe(1);
@@ -617,11 +617,10 @@ describe(`Webpack ${webpack.version}`, () => {
 						};
 
 						if (isWebpack5) {
-							(compilation as WP5.Compilation).hooks.processAssets.tap(
+							compilation.hooks.processAssets.tap(
 								{
 									name: FakeMinifier.name,
-									stage: (compilation.constructor as typeof WP5.Compilation)
-										.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
+									stage: (compilation.constructor as typeof Compilation).PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
 								},
 								checkAssets,
 							);
@@ -639,7 +638,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -657,8 +656,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.optimization.minimize = true;
-					config.plugins.push(
+					config.optimization!.minimize = true;
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -680,7 +679,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					configureWebpack(config);
 
 					config.devtool = 'eval';
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -705,7 +704,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					configureWebpack(config);
 
 					config.devtool = 'source-map';
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -730,7 +729,7 @@ describe(`Webpack ${webpack.version}`, () => {
 					configureWebpack(config);
 
 					config.devtool = 'source-map';
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 							sourceMapForLocales: ['en'],
@@ -753,7 +752,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 							warnOnUnusedString: true,
@@ -781,7 +780,7 @@ describe(`Webpack ${webpack.version}`, () => {
 
 					config.devtool = 'source-map';
 
-					config.module.rules.push({
+					config.module!.rules.push({
 						test: /\.css$/,
 						use: [
 							MiniCssExtractPlugin.loader,
@@ -789,7 +788,7 @@ describe(`Webpack ${webpack.version}`, () => {
 						],
 					});
 
-					config.plugins.push(
+					config.plugins!.push(
 						new MiniCssExtractPlugin() as any,
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
@@ -827,15 +826,14 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 			const cacheDirectory = tempy.directory();
-			const configure = (config: DefaultWebpackConfig) => {
+			const configure = (config: webpack.Configuration) => {
 				configureWebpack(config);
-
 				config.cache = {
 					type: 'filesystem',
 					cacheDirectory,
 				};
 
-				config.plugins.push(
+				config.plugins!.push(
 					new WebpackLocalizeAssetsPlugin({
 						locales: localesMulti,
 					}),
@@ -864,14 +862,14 @@ describe(`Webpack ${webpack.version}`, () => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 
-			const configure = (config: DefaultWebpackConfig) => {
+			const configure = (config: webpack.Configuration) => {
 				configureWebpack(config);
 
 				config.cache = {
 					type: 'filesystem',
 				};
 
-				config.plugins.push(
+				config.plugins!.push(
 					new WebpackLocalizeAssetsPlugin({
 						locales: localesMulti,
 						warnOnUnusedString: true,
@@ -911,7 +909,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								en: './src/locales/en.json',
@@ -971,7 +969,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								en: '/src/locales/en.json',
@@ -994,7 +992,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								en: '/src/locales/en.json',
@@ -1015,17 +1013,15 @@ describe(`Webpack ${webpack.version}`, () => {
 				},
 				(config) => {
 					if (isWebpack5) {
+						config.output!.filename = () => '[name].fn.[locale].[fullhash].js';
 						// @ts-expect-error Webpack 5 config
-						config.output.filename = () => '[name].fn.[locale].[fullhash].js';
-						// @ts-expect-error Webpack 5 config
-						config.output.chunkFilename = () => '[name].fn.[locale].[fullhash].js';
+						config.output!.chunkFilename = () => '[name].fn.[locale].[fullhash].js';
 					} else {
-						// @ts-expect-error Webpack 5 config
-						config.output.filename = () => '[name].fn.[locale].[hash].js';
-						config.output.chunkFilename = '[name].fn.[locale].[hash].js';
+						config.output!.filename = () => '[name].fn.[locale].[hash].js';
+						config.output!.chunkFilename = '[name].fn.[locale].[hash].js';
 					}
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -1068,7 +1064,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 							localizeCompiler: {
@@ -1104,7 +1100,7 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 							localizeCompiler: {
@@ -1187,8 +1183,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.output.filename = '[name].[chunkhash].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[chunkhash].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -1206,8 +1202,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.output.filename = '[name].[chunkhash].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[chunkhash].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								...localesSingle,
@@ -1238,8 +1234,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.output.filename = '[name].[chunkhash].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[chunkhash].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -1257,8 +1253,8 @@ describe(`Webpack ${webpack.version}`, () => {
 				(config) => {
 					configureWebpack(config);
 
-					config.output.filename = '[name].[chunkhash].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[chunkhash].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								...localesMulti,
@@ -1295,8 +1291,8 @@ describe(`Webpack ${webpack.version}`, () => {
 			const builtA = await build(
 				volume,
 				(config) => {
-					config.output.filename = '[name].[contenthash].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[contenthash].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesSingle,
 						}),
@@ -1312,8 +1308,8 @@ describe(`Webpack ${webpack.version}`, () => {
 			const builtB = await build(
 				volume,
 				(config) => {
-					config.output.filename = '[name].[contenthash].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[contenthash].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								...localesSingle,
@@ -1343,8 +1339,8 @@ describe(`Webpack ${webpack.version}`, () => {
 			const builtA = await build(
 				volume,
 				(config) => {
-					config.output.filename = '[name].[contenthash].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[contenthash].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
@@ -1361,8 +1357,8 @@ describe(`Webpack ${webpack.version}`, () => {
 			const builtB = await build(
 				volume,
 				(config) => {
-					config.output.filename = '[name].[contenthash].[locale].js';
-					config.plugins.push(
+					config.output!.filename = '[name].[contenthash].[locale].js';
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: {
 								...localesMulti,
@@ -1394,9 +1390,9 @@ describe(`Webpack ${webpack.version}`, () => {
 					'/src/async-import2.js': 'export default __("hello-key");',
 				},
 				(config) => {
-					config.output.filename = '[name].[contenthash].[locale].js';
+					config.output!.filename = '[name].[contenthash].[locale].js';
 
-					config.plugins.push(
+					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),

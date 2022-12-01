@@ -6,9 +6,7 @@ import {
 import {
 	isWebpack5Compilation,
 } from './webpack';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../../package.json');
+import { name } from '../../package.json';
 
 export const interpolateLocaleToFileName = (
 	compilation: WP5.Compilation,

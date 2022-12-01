@@ -5,9 +5,7 @@ import {
 	LocalesMap,
 	LocalizedStringKey,
 } from '../types';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../../package.json');
+import { name } from '../../package.json';
 
 export type StringKeysCollection = Set<LocalizedStringKey>;
 

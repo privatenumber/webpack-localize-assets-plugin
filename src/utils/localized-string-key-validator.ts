@@ -9,9 +9,7 @@ import {
 import {
 	reportModuleWarning,
 } from './webpack';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../../package.json');
+import { name } from '../../package.json';
 
 export function localizedStringKeyValidator<LocalizedData>(
 	locales: LocalesMap<LocalizedData>,

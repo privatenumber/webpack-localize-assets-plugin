@@ -20,9 +20,7 @@ import {
 import type { StringKeysCollection } from './utils/track-unused-localized-strings';
 import { callLocalizeCompiler } from './utils/call-localize-compiler';
 import { stringifyAst } from './utils/stringify-ast';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../package.json');
+import { name } from '../package.json';
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;

@@ -30,9 +30,7 @@ import {
 } from './multi-locale';
 import { callLocalizeCompiler } from './utils/call-localize-compiler';
 import { stringifyAst } from './utils/stringify-ast';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../package.json');
+import { name } from '../package.json';
 
 const defaultLocalizerName = '__';
 
@@ -281,4 +279,4 @@ function defaultLocalizeCompilerFunction(
 	return keyResolved ? JSON.stringify(keyResolved) : key;
 }
 
-export = LocalizeAssetsPlugin;
+export default LocalizeAssetsPlugin;

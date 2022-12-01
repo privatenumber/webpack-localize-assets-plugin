@@ -26,7 +26,7 @@ specifiers:
   webpack: 4.42.0
   webpack-manifest-plugin: ^3.1.1
   webpack-sources: ^2.2.0
-  webpack-test-utils: ^1.1.0
+  webpack-test-utils: github:privatenumber/webpack-test-utils#npm/extend-webpack-config
   webpack5: npm:webpack@5.10.1
 
 dependencies:
@@ -57,7 +57,7 @@ devDependencies:
   typescript: 4.8.3
   webpack: 4.42.0
   webpack-manifest-plugin: 3.1.1_webpack@4.42.0
-  webpack-test-utils: 1.1.0_webpack@4.42.0
+  webpack-test-utils: github.com/privatenumber/webpack-test-utils/d4d45c31f62387555e12ef48d656f6b7e18df856_webpack@4.42.0
   webpack5: /webpack/5.10.1
 
 packages:
@@ -3736,8 +3736,8 @@ packages:
     resolution: {integrity: sha512-cybjIfiiE+pTWicSCLFHSrXZ6EilF30oh91FDP9S2B051prEa7QWfrVTQm10/dDpswBDXZugPa1Ogu8Yh+HV0Q==}
     dev: true
 
-  /fs-require/1.4.0:
-    resolution: {integrity: sha512-ZytCzc6QAE0lprblNErZJuDVNoT0JPRSBCUXIMrIB0mLlwcAppbE5fqUyqC8zhgrrR3+whvpKLxOqtk8EnSbeA==}
+  /fs-require/1.4.2:
+    resolution: {integrity: sha512-fC9qtpGiFqLwScjlY0citpwB2ClVonDweFYkPboumFncDoKQDojTkWqk9V6cBoCVwMzPcDNid2c9JGO05qqEbg==}
     dev: true
 
   /fs-write-stream-atomic/1.0.10:
@@ -5462,8 +5462,8 @@ packages:
     resolution: {integrity: sha512-AW4DRS3QbBayY/jJmD8437V1Gombjf8RSOUCMFBuo5iHi58AGEgVCKQ+ezHkZZDpAQS75hcBMpLqjpJTjtUL7w==}
     dev: true
 
-  /memfs/3.3.0:
-    resolution: {integrity: sha512-BEE62uMfKOavX3iG7GYX43QJ+hAeeWnwIAuJ/R6q96jaMtiLzhsxHJC8B1L7fK7Pt/vXDRwb3SG/yBpNGDPqzg==}
+  /memfs/3.4.12:
+    resolution: {integrity: sha512-BcjuQn6vfqP+k100e0E9m61Hyqa//Brp+I3f0OBmN0ATHlFA8vx3Lt8z57R3u2bPqe3WGDBC+nF72fTH7isyEw==}
     engines: {node: '>= 4.0.0'}
     dependencies:
       fs-monkey: 1.0.3
@@ -7716,17 +7716,6 @@ packages:
       source-map: 0.6.1
     dev: true
 
-  /webpack-test-utils/1.1.0_webpack@4.42.0:
-    resolution: {integrity: sha512-zJaJZsa3v8jFx41uiVSF6V/8wd4zuX/DtDZkm7t8f8WlxP0W3Iwj3BikZx4C45EX7+yTUBWmKbkknoSsaIhFmw==}
-    peerDependencies:
-      webpack: ^4.40.0 || ^5.0.0
-    dependencies:
-      fs-require: 1.4.0
-      memfs: 3.3.0
-      unionfs: 4.4.0
-      webpack: 4.42.0
-    dev: true
-
   /webpack/4.42.0:
     resolution: {integrity: sha512-EzJRHvwQyBiYrYqhyjW9AqM90dE4+s1/XtCfn7uWg6cS72zH+2VPFAlsnW0+W0cDi0XRjNKUMoJtpSi50+Ph6w==}
     engines: {node: '>=6.11.5'}
@@ -7960,4 +7949,18 @@ packages:
   /yocto-queue/0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+    dev: true
+
+  github.com/privatenumber/webpack-test-utils/d4d45c31f62387555e12ef48d656f6b7e18df856_webpack@4.42.0:
+    resolution: {tarball: https://codeload.github.com/privatenumber/webpack-test-utils/tar.gz/d4d45c31f62387555e12ef48d656f6b7e18df856}
+    id: github.com/privatenumber/webpack-test-utils/d4d45c31f62387555e12ef48d656f6b7e18df856
+    name: webpack-test-utils
+    version: 0.0.0-semantic-release
+    peerDependencies:
+      webpack: ^4.40.0 || ^5.0.0
+    dependencies:
+      fs-require: 1.4.2
+      memfs: 3.4.12
+      unionfs: 4.4.0
+      webpack: 4.42.0
     dev: true
