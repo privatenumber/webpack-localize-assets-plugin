@@ -3,7 +3,6 @@ import type { SimpleCallExpression } from 'estree';
 import {
 	Options,
 	validateOptions,
-	Compiler,
 	Module,
 	NormalModuleFactory,
 	LocalizedStringKey,
