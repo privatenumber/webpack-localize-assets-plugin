@@ -71,10 +71,10 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 		this.functionNames = Object.keys(this.localizeCompiler);
 	}
 
-	apply(compiler: Compiler) {
+	apply(compiler: WP5.Compiler) {
 		const { inputFileSystem } = compiler;
 
-		(compiler as WP5.Compiler).hooks.thisCompilation.tap(
+		compiler.hooks.thisCompilation.tap(
 			name,
 			(compilation, { normalModuleFactory }) => {
 				// Reload on build
