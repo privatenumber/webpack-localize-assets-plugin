@@ -8,6 +8,7 @@ import type {
 	Literal,
 	SimpleCallExpression,
 } from 'estree';
+import { name } from '../package.json';
 import { isWebpack5Compilation, deleteAsset } from './utils/webpack';
 import { sha256 } from './utils/sha256';
 import {
@@ -20,7 +21,6 @@ import {
 import type { StringKeysCollection } from './utils/track-unused-localized-strings';
 import { callLocalizeCompiler } from './utils/call-localize-compiler';
 import { stringifyAst } from './utils/stringify-ast';
-import { name } from '../package.json';
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;

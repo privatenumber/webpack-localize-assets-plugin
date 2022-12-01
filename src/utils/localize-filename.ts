@@ -3,10 +3,10 @@ import {
 	LocaleName,
 	WP5,
 } from '../types';
+import { name } from '../../package.json';
 import {
 	isWebpack5Compilation,
 } from './webpack';
-import { name } from '../../package.json';
 
 export const interpolateLocaleToFileName = (
 	compilation: WP5.Compilation,

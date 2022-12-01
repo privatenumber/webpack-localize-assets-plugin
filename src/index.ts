@@ -1,5 +1,6 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import type { SimpleCallExpression } from 'estree';
+import { name } from '../package.json';
 import {
 	Options,
 	validateOptions,
@@ -30,7 +31,6 @@ import {
 } from './multi-locale';
 import { callLocalizeCompiler } from './utils/call-localize-compiler';
 import { stringifyAst } from './utils/stringify-ast';
-import { name } from '../package.json';
 
 const defaultLocalizerName = '__';
 

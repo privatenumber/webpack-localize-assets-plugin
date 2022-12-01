@@ -6,10 +6,10 @@ import {
 	LocalizedStringKey,
 	LocalesMap,
 } from '../types';
+import { name } from '../../package.json';
 import {
 	reportModuleWarning,
 } from './webpack';
-import { name } from '../../package.json';
 
 export function localizedStringKeyValidator<LocalizedData>(
 	locales: LocalesMap<LocalizedData>,
