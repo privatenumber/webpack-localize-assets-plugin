@@ -32,6 +32,7 @@
 		}
 	},
 	"scripts": {
+		"prepare": "simple-git-hooks",
 		"lint": "eslint .",
 		"build": "pkgroll",
 		"type-check": "tsc --noEmit",
