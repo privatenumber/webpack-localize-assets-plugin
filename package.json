@@ -24,6 +24,13 @@
 	],
 	"main": "./dist/index.cjs",
 	"types": "./dist/plugin-type.d.ts",
+	"imports": {
+		"#webpack-localize-assets-plugin": {
+			"types": "./src/index.ts",
+			"development": "./src/index.ts",
+			"default": "./dist/index.cjs"
+		}
+	},
 	"scripts": {
 		"lint": "eslint .",
 		"build": "pkgroll",

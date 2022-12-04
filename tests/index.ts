@@ -6,7 +6,7 @@ import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { build, watch } from 'webpack-test-utils';
 import type { Compilation } from 'webpack5';
-import WebpackLocalizeAssetsPlugin from '..';
+import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin';
 
 const localesEmpty = {};
 const localesSingle = {
