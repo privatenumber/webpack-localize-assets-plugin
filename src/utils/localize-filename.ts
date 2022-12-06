@@ -2,11 +2,11 @@ import assert from 'assert';
 import {
 	LocaleName,
 	WP5,
-} from '../types';
+} from '../types.js';
 import { name } from '../../package.json';
 import {
 	isWebpack5Compilation,
-} from './webpack';
+} from './webpack.js';
 
 export const interpolateLocaleToFileName = (
 	compilation: WP5.Compilation,

@@ -1,6 +1,6 @@
 import type { Identifier } from 'estree';
-import { LocalizeCompiler, LocalizeCompilerContext } from '../types';
-import { stringifyAst } from './stringify-ast';
+import { LocalizeCompiler, LocalizeCompilerContext } from '../types.js';
+import { stringifyAst } from './stringify-ast.js';
 
 export function callLocalizeCompiler<LocalizedData>(
 	localizeCompiler: LocalizeCompiler<LocalizedData>,

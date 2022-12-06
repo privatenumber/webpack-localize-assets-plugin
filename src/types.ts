@@ -6,9 +6,9 @@ import type {
 	LocaleName,
 	LocaleStrings,
 	Options,
-} from './types-options';
+} from './types-options.js';
 
-export * from './types-options';
+export * from './types-options.js';
 
 export type LocalesMap<LocalizedData> = Record<LocaleName, LocaleStrings<LocalizedData>>;
 export interface LocalizeCompilerContext<LocalizedData = string> {

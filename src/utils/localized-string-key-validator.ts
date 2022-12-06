@@ -5,11 +5,11 @@ import type { Expression } from 'estree';
 import {
 	LocalizedStringKey,
 	LocalesMap,
-} from '../types';
+} from '../types.js';
 import { name } from '../../package.json';
 import {
 	reportModuleWarning,
-} from './webpack';
+} from './webpack.js';
 
 export function localizedStringKeyValidator<LocalizedData>(
 	locales: LocalesMap<LocalizedData>,

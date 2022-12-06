@@ -4,7 +4,7 @@ import {
 	Compilation,
 	LocalesMap,
 	LocalizedStringKey,
-} from '../types';
+} from '../types.js';
 import { name } from '../../package.json';
 
 export type StringKeysCollection = Set<LocalizedStringKey>;

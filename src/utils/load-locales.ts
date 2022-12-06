@@ -5,7 +5,7 @@ import type {
 	UnprocessedLocalesMap,
 	LocalesMap,
 	LocaleFilePath,
-} from '../types';
+} from '../types.js';
 
 const loadJson = <T extends {
 	readFileSync: typeof readFileSync;

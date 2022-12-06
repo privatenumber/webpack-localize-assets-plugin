@@ -1,7 +1,7 @@
-import type { Options } from './types-options';
+import type { Options } from './types-options.js';
 
-export default class LocalizeAssetsPlugin {
-	constructor(options: Options<LocalizedData>): void;
+export default class LocalizeAssetsPlugin<LocalizedData = string> {
+	constructor(options: Options<LocalizedData>);
 
 	apply(compiler: any): void;
 }
