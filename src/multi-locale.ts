@@ -192,6 +192,7 @@ function localizeAsset<LocalizedData>(
 				},
 			},
 			locale,
+			localeData,
 		);
 
 		if (escapeDoubleQuotes) {

@@ -23,6 +23,7 @@ export interface LocalizeCompiler<LocalizedData = string> {
 		this: LocalizeCompilerContext<LocalizedData>,
 		functionArgments: string[],
 		localeName: string,
+		localeData: LocaleStrings<LocalizedData>
 	) => string;
 }
 
