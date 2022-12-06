@@ -1,5 +1,10 @@
 lockfileVersion: 5.4
 
+patchedDependencies:
+  astring@1.8.3:
+    hash: hcy575fszvf2h6jcslxbs2omga
+    path: patches/astring@1.8.3.patch
+
 specifiers:
   '@pvtnbr/eslint-config': ^0.33.0
   '@types/estree': ^0.0.50
@@ -8,7 +13,7 @@ specifiers:
   '@types/webpack-manifest-plugin': ^3.0.5
   '@types/webpack-sources': ^3.2.0
   acorn: ^8.6.0
-  astring: ^1.8.1
+  astring: ^1.8.3
   css-loader: ^5.2.4
   eslint: ^8.28.0
   has-own-prop: ^2.0.0
@@ -31,7 +36,7 @@ specifiers:
 dependencies:
   '@types/estree': 0.0.50
   acorn: 8.6.0
-  astring: 1.8.1
+  astring: 1.8.3_hcy575fszvf2h6jcslxbs2omga
   has-own-prop: 2.0.0
   magic-string: 0.27.0
   source-map: 0.7.3
@@ -1141,10 +1146,11 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /astring/1.8.1:
-    resolution: {integrity: sha512-Aj3mbwVzj7Vve4I/v2JYOPFkCGM2YS7OqQTNSxmUR+LECRpokuPgAYghePgr6SALDo5bD5DlfbSaYjOzGJZOLQ==}
+  /astring/1.8.3_hcy575fszvf2h6jcslxbs2omga:
+    resolution: {integrity: sha512-sRpyiNrx2dEYIMmUXprS8nlpRg2Drs8m9ElX9vVEXaCB4XEAJhKfs7IcX0IwShjuOAjLR6wzIrgoptz1n19i1A==}
     hasBin: true
     dev: false
+    patched: true
 
   /async-each/1.0.3:
     resolution: {integrity: sha512-z/WhQ5FPySLdvREByI2vZiTWwCnF0moMJ1hK9YQwDTHKh6I7/uSckMetoRGb5UBZPC1z0jlw+n/XCgjeH7y1AQ==}

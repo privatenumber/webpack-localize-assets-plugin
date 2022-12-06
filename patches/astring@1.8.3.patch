@@ -1,0 +1,12 @@
+diff --git a/package.json b/package.json
+index a37dc0a9959d745b2ef53e3c5432304580ac30aa..1a56d24a079924ab86c141fa8e91133be43689a6 100644
+--- a/package.json
++++ b/package.json
+@@ -6,6 +6,7 @@
+   "module": "./dist/astring.mjs",
+   "types": "./astring.d.ts",
+   "exports": {
++    "types": "./astring.d.ts",
+     "import": "./dist/astring.mjs",
+     "require": "./dist/astring.js",
+     "browser": "./dist/astring.min.js"
