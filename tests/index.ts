@@ -8,13 +8,13 @@ import { build, watch } from 'webpack-test-utils';
 import type { Compilation } from 'webpack5';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin';
 
-const localesEmpty = {};
-const localesSingle = {
+const localesEmpty = Object.freeze({});
+const localesSingle = Object.freeze({
 	en: {
 		'hello-key': 'Hello',
 	},
-};
-const localesMulti = {
+});
+const localesMulti = Object.freeze({
 	en: {
 		'hello-key': 'Hello',
 		stringWithQuotes: '"quotes"',
@@ -27,7 +27,7 @@ const localesMulti = {
 		'hello-key': 'こんにちは',
 		stringWithQuotes: '"quotes"',
 	},
-};
+});
 
 function configureWebpack(config: webpack.Configuration) {
 	config.output!.filename = '[name].[locale].js';
