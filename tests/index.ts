@@ -201,7 +201,7 @@ describe(`Webpack ${webpack.version}`, ({ describe }) => {
 			}).rejects.toThrow('sourceMapForLocales must contain valid locales');
 		});
 
-		describe('missing key', () => {
+		describe('missing key', ({ test }) => {
 			test('warning - single locale', async () => {
 				const built = await build(
 					{
