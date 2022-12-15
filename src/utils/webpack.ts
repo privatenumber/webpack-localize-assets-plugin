@@ -7,7 +7,7 @@ import {
 	WP5,
 	NormalModuleFactory,
 	Module,
-} from '../types';
+} from '../types.js';
 import { name } from '../../package.json';
 
 export const isWebpack5 = (wp: Webpack) => {

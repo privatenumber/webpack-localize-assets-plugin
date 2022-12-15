@@ -13,24 +13,24 @@ import {
 	LocalizeCompiler,
 	WP5,
 	LocalizeCompilerContext,
-} from './types';
-import { loadLocales } from './utils/load-locales';
-import { interpolateLocaleToFileName } from './utils/localize-filename';
-import { StringKeysCollection, getAllLocalizedStringKeys, warnOnUnusedLocalizedStringKeys } from './utils/track-unused-localized-strings';
+} from './types.js';
+import { loadLocales } from './utils/load-locales.js';
+import { interpolateLocaleToFileName } from './utils/localize-filename.js';
+import { StringKeysCollection, getAllLocalizedStringKeys, warnOnUnusedLocalizedStringKeys } from './utils/track-unused-localized-strings.js';
 import {
 	toConstantDependency,
 	reportModuleWarning,
 	onFunctionCall,
 	reportModuleError,
-} from './utils/webpack';
-import { localizedStringKeyValidator } from './utils/localized-string-key-validator';
+} from './utils/webpack.js';
+import { localizedStringKeyValidator } from './utils/localized-string-key-validator.js';
 import {
 	generateLocalizedAssets,
 	markLocalizeFunction,
 	fileNameTemplatePlaceholder,
-} from './multi-locale';
-import { callLocalizeCompiler } from './utils/call-localize-compiler';
-import { stringifyAst } from './utils/stringify-ast';
+} from './multi-locale.js';
+import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
+import { stringifyAst } from './utils/stringify-ast.js';
 
 const defaultLocalizerName = '__';
 

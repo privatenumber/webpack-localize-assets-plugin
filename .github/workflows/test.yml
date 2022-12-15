@@ -25,11 +25,14 @@ jobs:
         version: 7
         run_install: true
 
-    - name: Test
-      run: pnpm test
-
     - name: Lint
       run: pnpm lint
 
     - name: Type check
       run: pnpm type-check
+
+    - name: Build
+      run: pnpm build
+
+    - name: Test
+      run: pnpm test

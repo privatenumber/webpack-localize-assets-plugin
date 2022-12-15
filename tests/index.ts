@@ -1,3 +1,4 @@
+import { describe, expect } from 'manten';
 import type { Identifier } from 'estree';
 import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
@@ -5,15 +6,16 @@ import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { build, watch } from 'webpack-test-utils';
 import type { Compilation } from 'webpack5';
-import WebpackLocalizeAssetsPlugin from '..';
+import TerserPlugin from 'terser-webpack-plugin';
+import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
-const localesEmpty = {};
-const localesSingle = {
+const localesEmpty = Object.freeze({});
+const localesSingle = Object.freeze({
 	en: {
 		'hello-key': 'Hello',
 	},
-};
-const localesMulti = {
+});
+const localesMulti = Object.freeze({
 	en: {
 		'hello-key': 'Hello',
 		stringWithQuotes: '"quotes"',
@@ -26,16 +28,16 @@ const localesMulti = {
 		'hello-key': 'こんにちは',
 		stringWithQuotes: '"quotes"',
 	},
-};
+});
 
 function configureWebpack(config: webpack.Configuration) {
 	config.output!.filename = '[name].[locale].js';
 }
 
-describe(`Webpack ${webpack.version}`, () => {
+describe(`Webpack ${webpack.version}`, ({ describe }) => {
 	const isWebpack5 = webpack.version?.startsWith('5.');
 
-	describe('error-cases', () => {
+	describe('error-cases', ({ test }) => {
 		test('no option', async () => {
 			await expect(async () => {
 				await build(
@@ -200,7 +202,7 @@ describe(`Webpack ${webpack.version}`, () => {
 			}).rejects.toThrow('sourceMapForLocales must contain valid locales');
 		});
 
-		describe('missing key', () => {
+		describe('missing key', ({ test }) => {
 			test('warning - single locale', async () => {
 				const built = await build(
 					{
@@ -406,7 +408,7 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 	});
 
-	describe('passing', () => {
+	describe('passing', ({ test }) => {
 		test('single locale', async () => {
 			const built = await build(
 				{
@@ -513,6 +515,15 @@ describe(`Webpack ${webpack.version}`, () => {
 					configureWebpack(config);
 
 					config.optimization!.minimize = true;
+
+					if (isWebpack5) {
+						config.optimization!.minimizer = [
+							new TerserPlugin({
+								parallel: false,
+							}),
+						];
+					}
+
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
@@ -658,6 +669,15 @@ describe(`Webpack ${webpack.version}`, () => {
 					configureWebpack(config);
 
 					config.optimization!.minimize = true;
+
+					if (isWebpack5) {
+						config.optimization!.minimizer = [
+							new TerserPlugin({
+								parallel: false,
+							}),
+						];
+					}
+
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
@@ -1052,7 +1072,7 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 	});
 
-	describe('localizeCompiler', () => {
+	describe('localizeCompiler', ({ test }) => {
 		test('single locale', async () => {
 			const built = await build(
 				{
@@ -1174,7 +1194,7 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 	});
 
-	describe('chunkhash', () => {
+	describe('chunkhash', ({ test }) => {
 		test('single locale', async () => {
 			const volume = {
 				'/src/index.js': 'export default __("hello-key");',
@@ -1284,7 +1304,7 @@ describe(`Webpack ${webpack.version}`, () => {
 		});
 	});
 
-	describe('contenthash', () => {
+	describe('contenthash', ({ test }) => {
 		test('single locale', async () => {
 			const volume = {
 				'/src/index.js': 'export default __("hello-key");',
@@ -1332,80 +1352,82 @@ describe(`Webpack ${webpack.version}`, () => {
 			expect(assetFilenameA).not.toBe(assetFilenameB);
 		});
 
-		// remove skip after implementing hashing w/o realcontenthash
-		(isWebpack5 ? test : test.skip)('multi locale', async () => {
-			const volume = {
-				'/src/index.js': 'export default __("hello-key");',
-			};
+		if (isWebpack5) {
+			// remove skip after implementing hashing w/o realcontenthash
+			test('multi locale', async () => {
+				const volume = {
+					'/src/index.js': 'export default __("hello-key");',
+				};
 
-			const builtA = await build(
-				volume,
-				(config) => {
-					config.output!.filename = '[name].[contenthash].[locale].js';
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesMulti,
-						}),
-					);
-				},
-			);
+				const builtA = await build(
+					volume,
+					(config) => {
+						config.output!.filename = '[name].[contenthash].[locale].js';
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesMulti,
+							}),
+						);
+					},
+				);
 
-			const assetsA = Object.keys(builtA.stats.compilation.assets);
-			const [assetFilenameA] = assetsA;
+				const assetsA = Object.keys(builtA.stats.compilation.assets);
+				const [assetFilenameA] = assetsA;
 
-			const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
-			expect(enBuildA).toBe('Hello');
+				const enBuildA = builtA.require(`/dist/${assetFilenameA}`);
+				expect(enBuildA).toBe('Hello');
 
-			const builtB = await build(
-				volume,
-				(config) => {
-					config.output!.filename = '[name].[contenthash].[locale].js';
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: {
-								...localesMulti,
-								en: {
-									'hello-key': 'Wazzup',
-									stringWithQuotes: '"quotes"',
+				const builtB = await build(
+					volume,
+					(config) => {
+						config.output!.filename = '[name].[contenthash].[locale].js';
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: {
+									...localesMulti,
+									en: {
+										'hello-key': 'Wazzup',
+										stringWithQuotes: '"quotes"',
+									},
 								},
-							},
-						}),
-					);
-				},
-			);
+							}),
+						);
+					},
+				);
 
-			const assetsB = Object.keys(builtB.stats.compilation.assets);
-			const [assetFilenameB] = assetsB;
+				const assetsB = Object.keys(builtB.stats.compilation.assets);
+				const [assetFilenameB] = assetsB;
 
-			const enBuildB = builtB.require(`/dist/${assetFilenameB}`);
-			expect(enBuildB).toBe('Wazzup');
+				const enBuildB = builtB.require(`/dist/${assetFilenameB}`);
+				expect(enBuildB).toBe('Wazzup');
 
-			expect(assetFilenameA).not.toBe(assetFilenameB);
-			expect(assetsB[1]).toBe(assetsA[1]);
-		});
+				expect(assetFilenameA).not.toBe(assetFilenameB);
+				expect(assetsB[1]).toBe(assetsA[1]);
+			});
 
-		(isWebpack5 ? test : test.skip)('async chunks', async () => {
-			const built = await build(
-				{
-					'/src/index.js': 'export default import("./async-import").then(module => module.default);',
-					'/src/async-import.js': 'export default import("./async-import2").then(module => module.default);',
-					'/src/async-import2.js': 'export default __("hello-key");',
-				},
-				(config) => {
-					config.output!.filename = '[name].[contenthash].[locale].js';
+			test('async chunks', async () => {
+				const built = await build(
+					{
+						'/src/index.js': 'export default import("./async-import").then(module => module.default);',
+						'/src/async-import.js': 'export default import("./async-import2").then(module => module.default);',
+						'/src/async-import2.js': 'export default __("hello-key");',
+					},
+					(config) => {
+						config.output!.filename = '[name].[contenthash].[locale].js';
 
-					config.plugins!.push(
-						new WebpackLocalizeAssetsPlugin({
-							locales: localesMulti,
-						}),
-					);
-				},
-			);
+						config.plugins!.push(
+							new WebpackLocalizeAssetsPlugin({
+								locales: localesMulti,
+							}),
+						);
+					},
+				);
 
-			const assets = Object.keys(built.stats.compilation.assets);
-			const indexAsset = assets.find(a => a.includes('index') && a.includes('.en.js'));
+				const assets = Object.keys(built.stats.compilation.assets);
+				const indexAsset = assets.find(a => a.includes('index') && a.includes('.en.js'));
 
-			expect(await built.require(`/dist/${indexAsset}`)).toBe(localesMulti.en['hello-key']);
-		});
+				expect(await built.require(`/dist/${indexAsset}`)).toBe(localesMulti.en['hello-key']);
+			});
+		}
 	});
 });
