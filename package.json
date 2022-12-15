@@ -44,9 +44,10 @@
 		"lint": "eslint .",
 		"build": "pkgroll",
 		"type-check": "tsc --noEmit",
+		"dev": "tsx watch --loader alias-imports -C development tests",
 		"test": "pnpm test:webpack4 && pnpm test:webpack5",
-		"test:webpack4": "pnpm exec tsx --loader alias-imports tests",
-		"test:webpack5": "pnpm exec tsx --loader alias-imports --conditions webpack5 tests"
+		"test:webpack4": "tsx --loader alias-imports tests",
+		"test:webpack5": "tsx --loader alias-imports --conditions webpack5 tests"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm build && pnpm lint-staged && pnpm test"
