@@ -32,7 +32,7 @@ specifiers:
   webpack: 4.42.0
   webpack-manifest-plugin: ^3.1.1
   webpack-sources: ^2.2.0
-  webpack-test-utils: github:privatenumber/webpack-test-utils#npm/develop
+  webpack-test-utils: ^2.1.0
   webpack5: npm:webpack@5.10.1
 
 dependencies:
@@ -64,7 +64,7 @@ devDependencies:
   typescript: 4.9.3
   webpack: 4.42.0
   webpack-manifest-plugin: 3.1.1_webpack@4.42.0
-  webpack-test-utils: github.com/privatenumber/webpack-test-utils/1169a822c64650bda292d29967258c66dd79f781_webpack@4.42.0
+  webpack-test-utils: 2.1.0_webpack@4.42.0
   webpack5: /webpack/5.10.1
 
 packages:
@@ -5977,6 +5977,17 @@ packages:
       source-map: 0.6.1
     dev: true
 
+  /webpack-test-utils/2.1.0_webpack@4.42.0:
+    resolution: {integrity: sha512-n7d+DyS70krYewAeV4xu4IU0LyKQXcGDYdibIUOnOiwmNJFhcns5ekF39T3+iEQZhBlYiZyGmaFqguOF1KvMSw==}
+    peerDependencies:
+      webpack: ^4.40.0 || ^5.0.0
+    dependencies:
+      fs-require: 1.6.0
+      memfs: 3.4.12
+      unionfs: 4.4.0
+      webpack: 4.42.0
+    dev: true
+
   /webpack/4.42.0:
     resolution: {integrity: sha512-EzJRHvwQyBiYrYqhyjW9AqM90dE4+s1/XtCfn7uWg6cS72zH+2VPFAlsnW0+W0cDi0XRjNKUMoJtpSi50+Ph6w==}
     engines: {node: '>=6.11.5'}
@@ -6138,18 +6149,4 @@ packages:
   /yocto-queue/0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
-    dev: true
-
-  github.com/privatenumber/webpack-test-utils/1169a822c64650bda292d29967258c66dd79f781_webpack@4.42.0:
-    resolution: {tarball: https://codeload.github.com/privatenumber/webpack-test-utils/tar.gz/1169a822c64650bda292d29967258c66dd79f781}
-    id: github.com/privatenumber/webpack-test-utils/1169a822c64650bda292d29967258c66dd79f781
-    name: webpack-test-utils
-    version: 0.0.0-semantic-release
-    peerDependencies:
-      webpack: ^4.40.0 || ^5.0.0
-    dependencies:
-      fs-require: 1.6.0
-      memfs: 3.4.12
-      unionfs: 4.4.0
-      webpack: 4.42.0
     dev: true
