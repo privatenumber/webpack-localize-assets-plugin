@@ -8,21 +8,19 @@ import type {
 	Literal,
 	SimpleCallExpression,
 } from 'estree';
-import { isWebpack5Compilation, deleteAsset } from './utils/webpack';
-import { sha256 } from './utils/sha256';
+import { name } from '../package.json';
+import { isWebpack5Compilation, deleteAsset } from './utils/webpack.js';
+import { sha256 } from './utils/sha256.js';
 import {
 	Compilation,
 	LocalesMap,
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
-} from './types';
-import type { StringKeysCollection } from './utils/track-unused-localized-strings';
-import { callLocalizeCompiler } from './utils/call-localize-compiler';
-import { stringifyAst } from './utils/stringify-ast';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../package.json');
+} from './types.js';
+import type { StringKeysCollection } from './utils/track-unused-localized-strings.js';
+import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
+import { stringifyAst } from './utils/stringify-ast.js';
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;

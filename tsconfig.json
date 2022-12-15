@@ -1,18 +1,13 @@
 {
 	"compilerOptions": {
-		"moduleResolution": "node",
+		"module": "Node16",
 		"isolatedModules": true,
 		"esModuleInterop": true,
-		"declaration": true,
-		"outDir": "dist",
 		"strict": true,
 		"skipLibCheck": true,
+		"resolveJsonModule": true,
 
 		// Node 12
-		"module": "commonjs",
 		"target": "ES2019"
 	},
-	"include": [
-		"src"
-	]
 }

@@ -1,9 +1,9 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import type { SimpleCallExpression } from 'estree';
+import { name } from '../package.json';
 import {
 	Options,
 	validateOptions,
-	Compiler,
 	Module,
 	NormalModuleFactory,
 	LocalizedStringKey,
@@ -13,27 +13,24 @@ import {
 	LocalizeCompiler,
 	WP5,
 	LocalizeCompilerContext,
-} from './types';
-import { loadLocales } from './utils/load-locales';
-import { interpolateLocaleToFileName } from './utils/localize-filename';
-import { StringKeysCollection, getAllLocalizedStringKeys, warnOnUnusedLocalizedStringKeys } from './utils/track-unused-localized-strings';
+} from './types.js';
+import { loadLocales } from './utils/load-locales.js';
+import { interpolateLocaleToFileName } from './utils/localize-filename.js';
+import { StringKeysCollection, getAllLocalizedStringKeys, warnOnUnusedLocalizedStringKeys } from './utils/track-unused-localized-strings.js';
 import {
 	toConstantDependency,
 	reportModuleWarning,
 	onFunctionCall,
 	reportModuleError,
-} from './utils/webpack';
-import { localizedStringKeyValidator } from './utils/localized-string-key-validator';
+} from './utils/webpack.js';
+import { localizedStringKeyValidator } from './utils/localized-string-key-validator.js';
 import {
 	generateLocalizedAssets,
 	markLocalizeFunction,
 	fileNameTemplatePlaceholder,
-} from './multi-locale';
-import { callLocalizeCompiler } from './utils/call-localize-compiler';
-import { stringifyAst } from './utils/stringify-ast';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../package.json');
+} from './multi-locale.js';
+import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
+import { stringifyAst } from './utils/stringify-ast.js';
 
 const defaultLocalizerName = '__';
 
@@ -64,21 +61,17 @@ class LocalizeAssetsPlugin<LocalizedData = string> {
 			[this.singleLocale] = this.localeNames;
 		}
 
-		this.localizeCompiler = (
-			this.options.localizeCompiler
-				? this.options.localizeCompiler
-				: {
-					[this.options.functionName ?? defaultLocalizerName]: defaultLocalizeCompilerFunction,
-				}
-		);
+		this.localizeCompiler = this.options.localizeCompiler ?? {
+			[this.options.functionName ?? defaultLocalizerName]: defaultLocalizeCompilerFunction,
+		};
 
 		this.functionNames = Object.keys(this.localizeCompiler);
 	}
 
-	apply(compiler: Compiler) {
+	apply(compiler: WP5.Compiler) {
 		const { inputFileSystem } = compiler;
 
-		(compiler as WP5.Compiler).hooks.thisCompilation.tap(
+		compiler.hooks.thisCompilation.tap(
 			name,
 			(compilation, { normalModuleFactory }) => {
 				// Reload on build
@@ -283,14 +276,20 @@ function defaultLocalizeCompilerFunction(
 	}
 
 	const keyResolved = this.resolveKey();
-	if (keyResolved) {
-		const stringifiedKey = JSON.stringify(keyResolved);
-		if (key.startsWith("'")) {
-			return `'${stringifiedKey.slice(1, -1)}'`;
-		}
-		return stringifiedKey;
+	if (!keyResolved) {
+		return key;
 	}
-	return key;
+
+	const keyResolvedStringified = JSON.stringify(keyResolved);
+	if (key.startsWith('\'')) {
+		return `'${
+			keyResolvedStringified
+				.slice(1, -1)
+				.replace(/'/g, "\\\\'")
+		}'`;
+	}
+
+	return keyResolvedStringified;
 }
 
-export = LocalizeAssetsPlugin;
+export default LocalizeAssetsPlugin;

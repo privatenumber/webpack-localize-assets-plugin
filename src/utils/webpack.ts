@@ -7,10 +7,8 @@ import {
 	WP5,
 	NormalModuleFactory,
 	Module,
-} from '../types';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../../package.json');
+} from '../types.js';
+import { name } from '../../package.json';
 
 export const isWebpack5 = (wp: Webpack) => {
 	const [major] = wp.version ? wp.version.split('.') : [];

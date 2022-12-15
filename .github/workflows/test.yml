@@ -2,9 +2,8 @@ name: Test
 
 on:
   push:
-    branches: [develop]
+    branches: develop
   pull_request:
-    branches: [master, develop]
 
 jobs:
   test:
@@ -26,8 +25,14 @@ jobs:
         version: 7
         run_install: true
 
-    - name: Test
-      run: npm run test
-
     - name: Lint
-      run: npm run lint
+      run: pnpm lint
+
+    - name: Type check
+      run: pnpm type-check
+
+    - name: Build
+      run: pnpm build
+
+    - name: Test
+      run: pnpm test

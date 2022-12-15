@@ -25,13 +25,13 @@ jobs:
         run_install: true
 
     - name: Test
-      run: npm run test # Produces distribution via pretest
+      run: pnpm test # Produces distribution via pretest
 
     - name: Lint
-      run: npm run lint
+      run: pnpm lint
 
     - name: Release
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: npx semantic-release
+      run: pnpm dlx semantic-release
