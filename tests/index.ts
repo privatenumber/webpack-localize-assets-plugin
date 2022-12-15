@@ -6,7 +6,8 @@ import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import { build, watch } from 'webpack-test-utils';
 import type { Compilation } from 'webpack5';
-import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin';
+import TerserPlugin from 'terser-webpack-plugin';
+import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
 const localesEmpty = Object.freeze({});
 const localesSingle = Object.freeze({
@@ -514,6 +515,15 @@ describe(`Webpack ${webpack.version}`, ({ describe }) => {
 					configureWebpack(config);
 
 					config.optimization!.minimize = true;
+
+					if (isWebpack5) {
+						config.optimization!.minimizer = [
+							new TerserPlugin({
+								parallel: false,
+							}),
+						];
+					}
+
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
@@ -659,6 +669,15 @@ describe(`Webpack ${webpack.version}`, ({ describe }) => {
 					configureWebpack(config);
 
 					config.optimization!.minimize = true;
+
+					if (isWebpack5) {
+						config.optimization!.minimizer = [
+							new TerserPlugin({
+								parallel: false,
+							}),
+						];
+					}
+
 					config.plugins!.push(
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,

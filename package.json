@@ -29,6 +29,14 @@
 			"types": "./src/plugin-type.d.ts",
 			"development": "./src/index.ts",
 			"default": "./dist/index.cjs"
+		},
+		"webpack": {
+			"webpack5": "webpack5",
+			"default": "webpack"
+		},
+		"webpack/*": {
+			"webpack5": "webpack5/*",
+			"default": "webpack/*"
 		}
 	},
 	"scripts": {
@@ -36,7 +44,9 @@
 		"lint": "eslint .",
 		"build": "pkgroll",
 		"type-check": "tsc --noEmit",
-		"test": "pnpm --use-node-version=12.22.12 exec tsx tests"
+		"test": "pnpm test:webpack4 && pnpm test:webpack5",
+		"test:webpack4": "pnpm exec tsx --loader alias-imports tests",
+		"test:webpack5": "pnpm exec tsx --loader alias-imports --conditions webpack5 tests"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm build && pnpm lint-staged && pnpm test"
@@ -63,6 +73,7 @@
 		"@types/webpack": "^4.41.32",
 		"@types/webpack-manifest-plugin": "^3.0.5",
 		"@types/webpack-sources": "^3.2.0",
+		"alias-imports": "^1.0.0",
 		"css-loader": "^5.2.4",
 		"eslint": "^8.28.0",
 		"lint-staged": "^12.1.2",
@@ -71,6 +82,7 @@
 		"pkgroll": "^1.5.0",
 		"simple-git-hooks": "^2.8.0",
 		"tempy": "^1.0.1",
+		"terser-webpack-plugin": "^5.3.6",
 		"tsx": "^3.12.1",
 		"typescript": "^4.9.3",
 		"webpack": "4.42.0",
