@@ -276,7 +276,20 @@ function defaultLocalizeCompilerFunction(
 	}
 
 	const keyResolved = this.resolveKey();
-	return keyResolved ? JSON.stringify(keyResolved) : key;
+	if (!keyResolved) {
+		return key;
+	}
+
+	const keyResolvedStringified = JSON.stringify(keyResolved);
+	if (key.startsWith('\'')) {
+		return `'${
+			keyResolvedStringified
+				.slice(1, -1)
+				.replace(/'/g, "\\\\'")
+		}'`;
+	}
+
+	return keyResolvedStringified;
 }
 
 export default LocalizeAssetsPlugin;

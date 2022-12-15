@@ -301,6 +301,9 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 						[
 							'__("hello-key")',
 							'__("stringWithDoubleQuotes")',
+							'__("stringWithSingleQuotes")',
+							'__(\'stringWithDoubleQuotes\')',
+							'__(\'stringWithSingleQuotes\')',
 						].join(',')
 					}];`,
 				},
@@ -324,6 +327,9 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			expect(enBuild).toEqual([
 				localesMulti.en['hello-key'],
 				localesMulti.en.stringWithDoubleQuotes,
+				localesMulti.en.stringWithSingleQuotes,
+				localesMulti.en.stringWithDoubleQuotes,
+				localesMulti.en.stringWithSingleQuotes,
 			]);
 		});
 
