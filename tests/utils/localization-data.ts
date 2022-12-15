@@ -9,14 +9,17 @@ export const localesSingle = Object.freeze({
 export const localesMulti = Object.freeze({
 	en: {
 		'hello-key': 'Hello',
-		stringWithQuotes: '"quotes"',
+		stringWithDoubleQuotes: '"double quotes"',
+		stringWithSingleQuotes: '\'single quotes\'',
 	},
 	es: {
 		'hello-key': 'Hola',
-		stringWithQuotes: '"quotes"',
+		stringWithDoubleQuotes: '"double quotes"',
+		stringWithSingleQuotes: '\'single quotes\'',
 	},
 	ja: {
 		'hello-key': 'こんにちは',
-		stringWithQuotes: '"quotes"',
+		stringWithDoubleQuotes: '"double quotes"',
+		stringWithSingleQuotes: '\'single quotes\'',
 	},
 });

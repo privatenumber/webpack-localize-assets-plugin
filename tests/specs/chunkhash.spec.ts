@@ -93,7 +93,7 @@ export default testSuite(({ describe }) => {
 								...localesMulti,
 								en: {
 									'hello-key': 'Wazzup',
-									stringWithQuotes: '"quotes"',
+									stringWithDoubleQuotes: '"quotes"',
 								},
 							},
 						}),

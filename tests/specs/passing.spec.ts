@@ -106,9 +106,9 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 				{
 					'/src/index.js': `
 						export default {
-							test1: __("hello-key") + " world and " + __("stringWithQuotes"),
+							test1: __("hello-key") + " world and " + __("stringWithDoubleQuotes"),
 						    test2: __("hello-key").length,
-						    test3: [__("hello-key"), __("stringWithQuotes")],
+						    test3: [__("hello-key"), __("stringWithDoubleQuotes")],
 						    test4: __("hello-key") || "hello",
 						    test5: __("hello-key") ? "hello" : "goodbye",
 						};
@@ -139,9 +139,9 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			expect(built.stats.hasErrors()).toBe(false);
 
 			const enBuild = await built.require('/dist/index.en.js');
-			expect(enBuild.test1).toBe(`${localesMulti.en['hello-key']} world and "quotes"`);
+			expect(enBuild.test1).toBe(`${localesMulti.en['hello-key']} world and ${localesMulti.en.stringWithDoubleQuotes}`);
 			expect(enBuild.test2).toBe(localesMulti.en['hello-key'].length);
-			expect(enBuild.test3).toEqual([localesMulti.en['hello-key'], localesMulti.en.stringWithQuotes]);
+			expect(enBuild.test3).toEqual([localesMulti.en['hello-key'], localesMulti.en.stringWithDoubleQuotes]);
 			expect(enBuild.test4).toBe(localesMulti.en['hello-key']);
 			expect(enBuild.test5).toBe('hello');
 
@@ -297,7 +297,12 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 		test('devtool eval', async () => {
 			const built = await build(
 				{
-					'/src/index.js': 'export default [__("hello-key"), __("stringWithQuotes")];',
+					'/src/index.js': `export default [${
+						[
+							'__("hello-key")',
+							'__("stringWithDoubleQuotes")',
+						].join(',')
+					}];`,
 				},
 				(config) => {
 					configureWebpack(config);
@@ -316,7 +321,10 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			expect(Object.keys(assets)).toStrictEqual(['index.en.js', 'index.es.js', 'index.ja.js']);
 
 			const enBuild = built.require('/dist/index.en.js');
-			expect(enBuild).toEqual([localesMulti.en['hello-key'], localesMulti.en.stringWithQuotes]);
+			expect(enBuild).toEqual([
+				localesMulti.en['hello-key'],
+				localesMulti.en.stringWithDoubleQuotes,
+			]);
 		});
 
 		test('emits source-maps', async () => {
@@ -386,9 +394,10 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			);
 
 			expect(built.stats.hasWarnings()).toBe(true);
-			expect(built.stats.compilation.warnings.length).toBe(2);
+			expect(built.stats.compilation.warnings.length).toBe(3);
 			expect(built.stats.compilation.warnings[0].message).toMatch('Unused string key "hello-key"');
-			expect(built.stats.compilation.warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
+			expect(built.stats.compilation.warnings[1].message).toMatch('Unused string key "stringWithDoubleQuotes"');
+			expect(built.stats.compilation.warnings[2].message).toMatch('Unused string key "stringWithSingleQuotes"');
 		});
 
 		test('works with WebpackManifestPlugin', async () => {
@@ -508,8 +517,9 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			);
 
 			const { warnings: warningsA } = builtA.stats.compilation;
-			expect(warningsA.length).toBe(1);
-			expect(warningsA[0].message).toMatch('Unused string key "stringWithQuotes"');
+			expect(warningsA.length).toBe(2);
+			expect(warningsA[0].message).toMatch('Unused string key "stringWithDoubleQuotes"');
+			expect(warningsA[1].message).toMatch('Unused string key "stringWithSingleQuotes"');
 
 			const builtB = await build(
 				volume,
@@ -517,8 +527,9 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			);
 
 			const { warnings: warningsB } = builtB.stats.compilation;
-			expect(warningsB.length).toBe(1);
-			expect(warningsB[0].message).toMatch('Unused string key "stringWithQuotes"');
+			expect(warningsB.length).toBe(2);
+			expect(warningsB[0].message).toMatch('Unused string key "stringWithDoubleQuotes"');
+			expect(warningsA[1].message).toMatch('Unused string key "stringWithSingleQuotes"');
 		});
 
 		test('dynamically load relative locale json path', async () => {

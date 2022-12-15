@@ -5,7 +5,7 @@ import { configureWebpack } from '../utils/configure-webpack';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
 export default testSuite(({ describe }) => {
-	describe('error-cases', ({ test }) => {
+	describe('error-cases', ({ test, describe }) => {
 		test('no option', async () => {
 			await expect(async () => {
 				await build(
@@ -339,11 +339,12 @@ export default testSuite(({ describe }) => {
 				let stats = await watching.build(true);
 
 				const { warnings } = stats.compilation;
-				expect(warnings.length).toBe(2);
+				expect(warnings.length).toBe(3);
 				expect(warnings[0].message).toMatch('Unused string key "hello-key"');
-				expect(warnings[1].message).toMatch('Unused string key "stringWithQuotes"');
+				expect(warnings[1].message).toMatch('Unused string key "stringWithDoubleQuotes"');
+				expect(warnings[2].message).toMatch('Unused string key "stringWithSingleQuotes"');
 
-				watching.fs.writeFileSync('/src/index.js', 'export default [__("hello-key"), __("stringWithQuotes")];');
+				watching.fs.writeFileSync('/src/index.js', 'export default [__("hello-key"), __("stringWithDoubleQuotes"), __("stringWithSingleQuotes")];');
 
 				stats = await watching.build(true);
 				expect(stats.compilation.warnings.length).toBe(0);

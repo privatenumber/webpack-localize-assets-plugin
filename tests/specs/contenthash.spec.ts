@@ -87,7 +87,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 									...localesMulti,
 									en: {
 										'hello-key': 'Wazzup',
-										stringWithQuotes: '"quotes"',
+										stringWithDoubleQuotes: '"quotes"',
 									},
 								},
 							}),
