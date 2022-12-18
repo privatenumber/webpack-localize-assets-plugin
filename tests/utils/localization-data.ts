@@ -6,20 +6,23 @@ export const localesSingle = Object.freeze({
 	},
 });
 
+const stringWithDoubleQuotes = '"double " quotes"';
+const stringWithSingleQuotes = "'single ' quotes'";
+
 export const localesMulti = Object.freeze({
 	en: {
 		'hello-key': 'Hello',
-		stringWithDoubleQuotes: '"double quotes"',
-		stringWithSingleQuotes: '\'single quotes\'',
+		stringWithDoubleQuotes,
+		stringWithSingleQuotes,
 	},
 	es: {
 		'hello-key': 'Hola',
-		stringWithDoubleQuotes: '"double quotes"',
-		stringWithSingleQuotes: '\'single quotes\'',
+		stringWithDoubleQuotes,
+		stringWithSingleQuotes,
 	},
 	ja: {
 		'hello-key': 'こんにちは',
-		stringWithDoubleQuotes: '"double quotes"',
-		stringWithSingleQuotes: '\'single quotes\'',
+		stringWithDoubleQuotes,
+		stringWithSingleQuotes,
 	},
 });
