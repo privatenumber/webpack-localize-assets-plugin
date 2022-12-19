@@ -4,7 +4,6 @@ import {
 	reportModuleError,
 } from './utils/webpack.js';
 import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
-import type { StringKeyHit } from './utils/on-localizer-call.js';
 import type { LocaleData } from './utils/load-locale-data.js';
 import {
 	onLocalizerCall,
@@ -13,14 +12,14 @@ import {
 import {
 	Options,
 	LocalizeCompiler,
-	Compilation,
+	WP5,
 	NormalModuleFactory,
 } from './types-internal.js';
 import { onAssetPath } from './utils/webpack.js';
 import { interpolateLocaleToFileName } from './utils/localize-filename.js';
 
 export const handleSingleLocaleLocalization = (
-	compilation: Compilation,
+	compilation: WP5.Compilation,
 	normalModuleFactory: NormalModuleFactory,
 	options: Options,
 	locales: LocaleData,

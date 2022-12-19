@@ -61,12 +61,13 @@ class LocalizeAssetsPlugin {
 						: undefined
 				);
 
-				const handleLocalization = (
+				const localizationMode = (
 					locales.names.length === 1
 						? handleSingleLocaleLocalization
 						: handleMultiLocaleLocalization
 				);
-				handleLocalization(
+
+				localizationMode(
 					compilation,
 					normalModuleFactory,
 					options,
