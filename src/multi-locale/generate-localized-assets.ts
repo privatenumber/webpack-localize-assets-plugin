@@ -72,7 +72,7 @@ const getOriginalCall = (node: Expression): SimpleCallExpression => {
 	}
 
 	throw new Error('Expected BinaryExpression or SequenceExpression');
-}
+};
 
 const locatePlaceholders = (sourceString: string) => {
 	const placeholderRanges = findSubstringRanges(sourceString, placeholderFunctionName);
@@ -104,7 +104,7 @@ const locatePlaceholders = (sourceString: string) => {
 	}
 
 	return placeholderLocations;
-}
+};
 
 const localizeAsset = (
 	locales: LocalesMap,
@@ -195,7 +195,7 @@ const localizeAsset = (
 		);
 	}
 	return new RawSource(localizedCode);
-}
+};
 
 export const generateLocalizedAssets = async (
 	compilation: Compilation,
