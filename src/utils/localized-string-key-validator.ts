@@ -4,7 +4,6 @@ import type { NormalModule } from 'webpack5';
 import type { Expression } from 'estree';
 import {
 	LocalizedStringKey,
-	LocalesMap,
 } from '../types.js';
 import { name } from '../../package.json';
 import {
@@ -12,7 +11,7 @@ import {
 } from './webpack.js';
 import type { LocaleData } from './load-locale-data.js';
 
-export function localizedStringKeyValidator<LocalizedData>(
+export function localizedStringKeyValidator(
 	locales: LocaleData,
 	throwOnMissing?: boolean,
 ) {
@@ -30,7 +29,7 @@ export function localizedStringKeyValidator<LocalizedData>(
 		validatedKeys.add(stringKey);
 
 		const keyMissingFromLocales = locales.names.filter(
-			name => !hasOwnProp(locales.data[name], stringKey),
+			localeName => !hasOwnProp(locales.data[localeName], stringKey),
 		);
 		const isMissingFromLocales = keyMissingFromLocales.length > 0;
 

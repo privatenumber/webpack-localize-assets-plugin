@@ -116,6 +116,6 @@ export const onFunctionCall = (
 			.tap(name, handler);
 		normalModuleFactory.hooks.parser
 			.for('javascript/esm')
-			.tap(name, handler);	
+			.tap(name, handler);
 	}
 };

@@ -22,9 +22,9 @@ const readJsonFile = (
 };
 
 export type LocaleData = {
-	names: LocaleName[],
-	data: LocalesMap,
-	paths: Set<LocaleFilePath>,
+	names: LocaleName[];
+	data: LocalesMap;
+	paths: Set<LocaleFilePath>;
 };
 
 export function loadLocaleData(

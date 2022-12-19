@@ -1,8 +1,3 @@
-import {
-	toConstantDependency,
-	reportModuleWarning,
-	onFunctionCall,
-} from './webpack.js';
 import WebpackError from 'webpack/lib/WebpackError.js';
 import type { SimpleCallExpression } from 'estree';
 import { name } from '../../package.json';
@@ -11,13 +6,18 @@ import {
 	NormalModuleFactory,
 	Options,
 } from '../types.js';
+import {
+	toConstantDependency,
+	reportModuleWarning,
+	onFunctionCall,
+} from './webpack.js';
 import type { LocaleData } from './load-locale-data.js';
 import { localizedStringKeyValidator } from './localized-string-key-validator.js';
 
 export type StringKeyHit = {
-	key: string,
-	callExpressionNode: SimpleCallExpression,
-	module: WP5.NormalModule,
+	key: string;
+	callExpressionNode: SimpleCallExpression;
+	module: WP5.NormalModule;
 };
 
 type onLocalizerCallCallback = (stringKeyHit: StringKeyHit) => string | undefined;
@@ -60,7 +60,7 @@ export const onLocalizerCall = (
 				toConstantDependency(parser, replacement)(callExpressionNode);
 				return true;
 			}
-		}
+		},
 	);
 };
 

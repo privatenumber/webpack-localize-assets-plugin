@@ -17,14 +17,12 @@ import {
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
-	Module,
 } from './types.js';
 import type { StringKeysCollection } from './utils/warn-on-unused-keys.js';
 import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
 import { stringifyAst } from './utils/stringify-ast.js';
 import type { LocaleData } from './utils/load-locale-data.js';
 import type { StringKeyHit } from './utils/on-localizer-call.js';
-
 
 /**
  * For Multiple locales
@@ -50,8 +48,7 @@ export const getMarkedFunctionPlaceholder = (
 	}
 
 	return markLocalizeFunction(stringKeyHit.callExpressionNode);
-}
-
+};
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;

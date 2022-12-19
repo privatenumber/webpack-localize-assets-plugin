@@ -68,7 +68,7 @@ class LocalizeAssetsPlugin {
 						? warnOnUnsuedKeys(compilation, locales.data)
 						: undefined
 				);
-			
+
 				if (locales.names.length === 1) {
 					const [localeName] = locales.names;
 
@@ -78,7 +78,7 @@ class LocalizeAssetsPlugin {
 						onStringKey(
 							locales,
 							options,
-							(stringKeyHit) => getLocalizedString(
+							stringKeyHit => getLocalizedString(
 								trackUsedKeys,
 								this.localizeCompiler,
 								locales,
@@ -96,7 +96,7 @@ class LocalizeAssetsPlugin {
 						onStringKey(
 							locales,
 							options,
-							(stringKeyHit) => getMarkedFunctionPlaceholder(
+							stringKeyHit => getMarkedFunctionPlaceholder(
 								locales,
 								stringKeyHit,
 							),
