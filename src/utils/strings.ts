@@ -24,7 +24,7 @@ export const findSubstringRanges = (
 	}
 
 	return ranges;
-}
+};
 
 export const findSubstringLocations = (
 	string: string,

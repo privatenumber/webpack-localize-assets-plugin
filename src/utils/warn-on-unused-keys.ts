@@ -27,7 +27,7 @@ function getAllKeys(
 	return allStringKeys;
 }
 
-export const warnOnUnsuedKeys = (
+export const warnOnUnusedKeys = (
 	compilation: Compilation,
 	locales: LocalesMap,
 ) => {

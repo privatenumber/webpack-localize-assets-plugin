@@ -49,7 +49,7 @@ const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-p
  * placeholder with calls to localizeCompiler
  * 3. Repeat for each locale
  */
-export const getMarkedFunctionPlaceholder = (
+export const insertPlaceholderFunction = (
 	locales: LocaleData,
 	{ module, key, callExpressionNode }: StringKeyHit,
 ) : string => {
@@ -366,4 +366,4 @@ export const generateLocalizedAssets = async (
 		// Delete original unlocalized asset
 		deleteAsset(compilation, asset.name, localizedAssetNames);
 	}));
-}
+};

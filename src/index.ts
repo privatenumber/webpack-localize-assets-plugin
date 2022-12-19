@@ -11,7 +11,7 @@ import { interpolateLocaleToFileName } from './utils/localize-filename.js';
 import {
 	generateLocalizedAssets,
 	fileNameTemplatePlaceholder,
-	getMarkedFunctionPlaceholder,
+	insertPlaceholderFunction,
 } from './multi-locale.js';
 import { stringifyAstNode } from './utils/stringify-ast-node';
 import { getLocalizedString } from './single-locale.js';
@@ -20,7 +20,7 @@ import {
 	onStringKey,
 } from './utils/on-localizer-call.js';
 import { onOptimizeAssets, onAssetPath } from './utils/webpack.js';
-import { warnOnUnsuedKeys } from './utils/warn-on-unused-keys.js';
+import { warnOnUnusedKeys } from './utils/warn-on-unused-keys.js';
 
 const defaultLocalizerName = '__';
 
@@ -67,7 +67,7 @@ class LocalizeAssetsPlugin {
 				const functionNames = Object.keys(localizeCompiler);
 				const trackUsedKeys = (
 					options.warnOnUnusedString
-						? warnOnUnsuedKeys(compilation, locales.data)
+						? warnOnUnusedKeys(compilation, locales.data)
 						: undefined
 				);
 
@@ -80,7 +80,7 @@ class LocalizeAssetsPlugin {
 						onStringKey(
 							locales,
 							options,
-							stringKeyHit => {
+							(stringKeyHit) => {
 								trackUsedKeys?.delete(stringKeyHit.key);
 
 								return getLocalizedString(
@@ -107,7 +107,7 @@ class LocalizeAssetsPlugin {
 						onStringKey(
 							locales,
 							options,
-							stringKeyHit => getMarkedFunctionPlaceholder(
+							stringKeyHit => insertPlaceholderFunction(
 								locales,
 								stringKeyHit,
 							),
@@ -156,7 +156,8 @@ class LocalizeAssetsPlugin {
 
 							const localizedModules = modules
 								.map(module => module.buildInfo.localized)
-								.filter(Boolean); // TODO is this necessary? Wouldn't it always be true based on multi-locale code
+								.filter(Boolean);
+								// TODO is this necessary? Wouldn't it always be true based on multi-locale code
 
 							// TODO: Probably needs to be sorted?
 							if (localizedModules.length > 0) {

@@ -19,10 +19,10 @@ export const getLocalizedString = (
 	{ data }: LocaleData,
 	stringKeyHit: StringKeyHit,
 	localeName: string,
-): string => {
+): string =>
 
 	// TODO: Inline this call after moving logic to this file from index.ts
-	return callLocalizeCompiler(
+	 callLocalizeCompiler(
 		localizeCompiler,
 		{
 			callNode: stringKeyHit.callExpressionNode,
@@ -32,4 +32,3 @@ export const getLocalizedString = (
 		},
 		localeName,
 	);
-};
