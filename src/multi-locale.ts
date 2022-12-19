@@ -104,6 +104,9 @@ export const handleMultiLocaleLocalization = (
 		),
 	);
 
+	// TODO Maybe change compilation type above WP4 + WP5
+	// And type-guard the below WP5 code?
+
 	// Update chunkHash based on localized content
 	compilation.hooks.chunkHash.tap(
 		name,
