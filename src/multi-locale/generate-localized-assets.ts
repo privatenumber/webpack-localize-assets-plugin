@@ -8,33 +8,22 @@ import type {
 	Literal,
 	SimpleCallExpression,
 } from 'estree';
-import { deleteAsset } from './utils/webpack.js';
-import { sha256 } from './utils/sha256.js';
+import { deleteAsset } from '../utils/webpack.js';
+import { sha256 } from '../utils/sha256.js';
 import {
 	Compilation,
-	NormalModuleFactory,
 	LocalesMap,
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
-	Options,
-} from './types-internal.js';
-import type { StringKeysCollection } from './utils/warn-on-unused-keys.js';
-import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
-import { stringifyAstNode } from './utils/stringify-ast-node.js';
-import type { LocaleData } from './utils/load-locale-data.js';
-import type { StringKeyHit } from './utils/on-localizer-call.js';
-import { findSubstringRanges, findSubstringLocations, type Range } from './utils/strings.js';
+} from '../types-internal.js';
+import type { StringKeysCollection } from '../utils/warn-on-unused-keys.js';
+import { callLocalizeCompiler } from '../utils/call-localize-compiler.js';
+import type { LocaleData } from '../utils/load-locale-data.js';
+import { findSubstringRanges, findSubstringLocations, type Range } from '../utils/strings.js';
 import {
-	onLocalizerCall,
-	onStringKey,
-} from './utils/on-localizer-call.js';
-import { onAssetPath, onOptimizeAssets } from './utils/webpack.js';
-import { interpolateLocaleToFileName } from './utils/localize-filename.js';
-import { name } from '../package.json';
-
-type ContentHash = string;
-type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
+	placeholderFunctionName,
+} from './insert-placeholder-function.js';
 
 export type PlaceholderLocation = {
 	range: Range;
@@ -42,131 +31,16 @@ export type PlaceholderLocation = {
 	escapeDoubleQuotes: boolean;
 };
 
+type ContentHash = string;
+type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
+
 export const fileNameTemplatePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
 
 const fileNameTemplatePlaceholderPattern = new RegExp(fileNameTemplatePlaceholder.replace(/[[\]]/g, '\\$&'), 'g');
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-plugin-placeholder').slice(0, 8)}`;
-
-export const handleMultiLocaleLocalization = (
-	compilation: WP5.Compilation,
-	normalModuleFactory: NormalModuleFactory,
-	options: Options,
-	locales: LocaleData,
-	localizeCompiler: LocalizeCompiler,
-	functionNames: string[],
-	trackUsedKeys?: Set<string>,
-) => {
-	onLocalizerCall(
-		normalModuleFactory,
-		functionNames,
-		onStringKey(
-			locales,
-			options,
-			stringKeyHit => insertPlaceholderFunction(
-				locales,
-				stringKeyHit,
-			),
-		),
-	);
-
-	/**
-	 * The reason why we replace "[locale]" with a placeholder instead of
-	 * the actual locale is because the name is used to load chunks.
-	 *
-	 * That means a file can be loading another file like `load('./file.[locale].js')`.
-	 * We later localize the assets by search-and-replacing instances of
-	 * `[locale]` with the actual locale.
-	 *
-	 * The placeholder is a unique enough string to guarantee that we're not accidentally
-	 * replacing `[locale]` if it happens to be in the source JS.
-	 */
-	onAssetPath(
-		compilation,
-		interpolateLocaleToFileName(
-			compilation,
-			fileNameTemplatePlaceholder,
-			true,
-		),
-	);
-
-	// Create localized assets by swapping out placeholders with localized strings
-	onOptimizeAssets(
-		compilation,
-		() => generateLocalizedAssets(
-			compilation,
-			locales,
-			options.sourceMapForLocales || locales.names,
-			trackUsedKeys,
-			localizeCompiler,
-		),
-	);
-
-	// TODO Maybe change compilation type above WP4 + WP5
-	// And type-guard the below WP5 code?
-
-	// Update chunkHash based on localized content
-	compilation.hooks.chunkHash.tap(
-		name,
-		(chunk, hash) => {
-			const modules = compilation.chunkGraph // WP5
-				? compilation.chunkGraph.getChunkModules(chunk)
-				: chunk.getModules();
-
-			const localizedModules = modules
-				.map(module => module.buildInfo.localized)
-				.filter(Boolean);
-				// TODO is this necessary? Wouldn't it always be true based on multi-locale code
-
-			// TODO: Probably needs to be sorted?
-			if (localizedModules.length > 0) {
-				hash.update(JSON.stringify(localizedModules));
-			}
-		},
-	);
-};
-
-/**
- * For Multiple locales
- *
- * 1. Replace the `__(...)` call with a placeholder -> `asdf(__(...)) + asdf`
- * 2. After the asset is generated & minified, search and replace the
- * placeholder with calls to localizeCompiler
- * 3. Repeat for each locale
- */
-export const insertPlaceholderFunction = (
-	locales: LocaleData,
-	{ module, key, callNode }: StringKeyHit,
-) : string => {
-	// Track used keys for hash
-	if (!module.buildInfo.localized) {
-		module.buildInfo.localized = {};
-	}
-
-	if (!module.buildInfo.localized[key]) {
-		module.buildInfo.localized[key] = locales.names.map(
-			locale => locales.data[locale][key],
-		);
-	}
-
-	/**
-	 * TODO
-	 * Shouldn't this be moved to the onLocalizerCall hook?
-	 * Maybe it should only be applied to multiple locales?
-	 */
-	if (callNode.callee.type !== 'Identifier') {
-		throw new Error('Expected Identifier');
-	}
-
-	const callExpression = stringifyAstNode(callNode);
-
-	// TODO I wonder if `placeholderFunctionName` can be passed in as the second argument?
-	return `${placeholderFunctionName}(${callExpression})+${placeholderFunctionName}`;
-};
-
-function getOriginalCall(node: Expression): SimpleCallExpression {
+const getOriginalCall = (node: Expression): SimpleCallExpression => {
 	if (node.type === 'BinaryExpression') {
 		if (node.left.type !== 'CallExpression') {
 			throw new Error('Expected CallExpression');
@@ -200,7 +74,7 @@ function getOriginalCall(node: Expression): SimpleCallExpression {
 	throw new Error('Expected BinaryExpression or SequenceExpression');
 }
 
-function locatePlaceholders(sourceString: string) {
+const locatePlaceholders = (sourceString: string) => {
 	const placeholderRanges = findSubstringRanges(sourceString, placeholderFunctionName);
 	const placeholderLocations: PlaceholderLocation[] = [];
 
@@ -232,7 +106,7 @@ function locatePlaceholders(sourceString: string) {
 	return placeholderLocations;
 }
 
-function localizeAsset(
+const localizeAsset = (
 	locales: LocalesMap,
 	locale: LocaleName,
 	assetName: string,
@@ -244,7 +118,7 @@ function localizeAsset(
 	compilation: Compilation,
 	localizeCompiler: LocalizeCompiler,
 	trackStringKeys: StringKeysCollection | undefined,
-) {
+) => {
 	const localeData = locales[locale];
 	const magicStringInstance = new MagicString(source);
 

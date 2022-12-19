@@ -1,22 +1,22 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
+import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
+import type { LocaleData } from './utils/load-locale-data.js';
 import {
 	reportModuleWarning,
 	reportModuleError,
+	onAssetPath,
 } from './utils/webpack.js';
-import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
-import type { LocaleData } from './utils/load-locale-data.js';
 import {
 	onLocalizerCall,
 	onStringKey,
 } from './utils/on-localizer-call.js';
-import {
+import { interpolateLocaleToFileName } from './utils/localize-filename.js';
+import type {
 	Options,
 	LocalizeCompiler,
 	WP5,
 	NormalModuleFactory,
 } from './types-internal.js';
-import { onAssetPath } from './utils/webpack.js';
-import { interpolateLocaleToFileName } from './utils/localize-filename.js';
 
 export const handleSingleLocaleLocalization = (
 	compilation: WP5.Compilation,

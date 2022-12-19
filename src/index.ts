@@ -9,7 +9,7 @@ import {
 import { loadLocaleData } from './utils/load-locale-data.js';
 import { stringifyAstNode } from './utils/stringify-ast-node';
 import { handleSingleLocaleLocalization } from './single-locale.js';
-import { handleMultiLocaleLocalization } from './multi-locale.js';
+import { handleMultiLocaleLocalization } from './multi-locale/index.js';
 import { warnOnUnusedKeys } from './utils/warn-on-unused-keys.js';
 
 const defaultLocalizerName = '__';
