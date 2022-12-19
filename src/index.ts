@@ -61,27 +61,20 @@ class LocalizeAssetsPlugin {
 						: undefined
 				);
 
-				if (locales.names.length === 1) {
-					handleSingleLocaleLocalization(
-						compilation,
-						normalModuleFactory,
-						options,
-						locales,
-						localizeCompiler,
-						functionNames,
-						trackUsedKeys,
-					);
-				} else {
-					handleMultiLocaleLocalization(
-						compilation,
-						normalModuleFactory,
-						options,
-						locales,
-						localizeCompiler,
-						functionNames,
-						trackUsedKeys,
-					);
-				}
+				const handleLocalization = (
+					locales.names.length === 1
+						? handleSingleLocaleLocalization
+						: handleMultiLocaleLocalization
+				);
+				handleLocalization(
+					compilation,
+					normalModuleFactory,
+					options,
+					locales,
+					localizeCompiler,
+					functionNames,
+					trackUsedKeys,
+				);
 			},
 		);
 	}
