@@ -1,13 +1,11 @@
 import assert from 'assert';
 import {
 	LocaleName,
-	WP5,
+	Compilation,
 } from '../types-internal.js';
-import { name } from '../../package.json';
-import { isWebpack5Compilation } from './webpack.js';
 
 export const interpolateLocaleToFileName = (
-	compilation: WP5.Compilation,
+	compilation: Compilation,
 	replaceWith: LocaleName,
 	requireLocaleInFilename?: boolean,
 ) => {
@@ -23,7 +21,7 @@ export const interpolateLocaleToFileName = (
 		}
 	}
 
-	const interpolateHook = (
+	return (
 		filePath: string | ((data: any) => string),
 		data: any,
 	) => {
@@ -37,17 +35,4 @@ export const interpolateLocaleToFileName = (
 
 		return filePath;
 	};
-
-	if (isWebpack5Compilation(compilation)) {
-		compilation.hooks.assetPath.tap(
-			name,
-			interpolateHook,
-		);
-	} else {
-		// @ts-expect-error Missing assetPath hook from @type
-		compilation.mainTemplate.hooks.assetPath.tap(
-			name,
-			interpolateHook,
-		);
-	}
 };

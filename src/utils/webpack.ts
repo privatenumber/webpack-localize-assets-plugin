@@ -119,3 +119,63 @@ export const onFunctionCall = (
 			.tap(name, handler);
 	}
 };
+
+export const onAssetPath = (
+	compilation: Compilation,
+	callback: (
+		filePath: string | ((data: any) => string),
+		data: any,
+	) => string,
+) => {
+	if (isWebpack5Compilation(compilation)) {
+		compilation.hooks.assetPath.tap(
+			name,
+			callback,
+		);
+	} else {
+		// @ts-expect-error Missing assetPath hook from @type
+		compilation.mainTemplate.hooks.assetPath.tap(
+			name,
+			callback,
+		);
+	}
+};
+
+export const onOptimizeAssets = (
+	compilation: Compilation,
+	callback: () => Promise<void>,
+) => {
+	if (isWebpack5Compilation(compilation)) {
+		/**
+		 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH, which is where
+		 * RealContentHashPlugin re-hashes assets:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH).
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE isn't actually used by Webpack, but there seemed
+		 * to be other plugins that were relying on it to summarize assets, so it makes sense
+		 * to run just before that.
+		 *
+		 * All "process assets" stages:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
+		 */
+		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
+		compilation.hooks.processAssets.tapPromise(
+			{
+				name,
+				stage: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
+				additionalAssets: true,
+			},
+			callback,
+		);
+	} else {
+		// Triggered after minification, which usually happens in optimizeChunkAssets
+		compilation.hooks.optimizeAssets.tapPromise(
+			name,
+			callback,
+		);
+	}
+};

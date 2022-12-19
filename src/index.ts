@@ -19,6 +19,7 @@ import {
 	onLocalizerCall,
 	onStringKey,
 } from './utils/on-localizer-call.js';
+import { onOptimizeAssets, onAssetPath } from './utils/webpack.js';
 import { warnOnUnsuedKeys } from './utils/warn-on-unused-keys.js';
 
 const defaultLocalizerName = '__';
@@ -91,7 +92,10 @@ class LocalizeAssetsPlugin {
 						),
 					);
 
-					interpolateLocaleToFileName(compilation, localeName);
+					onAssetPath(
+						compilation,
+						interpolateLocaleToFileName(compilation, localeName),
+					);
 				} else {
 					onLocalizerCall(
 						normalModuleFactory,
@@ -117,15 +121,26 @@ class LocalizeAssetsPlugin {
 					 * The placeholder is a unique enough string to guarantee that we're not accidentally
 					 * replacing `[locale]` if it happens to be in the source JS.
 					 */
-					interpolateLocaleToFileName(compilation, fileNameTemplatePlaceholder, true);
+
+					onAssetPath(
+						compilation,
+						interpolateLocaleToFileName(
+							compilation,
+							fileNameTemplatePlaceholder,
+							true,
+						),
+					);
 
 					// Create localized assets by swapping out placeholders with localized strings
-					generateLocalizedAssets(
+					onOptimizeAssets(
 						compilation,
-						locales,
-						options.sourceMapForLocales || locales.names,
-						trackUsedKeys,
-						this.localizeCompiler,
+						() => generateLocalizedAssets(
+							compilation,
+							locales,
+							options.sourceMapForLocales || locales.names,
+							trackUsedKeys,
+							this.localizeCompiler,
+						),
 					);
 
 					// Update chunkHash based on localized content
@@ -138,8 +153,9 @@ class LocalizeAssetsPlugin {
 
 							const localizedModules = modules
 								.map(module => module.buildInfo.localized)
-								.filter(Boolean);
+								.filter(Boolean); // TODO is this necessary? Wouldn't it always be true based on multi-locale code
 
+							// TODO: Probably needs to be sorted?
 							if (localizedModules.length > 0) {
 								hash.update(JSON.stringify(localizedModules));
 							}

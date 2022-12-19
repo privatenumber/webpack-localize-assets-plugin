@@ -8,8 +8,7 @@ import type {
 	Literal,
 	SimpleCallExpression,
 } from 'estree';
-import { name } from '../package.json';
-import { isWebpack5Compilation, deleteAsset } from './utils/webpack.js';
+import { deleteAsset } from './utils/webpack.js';
 import { sha256 } from './utils/sha256.js';
 import {
 	Compilation,
@@ -23,32 +22,6 @@ import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
 import { stringifyAst } from './utils/stringify-ast.js';
 import type { LocaleData } from './utils/load-locale-data.js';
 import type { StringKeyHit } from './utils/on-localizer-call.js';
-
-/**
- * For Multiple locales
- *
- * 1. Replace the `__(...)` call with a placeholder -> `asdf(__(...)) + asdf`
- * 2. After the asset is generated & minified, search and replace the
- * placeholder with calls to localizeCompiler
- * 3. Repeat for each locale
- */
-export const getMarkedFunctionPlaceholder = (
-	locales: LocaleData,
-	stringKeyHit: StringKeyHit,
-) : string => {
-	// Track used keys for hash
-	if (!stringKeyHit.module.buildInfo.localized) {
-		stringKeyHit.module.buildInfo.localized = {};
-	}
-
-	if (!stringKeyHit.module.buildInfo.localized[stringKeyHit.key]) {
-		stringKeyHit.module.buildInfo.localized[stringKeyHit.key] = locales.names.map(
-			locale => locales.data[locale][stringKeyHit.key],
-		);
-	}
-
-	return markLocalizeFunction(stringKeyHit.callExpressionNode);
-};
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
@@ -108,13 +81,40 @@ const isSourceMap = /\.js\.map$/;
 
 const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-plugin-placeholder').slice(0, 8)}`;
 
-export function markLocalizeFunction(callExpression: SimpleCallExpression) {
-	if (callExpression.callee.type !== 'Identifier') {
+/**
+ * For Multiple locales
+ *
+ * 1. Replace the `__(...)` call with a placeholder -> `asdf(__(...)) + asdf`
+ * 2. After the asset is generated & minified, search and replace the
+ * placeholder with calls to localizeCompiler
+ * 3. Repeat for each locale
+ */
+ export const getMarkedFunctionPlaceholder = (
+	locales: LocaleData,
+	{ module, key, callExpressionNode }: StringKeyHit,
+) : string => {
+	// Track used keys for hash
+	if (!module.buildInfo.localized) {
+		module.buildInfo.localized = {};
+	}
+
+	if (!module.buildInfo.localized[key]) {
+		module.buildInfo.localized[key] = locales.names.map(
+			locale => locales.data[locale][key],
+		);
+	}
+
+	/**
+	 * TODO
+	 * Shouldn't this be moved to the onLocalizerCall hook?
+	 * Maybe it should only be applied to multiple locales?
+	 */
+	if (callExpressionNode.callee.type !== 'Identifier') {
 		throw new Error('Expected Identifier');
 	}
 
-	return `${placeholderFunctionName}(${stringifyAst(callExpression)})+${placeholderFunctionName}`;
-}
+	return `${placeholderFunctionName}(${stringifyAst(callExpressionNode)})+${placeholderFunctionName}`;
+};
 
 function getOriginalCall(node: Expression): SimpleCallExpression {
 	if (node.type === 'BinaryExpression') {
@@ -273,171 +273,135 @@ function localizeAsset(
 	return new RawSource(localizedCode);
 }
 
-export function generateLocalizedAssets(
+export const generateLocalizedAssets = async (
 	compilation: Compilation,
 	locales: LocaleData,
 	sourceMapForLocales: LocaleName[],
 	trackStringKeys: StringKeysCollection | undefined,
 	localizeCompiler: LocalizeCompiler,
-) {
-	const generateLocalizedAssetsHandler = async () => {
-		const assetsWithInfo = (compilation as WP5.Compilation).getAssets()
-			.filter(asset => asset.name.includes(fileNameTemplatePlaceholder));
+) => {
+	const assetsWithInfo = (compilation as WP5.Compilation).getAssets()
+		.filter(asset => asset.name.includes(fileNameTemplatePlaceholder));
 
-		const contentHashMap: ContentHashMap = new Map(
-			assetsWithInfo
-				.flatMap((asset) => {
-					// Add locale to hash for RealContentHashPlugin plugin
-					const { contenthash } = asset.info;
-					if (!contenthash) {
-						return [];
-					}
-
-					const contentHashArray = Array.isArray(contenthash)
-						? contenthash
-						: [contenthash];
-
-					return contentHashArray.map(chash => [
-						chash,
-						new Map(locales.names.map(locale => [
-							locale,
-							sha256(chash + locale).slice(0, chash.length),
-						])),
-					]);
-				}),
-		);
-
-		await Promise.all(assetsWithInfo.map(async (asset) => {
-			const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
-			const localizedAssetNames: string[] = [];
-
-			if (isJsFile.test(asset.name)) {
-				const sourceString = source.toString();
-				const placeholderLocations = locatePlaceholders(sourceString);
-				const fileNamePlaceholderLocations = findSubstringLocations(
-					sourceString,
-					fileNameTemplatePlaceholder,
-				);
-				const contentHashLocations = [...contentHashMap.entries()]
-					.flatMap(([hash, hashesByLocale]) => findSubstringLocations(sourceString, hash)
-						.map(loc => [
-							{ start: loc, end: loc + hash.length },
-							hashesByLocale,
-						] as [Range, Map<LocaleName, string>]));
-
-				await Promise.all(locales.names.map(async (locale) => {
-					const contentHashReplacements = contentHashLocations.map(([range, hashesByLocale]) => [
-						range,
-						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-						hashesByLocale.get(locale)!,
-					] as [Range, string]);
-
-					let newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
-
-					// object spread breaks types
-					// eslint-disable-next-line prefer-object-spread
-					const newInfo = Object.assign(
-						{},
-						asset.info,
-						{ locale },
-					);
-
-					// Add locale to hash for RealContentHashPlugin plugin
-					if (newInfo.contenthash) {
-						const { contenthash } = newInfo;
-						if (Array.isArray(contenthash)) {
-							const newContentHashes = [];
-							for (const chash of contenthash) {
-								const newContentHash = contentHashMap.get(chash)?.get(locale) ?? chash;
-								newContentHashes.push(newContentHash);
-								newAssetName = newAssetName.replace(chash, newContentHash);
-							}
-							newInfo.contenthash = newContentHashes;
-						} else {
-							const newContentHash = contentHashMap.get(contenthash)?.get(locale) ?? contenthash;
-							newAssetName = newAssetName.replace(contenthash, newContentHash);
-							newInfo.contenthash = newContentHash;
-						}
-					}
-
-					localizedAssetNames.push(newAssetName);
-
-					const localizedSource = localizeAsset(
-						locales.data,
-						locale,
-						newAssetName,
-						placeholderLocations,
-						fileNamePlaceholderLocations,
-						contentHashReplacements,
-						sourceString,
-						sourceMapForLocales.includes(locale) && map,
-						compilation,
-						localizeCompiler,
-						trackStringKeys,
-					);
-
-					// @ts-expect-error Outdated @type
-					compilation.emitAsset(
-						newAssetName,
-						localizedSource,
-						newInfo,
-					);
-				}));
-			} else {
-				let localesToIterate = locales.names;
-				if (isSourceMap.test(asset.name) && sourceMapForLocales) {
-					localesToIterate = sourceMapForLocales;
+	const contentHashMap: ContentHashMap = new Map(
+		assetsWithInfo
+			.flatMap((asset) => {
+				// Add locale to hash for RealContentHashPlugin plugin
+				const { contenthash } = asset.info;
+				if (!contenthash) {
+					return [];
 				}
 
-				await Promise.all(localesToIterate.map(async (locale) => {
-					const newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
-					localizedAssetNames.push(newAssetName);
+				const contentHashArray = Array.isArray(contenthash)
+					? contenthash
+					: [contenthash];
 
-					// @ts-expect-error Outdated @type
-					compilation.emitAsset(
-						newAssetName,
-						asset.source,
-						asset.info,
-					);
-				}));
+				return contentHashArray.map(chash => [
+					chash,
+					new Map(locales.names.map(locale => [
+						locale,
+						sha256(chash + locale).slice(0, chash.length),
+					])),
+				]);
+			}),
+	);
+
+	await Promise.all(assetsWithInfo.map(async (asset) => {
+		const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
+		const localizedAssetNames: string[] = [];
+
+		if (isJsFile.test(asset.name)) {
+			const sourceString = source.toString();
+			const placeholderLocations = locatePlaceholders(sourceString);
+			const fileNamePlaceholderLocations = findSubstringLocations(
+				sourceString,
+				fileNameTemplatePlaceholder,
+			);
+			const contentHashLocations = [...contentHashMap.entries()]
+				.flatMap(([hash, hashesByLocale]) => findSubstringLocations(sourceString, hash)
+					.map(loc => [
+						{ start: loc, end: loc + hash.length },
+						hashesByLocale,
+					] as [Range, Map<LocaleName, string>]));
+
+			await Promise.all(locales.names.map(async (locale) => {
+				const contentHashReplacements = contentHashLocations.map(([range, hashesByLocale]) => [
+					range,
+					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+					hashesByLocale.get(locale)!,
+				] as [Range, string]);
+
+				let newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+
+				// object spread breaks types
+				// eslint-disable-next-line prefer-object-spread
+				const newInfo = Object.assign(
+					{},
+					asset.info,
+					{ locale },
+				);
+
+				// Add locale to hash for RealContentHashPlugin plugin
+				if (newInfo.contenthash) {
+					const { contenthash } = newInfo;
+					if (Array.isArray(contenthash)) {
+						const newContentHashes = [];
+						for (const chash of contenthash) {
+							const newContentHash = contentHashMap.get(chash)?.get(locale) ?? chash;
+							newContentHashes.push(newContentHash);
+							newAssetName = newAssetName.replace(chash, newContentHash);
+						}
+						newInfo.contenthash = newContentHashes;
+					} else {
+						const newContentHash = contentHashMap.get(contenthash)?.get(locale) ?? contenthash;
+						newAssetName = newAssetName.replace(contenthash, newContentHash);
+						newInfo.contenthash = newContentHash;
+					}
+				}
+
+				localizedAssetNames.push(newAssetName);
+
+				const localizedSource = localizeAsset(
+					locales.data,
+					locale,
+					newAssetName,
+					placeholderLocations,
+					fileNamePlaceholderLocations,
+					contentHashReplacements,
+					sourceString,
+					sourceMapForLocales.includes(locale) && map,
+					compilation,
+					localizeCompiler,
+					trackStringKeys,
+				);
+
+				// @ts-expect-error Outdated @type
+				compilation.emitAsset(
+					newAssetName,
+					localizedSource,
+					newInfo,
+				);
+			}));
+		} else {
+			let localesToIterate = locales.names;
+			if (isSourceMap.test(asset.name) && sourceMapForLocales) {
+				localesToIterate = sourceMapForLocales;
 			}
 
-			// Delete original unlocalized asset
-			deleteAsset(compilation, asset.name, localizedAssetNames);
-		}));
-	};
+			await Promise.all(localesToIterate.map(async (locale) => {
+				const newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+				localizedAssetNames.push(newAssetName);
 
-	if (isWebpack5Compilation(compilation)) {
-		/**
-		 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH, which is where
-		 * RealContentHashPlugin re-hashes assets:
-		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
-		 *
-		 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
-		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
-		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH).
-		 *
-		 * PROCESS_ASSETS_STAGE_SUMMARIZE isn't actually used by Webpack, but there seemed
-		 * to be other plugins that were relying on it to summarize assets, so it makes sense
-		 * to run just before that.
-		 *
-		 * All "process assets" stages:
-		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
-		 */
-		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
-		compilation.hooks.processAssets.tapPromise(
-			{
-				name,
-				stage: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
-				additionalAssets: true,
-			},
-			generateLocalizedAssetsHandler,
-		);
-	} else {
-		// Triggered after minification, which usually happens in optimizeChunkAssets
-		compilation.hooks.optimizeAssets.tapPromise(
-			name,
-			generateLocalizedAssetsHandler,
-		);
-	}
+				// @ts-expect-error Outdated @type
+				compilation.emitAsset(
+					newAssetName,
+					asset.source,
+					asset.info,
+				);
+			}));
+		}
+
+		// Delete original unlocalized asset
+		deleteAsset(compilation, asset.name, localizedAssetNames);
+	}));
 }
