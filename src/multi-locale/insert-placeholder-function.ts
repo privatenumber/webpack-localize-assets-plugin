@@ -40,5 +40,8 @@ export const insertPlaceholderFunction = (
 	const callExpression = stringifyAstNode(callNode);
 
 	// TODO I wonder if `placeholderFunctionName` can be passed in as the second argument?
-	return `${placeholderFunctionName}(${callExpression})+${placeholderFunctionName}`;
+	const code =  `${placeholderFunctionName}(${callExpression},${placeholderFunctionName})`;
+
+	// console.log({code});
+	return code;
 };

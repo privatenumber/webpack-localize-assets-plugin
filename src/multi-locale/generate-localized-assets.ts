@@ -40,46 +40,23 @@ const fileNameTemplatePlaceholderPattern = new RegExp(fileNameTemplatePlaceholde
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-const getOriginalCall = (node: Expression): SimpleCallExpression => {
-	if (node.type === 'BinaryExpression') {
-		if (node.left.type !== 'CallExpression') {
-			throw new Error('Expected CallExpression');
-		}
-
-		if (node.left.arguments[0].type !== 'CallExpression') {
-			throw new Error('Expected CallExpression');
-		}
-
-		return node.left.arguments[0];
-	}
-
-	/*
-	If the localized value is not used anywhere (eg. assigned to a variable)
-	Terser converts the + operator to a , because it has no effect
-	*/
-	if (node.type === 'SequenceExpression') {
-		const [firstExpression] = node.expressions;
-
-		if (firstExpression.type !== 'CallExpression') {
-			throw new Error('Expected CallExpression');
-		}
-
-		if (firstExpression.arguments[0].type !== 'CallExpression') {
-			throw new Error('Expected CallExpression');
-		}
-
-		return firstExpression.arguments[0];
-	}
-
-	throw new Error('Expected BinaryExpression or SequenceExpression');
-};
 
 const locatePlaceholders = (sourceString: string) => {
 	const placeholderRanges = findSubstringRanges(sourceString, placeholderFunctionName);
 	const placeholderLocations: PlaceholderLocation[] = [];
 
 	for (const placeholderRange of placeholderRanges) {
+
+		// TODO maybe move this parsing logic to ./insert-placeholder-function.ts
+
+		// Account for closing )
+		placeholderRange.end! += 1;
+
 		let code = sourceString.slice(placeholderRange.start, placeholderRange.end);
+		code = code.slice(placeholderFunctionName.length + 1, -placeholderFunctionName.length - 2);
+
+
+
 		const escapedDoubleQuotesPattern = /\\"/g;
 		const escapeDoubleQuotes = escapedDoubleQuotesPattern.test(code);
 
@@ -97,7 +74,7 @@ const locatePlaceholders = (sourceString: string) => {
 		const node = parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
 
 		placeholderLocations.push({
-			node: getOriginalCall(node),
+			node: node as SimpleCallExpression,
 			range: placeholderRange,
 			escapeDoubleQuotes,
 		});
