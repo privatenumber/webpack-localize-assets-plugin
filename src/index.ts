@@ -5,7 +5,7 @@ import {
 	LocalizeCompiler,
 	WP5,
 	LocalizeCompilerContext,
-} from './types.js';
+} from './types-internal.js';
 import { loadLocaleData } from './utils/load-locale-data.js';
 import { interpolateLocaleToFileName } from './utils/localize-filename.js';
 import {
@@ -78,13 +78,16 @@ class LocalizeAssetsPlugin {
 						onStringKey(
 							locales,
 							options,
-							stringKeyHit => getLocalizedString(
-								trackUsedKeys,
-								this.localizeCompiler,
-								locales,
-								stringKeyHit,
-								localeName,
-							),
+							stringKeyHit => {
+								trackUsedKeys?.delete(stringKeyHit.key);
+
+								return getLocalizedString(
+									this.localizeCompiler,
+									locales,
+									stringKeyHit,
+									localeName,
+								);
+							},
 						),
 					);
 

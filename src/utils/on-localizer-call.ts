@@ -5,7 +5,7 @@ import {
 	WP5,
 	NormalModuleFactory,
 	Options,
-} from '../types.js';
+} from '../types-internal.js';
 import {
 	toConstantDependency,
 	reportModuleWarning,

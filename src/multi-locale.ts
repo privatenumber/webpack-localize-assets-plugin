@@ -17,7 +17,7 @@ import {
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
-} from './types.js';
+} from './types-internal.js';
 import type { StringKeysCollection } from './utils/warn-on-unused-keys.js';
 import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
 import { stringifyAst } from './utils/stringify-ast.js';

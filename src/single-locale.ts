@@ -1,6 +1,5 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
-import { LocalizeCompiler } from './types.js';
-import { StringKeysCollection } from './utils/warn-on-unused-keys.js';
+import { LocalizeCompiler } from './types-internal.js';
 import {
 	reportModuleWarning,
 	reportModuleError,
@@ -16,14 +15,11 @@ import type { LocaleData } from './utils/load-locale-data.js';
  * No need to use placeholder for string replacement on asset.
  */
 export const getLocalizedString = (
-	trackStringKeys: StringKeysCollection | undefined,
 	localizeCompiler: LocalizeCompiler,
 	{ data }: LocaleData,
 	stringKeyHit: StringKeyHit,
 	localeName: string,
 ): string => {
-	trackStringKeys?.delete(stringKeyHit.key);
-
 	return callLocalizeCompiler(
 		localizeCompiler,
 		{
