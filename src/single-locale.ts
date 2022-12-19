@@ -1,5 +1,4 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
-import { LocalizeCompiler } from './types-internal.js';
 import {
 	reportModuleWarning,
 	reportModuleError,
@@ -7,28 +6,58 @@ import {
 import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
 import type { StringKeyHit } from './utils/on-localizer-call.js';
 import type { LocaleData } from './utils/load-locale-data.js';
+import {
+	onLocalizerCall,
+	onStringKey,
+} from './utils/on-localizer-call.js';
+import {
+	Options,
+	LocalizeCompiler,
+	Compilation,
+	NormalModuleFactory,
+} from './types-internal.js';
+import { onAssetPath } from './utils/webpack.js';
+import { interpolateLocaleToFileName } from './utils/localize-filename.js';
 
-/**
- * For Single locale
- *
- * Insert the localized string during Webpack JS parsing.
- * No need to use placeholder for string replacement on asset.
- */
-export const getLocalizedString = (
+export const handleSingleLocaleLocalization = (
+	compilation: Compilation,
+	normalModuleFactory: NormalModuleFactory,
+	options: Options,
+	locales: LocaleData,
 	localizeCompiler: LocalizeCompiler,
-	{ data }: LocaleData,
-	stringKeyHit: StringKeyHit,
-	localeName: string,
-): string =>
+	functionNames: string[],
+	trackUsedKeys?: Set<string>,
+) => {
+	const [localeName] = locales.names;
 
-	// TODO: Inline this call after moving logic to this file from index.ts
-	 callLocalizeCompiler(
-		localizeCompiler,
-		{
-			callNode: stringKeyHit.callExpressionNode,
-			resolveKey: (stringKey = stringKeyHit.key) => data[localeName][stringKey],
-			emitWarning: message => reportModuleWarning(stringKeyHit.module, new WebpackError(message)),
-			emitError: message => reportModuleError(stringKeyHit.module, new WebpackError(message)),
-		},
-		localeName,
+	onLocalizerCall(
+		normalModuleFactory,
+		functionNames,
+		onStringKey(
+			locales,
+			options,
+			({ key, callNode, module }) => {
+				trackUsedKeys?.delete(key);
+
+				return callLocalizeCompiler(
+					localizeCompiler,
+					{
+						callNode,
+						resolveKey: (stringKey = key) => locales.data[localeName][stringKey],
+						emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
+						emitError: message => reportModuleError(module, new WebpackError(message)),
+					},
+					localeName,
+				);
+			},
+		),
 	);
+
+	onAssetPath(
+		compilation,
+		interpolateLocaleToFileName(
+			compilation,
+			localeName,
+		),
+	);
+};

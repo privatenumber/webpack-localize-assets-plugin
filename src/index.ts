@@ -7,19 +7,9 @@ import {
 	LocalizeCompilerContext,
 } from './types-internal.js';
 import { loadLocaleData } from './utils/load-locale-data.js';
-import { interpolateLocaleToFileName } from './utils/localize-filename.js';
-import {
-	generateLocalizedAssets,
-	fileNameTemplatePlaceholder,
-	insertPlaceholderFunction,
-} from './multi-locale.js';
 import { stringifyAstNode } from './utils/stringify-ast-node';
-import { getLocalizedString } from './single-locale.js';
-import {
-	onLocalizerCall,
-	onStringKey,
-} from './utils/on-localizer-call.js';
-import { onOptimizeAssets, onAssetPath } from './utils/webpack.js';
+import { handleSingleLocaleLocalization } from './single-locale.js';
+import { handleMultiLocaleLocalization } from './multi-locale.js';
 import { warnOnUnusedKeys } from './utils/warn-on-unused-keys.js';
 
 const defaultLocalizerName = '__';
@@ -72,98 +62,24 @@ class LocalizeAssetsPlugin {
 				);
 
 				if (locales.names.length === 1) {
-					const [localeName] = locales.names;
-
-					onLocalizerCall(
-						normalModuleFactory,
-						functionNames,
-						onStringKey(
-							locales,
-							options,
-							(stringKeyHit) => {
-								trackUsedKeys?.delete(stringKeyHit.key);
-
-								return getLocalizedString(
-									localizeCompiler,
-									locales,
-									stringKeyHit,
-									localeName,
-								);
-							},
-						),
-					);
-
-					onAssetPath(
+					handleSingleLocaleLocalization(
 						compilation,
-						interpolateLocaleToFileName(
-							compilation,
-							localeName,
-						),
+						normalModuleFactory,
+						options,
+						locales,
+						localizeCompiler,
+						functionNames,
+						trackUsedKeys,
 					);
 				} else {
-					onLocalizerCall(
+					handleMultiLocaleLocalization(
+						compilation,
 						normalModuleFactory,
+						options,
+						locales,
+						localizeCompiler,
 						functionNames,
-						onStringKey(
-							locales,
-							options,
-							stringKeyHit => insertPlaceholderFunction(
-								locales,
-								stringKeyHit,
-							),
-						),
-					);
-
-					/**
-					 * The reason why we replace "[locale]" with a placeholder instead of
-					 * the actual locale is because the name is used to load chunks.
-					 *
-					 * That means a file can be loading another file like `load('./file.[locale].js')`.
-					 * We later localize the assets by search-and-replacing instances of
-					 * `[locale]` with the actual locale.
-					 *
-					 * The placeholder is a unique enough string to guarantee that we're not accidentally
-					 * replacing `[locale]` if it happens to be in the source JS.
-					 */
-					onAssetPath(
-						compilation,
-						interpolateLocaleToFileName(
-							compilation,
-							fileNameTemplatePlaceholder,
-							true,
-						),
-					);
-
-					// Create localized assets by swapping out placeholders with localized strings
-					onOptimizeAssets(
-						compilation,
-						() => generateLocalizedAssets(
-							compilation,
-							locales,
-							options.sourceMapForLocales || locales.names,
-							trackUsedKeys,
-							localizeCompiler,
-						),
-					);
-
-					// Update chunkHash based on localized content
-					compilation.hooks.chunkHash.tap(
-						name,
-						(chunk, hash) => {
-							const modules = compilation.chunkGraph // WP5
-								? compilation.chunkGraph.getChunkModules(chunk)
-								: chunk.getModules();
-
-							const localizedModules = modules
-								.map(module => module.buildInfo.localized)
-								.filter(Boolean);
-								// TODO is this necessary? Wouldn't it always be true based on multi-locale code
-
-							// TODO: Probably needs to be sorted?
-							if (localizedModules.length > 0) {
-								hash.update(JSON.stringify(localizedModules));
-							}
-						},
+						trackUsedKeys,
 					);
 				}
 			},

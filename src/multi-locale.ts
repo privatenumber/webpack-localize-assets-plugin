@@ -12,10 +12,12 @@ import { deleteAsset } from './utils/webpack.js';
 import { sha256 } from './utils/sha256.js';
 import {
 	Compilation,
+	NormalModuleFactory,
 	LocalesMap,
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
+	Options,
 } from './types-internal.js';
 import type { StringKeysCollection } from './utils/warn-on-unused-keys.js';
 import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
@@ -23,6 +25,13 @@ import { stringifyAstNode } from './utils/stringify-ast-node.js';
 import type { LocaleData } from './utils/load-locale-data.js';
 import type { StringKeyHit } from './utils/on-localizer-call.js';
 import { findSubstringRanges, findSubstringLocations, type Range } from './utils/strings.js';
+import {
+	onLocalizerCall,
+	onStringKey,
+} from './utils/on-localizer-call.js';
+import { onAssetPath, onOptimizeAssets } from './utils/webpack.js';
+import { interpolateLocaleToFileName } from './utils/localize-filename.js';
+import { name } from '../package.json';
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
@@ -41,6 +50,81 @@ const isSourceMap = /\.js\.map$/;
 
 const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-plugin-placeholder').slice(0, 8)}`;
 
+export const handleMultiLocaleLocalization = (
+	compilation: WP5.Compilation,
+	normalModuleFactory: NormalModuleFactory,
+	options: Options,
+	locales: LocaleData,
+	localizeCompiler: LocalizeCompiler,
+	functionNames: string[],
+	trackUsedKeys?: Set<string>,
+) => {
+	onLocalizerCall(
+		normalModuleFactory,
+		functionNames,
+		onStringKey(
+			locales,
+			options,
+			stringKeyHit => insertPlaceholderFunction(
+				locales,
+				stringKeyHit,
+			),
+		),
+	);
+
+	/**
+	 * The reason why we replace "[locale]" with a placeholder instead of
+	 * the actual locale is because the name is used to load chunks.
+	 *
+	 * That means a file can be loading another file like `load('./file.[locale].js')`.
+	 * We later localize the assets by search-and-replacing instances of
+	 * `[locale]` with the actual locale.
+	 *
+	 * The placeholder is a unique enough string to guarantee that we're not accidentally
+	 * replacing `[locale]` if it happens to be in the source JS.
+	 */
+	onAssetPath(
+		compilation,
+		interpolateLocaleToFileName(
+			compilation,
+			fileNameTemplatePlaceholder,
+			true,
+		),
+	);
+
+	// Create localized assets by swapping out placeholders with localized strings
+	onOptimizeAssets(
+		compilation,
+		() => generateLocalizedAssets(
+			compilation,
+			locales,
+			options.sourceMapForLocales || locales.names,
+			trackUsedKeys,
+			localizeCompiler,
+		),
+	);
+
+	// Update chunkHash based on localized content
+	compilation.hooks.chunkHash.tap(
+		name,
+		(chunk, hash) => {
+			const modules = compilation.chunkGraph // WP5
+				? compilation.chunkGraph.getChunkModules(chunk)
+				: chunk.getModules();
+
+			const localizedModules = modules
+				.map(module => module.buildInfo.localized)
+				.filter(Boolean);
+				// TODO is this necessary? Wouldn't it always be true based on multi-locale code
+
+			// TODO: Probably needs to be sorted?
+			if (localizedModules.length > 0) {
+				hash.update(JSON.stringify(localizedModules));
+			}
+		},
+	);
+};
+
 /**
  * For Multiple locales
  *
@@ -51,7 +135,7 @@ const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-p
  */
 export const insertPlaceholderFunction = (
 	locales: LocaleData,
-	{ module, key, callExpressionNode }: StringKeyHit,
+	{ module, key, callNode }: StringKeyHit,
 ) : string => {
 	// Track used keys for hash
 	if (!module.buildInfo.localized) {
@@ -69,12 +153,13 @@ export const insertPlaceholderFunction = (
 	 * Shouldn't this be moved to the onLocalizerCall hook?
 	 * Maybe it should only be applied to multiple locales?
 	 */
-	if (callExpressionNode.callee.type !== 'Identifier') {
+	if (callNode.callee.type !== 'Identifier') {
 		throw new Error('Expected Identifier');
 	}
 
-	const callExpression = stringifyAstNode(callExpressionNode);
+	const callExpression = stringifyAstNode(callNode);
 
+	// TODO I wonder if `placeholderFunctionName` can be passed in as the second argument?
 	return `${placeholderFunctionName}(${callExpression})+${placeholderFunctionName}`;
 };
 

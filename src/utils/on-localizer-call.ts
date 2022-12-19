@@ -16,7 +16,7 @@ import { localizedStringKeyValidator } from './localized-string-key-validator.js
 
 export type StringKeyHit = {
 	key: string;
-	callExpressionNode: SimpleCallExpression;
+	callNode: SimpleCallExpression;
 	module: WP5.NormalModule;
 };
 
@@ -30,19 +30,19 @@ export const onLocalizerCall = (
 	onFunctionCall(
 		normalModuleFactory,
 		functionNames,
-		(functionName, parser, callExpressionNode) => {
+		(functionName, parser, callNode) => {
 			const { module } = parser.state;
-			const firstArgument = callExpressionNode.arguments[0];
+			const firstArgument = callNode.arguments[0];
 
 			// Enforce minimum requirement that first argument is a string
 			if (
 				!(
-					callExpressionNode.arguments.length > 0
+					callNode.arguments.length > 0
 					&& firstArgument.type === 'Literal'
 					&& typeof firstArgument.value === 'string'
 				)
 			) {
-				const location = callExpressionNode.loc!.start;
+				const location = callNode.loc!.start;
 				reportModuleWarning(
 					module,
 					new WebpackError(`[${name}] Ignoring confusing usage of localization function "${functionName}" in ${module.resource}:${location.line}:${location.column}`),
@@ -52,12 +52,12 @@ export const onLocalizerCall = (
 
 			const replacement = callback({
 				key: firstArgument.value,
-				callExpressionNode,
+				callNode,
 				module,
 			});
 
 			if (replacement) {
-				toConstantDependency(parser, replacement)(callExpressionNode);
+				toConstantDependency(parser, replacement)(callNode);
 				return true;
 			}
 		},
@@ -75,7 +75,7 @@ export const onStringKey = (
 		assertKeyExists(
 			stringKeyHit.key,
 			stringKeyHit.module,
-			stringKeyHit.callExpressionNode,
+			stringKeyHit.callNode,
 		);
 
 		for (const fileDependency of locales.paths) {
