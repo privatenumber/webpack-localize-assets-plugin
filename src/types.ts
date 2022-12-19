@@ -10,7 +10,7 @@ import type {
 
 export * from './types-options.js';
 
-export type LocalesMap<LocalizedData> = Record<LocaleName, LocaleStrings<LocalizedData>>;
+export type LocalesMap<LocalizedData = string> = Record<LocaleName, LocaleStrings<LocalizedData>>;
 export interface LocalizeCompilerContext<LocalizedData = string> {
 	readonly callNode: SimpleCallExpression;
 	resolveKey(stringKey?: string): LocalizedData;

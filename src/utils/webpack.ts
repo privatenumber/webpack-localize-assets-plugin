@@ -87,23 +87,35 @@ export const reportModuleError = (
 
 export const onFunctionCall = (
 	normalModuleFactory: NormalModuleFactory,
-	functionName: string,
-	hook: (parser: WP5.javascript.JavascriptParser, node: SimpleCallExpression) => void,
+	functionNames: string[],
+	callback: (
+		functionName: string,
+		parser: WP5.javascript.JavascriptParser,
+		node: SimpleCallExpression,
+	) => void,
 ) => {
-	const handler = (parser: WP5.javascript.JavascriptParser) => {
-		parser.hooks.call.for(functionName).tap(
-			name,
-			node => hook(parser, node as SimpleCallExpression),
-		);
-	};
+	for (const functionName of functionNames) {
+		const handler = (parser: WP5.javascript.JavascriptParser) => {
+			parser.hooks.call
+				.for(functionName)
+				.tap(
+					name,
+					node => callback(
+						functionName,
+						parser,
+						node as SimpleCallExpression,
+					),
+				);
+		};
 
-	normalModuleFactory.hooks.parser
-		.for('javascript/auto')
-		.tap(name, handler);
-	normalModuleFactory.hooks.parser
-		.for('javascript/dynamic')
-		.tap(name, handler);
-	normalModuleFactory.hooks.parser
-		.for('javascript/esm')
-		.tap(name, handler);
+		normalModuleFactory.hooks.parser
+			.for('javascript/auto')
+			.tap(name, handler);
+		normalModuleFactory.hooks.parser
+			.for('javascript/dynamic')
+			.tap(name, handler);
+		normalModuleFactory.hooks.parser
+			.for('javascript/esm')
+			.tap(name, handler);	
+	}
 };

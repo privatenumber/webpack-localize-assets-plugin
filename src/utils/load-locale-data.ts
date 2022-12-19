@@ -2,24 +2,37 @@ import path from 'path';
 import { readFileSync } from 'fs';
 import hasOwnProp from 'has-own-prop';
 import type {
+	Compiler,
 	UnprocessedLocalesMap,
+	LocaleName,
 	LocalesMap,
 	LocaleFilePath,
 } from '../types.js';
 
-const loadJson = <T extends {
+type FSLike = {
 	readFileSync: typeof readFileSync;
-}>(fs: T, jsonPath: string): any | null => {
+};
+
+const readJsonFile = (
+	fs: FSLike,
+	jsonPath: string,
+) => {
 	const stringContent = fs.readFileSync(jsonPath).toString();
 	return JSON.parse(stringContent);
 };
 
-export function loadLocales<LocalizedData>(
-	fs: any,
-	unprocessedLocales: UnprocessedLocalesMap<LocalizedData>,
-) {
-	const locales: LocalesMap<LocalizedData> = {};
-	const fileDependencies = new Set<LocaleFilePath>();
+export type LocaleData = {
+	names: LocaleName[],
+	data: LocalesMap,
+	paths: Set<LocaleFilePath>,
+};
+
+export function loadLocaleData(
+	{ inputFileSystem }: Compiler,
+	unprocessedLocales: UnprocessedLocalesMap,
+): LocaleData {
+	const data: LocalesMap = {};
+	const paths = new Set<LocaleFilePath>();
 
 	for (const localeName in unprocessedLocales) {
 		if (!hasOwnProp(unprocessedLocales, localeName)) {
@@ -29,15 +42,16 @@ export function loadLocales<LocalizedData>(
 		const localeValue = unprocessedLocales[localeName];
 		if (typeof localeValue === 'string') {
 			const resolvedPath = path.resolve(localeValue);
-			locales[localeName] = loadJson(fs, resolvedPath);
-			fileDependencies.add(resolvedPath);
+			data[localeName] = readJsonFile(inputFileSystem as unknown as FSLike, resolvedPath);
+			paths.add(resolvedPath);
 		} else {
-			locales[localeName] = localeValue;
+			data[localeName] = localeValue;
 		}
 	}
 
 	return {
-		locales,
-		fileDependencies,
+		names: Object.keys(data),
+		data,
+		paths,
 	};
 }

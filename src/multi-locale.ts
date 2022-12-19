@@ -17,10 +17,41 @@ import {
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
+	Module,
 } from './types.js';
-import type { StringKeysCollection } from './utils/track-unused-localized-strings.js';
+import type { StringKeysCollection } from './utils/warn-on-unused-keys.js';
 import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
 import { stringifyAst } from './utils/stringify-ast.js';
+import type { LocaleData } from './utils/load-locale-data.js';
+import type { StringKeyHit } from './utils/on-localizer-call.js';
+
+
+/**
+ * For Multiple locales
+ *
+ * 1. Replace the `__(...)` call with a placeholder -> `asdf(__(...)) + asdf`
+ * 2. After the asset is generated & minified, search and replace the
+ * placeholder with calls to localizeCompiler
+ * 3. Repeat for each locale
+ */
+export const getMarkedFunctionPlaceholder = (
+	locales: LocaleData,
+	stringKeyHit: StringKeyHit,
+) : string => {
+	// Track used keys for hash
+	if (!stringKeyHit.module.buildInfo.localized) {
+		stringKeyHit.module.buildInfo.localized = {};
+	}
+
+	if (!stringKeyHit.module.buildInfo.localized[stringKeyHit.key]) {
+		stringKeyHit.module.buildInfo.localized[stringKeyHit.key] = locales.names.map(
+			locale => locales.data[locale][stringKeyHit.key],
+		);
+	}
+
+	return markLocalizeFunction(stringKeyHit.callExpressionNode);
+}
+
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
@@ -154,8 +185,8 @@ function locatePlaceholders(sourceString: string) {
 	return placeholderLocations;
 }
 
-function localizeAsset<LocalizedData>(
-	locales: LocalesMap<LocalizedData>,
+function localizeAsset(
+	locales: LocalesMap,
 	locale: LocaleName,
 	assetName: string,
 	placeholderLocations: PlaceholderLocation[],
@@ -164,7 +195,7 @@ function localizeAsset<LocalizedData>(
 	source: string,
 	map: RawSourceMap | null | false,
 	compilation: Compilation,
-	localizeCompiler: LocalizeCompiler<LocalizedData>,
+	localizeCompiler: LocalizeCompiler,
 	trackStringKeys: StringKeysCollection | undefined,
 ) {
 	const localeData = locales[locale];
@@ -245,13 +276,12 @@ function localizeAsset<LocalizedData>(
 	return new RawSource(localizedCode);
 }
 
-export function generateLocalizedAssets<LocalizedData>(
+export function generateLocalizedAssets(
 	compilation: Compilation,
-	localeNames: LocaleName[],
-	locales: LocalesMap<LocalizedData>,
+	locales: LocaleData,
 	sourceMapForLocales: LocaleName[],
 	trackStringKeys: StringKeysCollection | undefined,
-	localizeCompiler: LocalizeCompiler<LocalizedData>,
+	localizeCompiler: LocalizeCompiler,
 ) {
 	const generateLocalizedAssetsHandler = async () => {
 		const assetsWithInfo = (compilation as WP5.Compilation).getAssets()
@@ -265,12 +295,14 @@ export function generateLocalizedAssets<LocalizedData>(
 					if (!contenthash) {
 						return [];
 					}
+
 					const contentHashArray = Array.isArray(contenthash)
 						? contenthash
 						: [contenthash];
+
 					return contentHashArray.map(chash => [
 						chash,
-						new Map(localeNames.map(locale => [
+						new Map(locales.names.map(locale => [
 							locale,
 							sha256(chash + locale).slice(0, chash.length),
 						])),
@@ -296,7 +328,7 @@ export function generateLocalizedAssets<LocalizedData>(
 							hashesByLocale,
 						] as [Range, Map<LocaleName, string>]));
 
-				await Promise.all(localeNames.map(async (locale) => {
+				await Promise.all(locales.names.map(async (locale) => {
 					const contentHashReplacements = contentHashLocations.map(([range, hashesByLocale]) => [
 						range,
 						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -334,7 +366,7 @@ export function generateLocalizedAssets<LocalizedData>(
 					localizedAssetNames.push(newAssetName);
 
 					const localizedSource = localizeAsset(
-						locales,
+						locales.data,
 						locale,
 						newAssetName,
 						placeholderLocations,
@@ -355,7 +387,7 @@ export function generateLocalizedAssets<LocalizedData>(
 					);
 				}));
 			} else {
-				let localesToIterate = localeNames;
+				let localesToIterate = locales.names;
 				if (isSourceMap.test(asset.name) && sourceMapForLocales) {
 					localesToIterate = sourceMapForLocales;
 				}

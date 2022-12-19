@@ -1,6 +1,6 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import hasOwnProp from 'has-own-prop';
-import {
+import type {
 	Compilation,
 	LocalesMap,
 	LocalizedStringKey,
@@ -9,7 +9,9 @@ import { name } from '../../package.json';
 
 export type StringKeysCollection = Set<LocalizedStringKey>;
 
-export function getAllLocalizedStringKeys<LocalizedData>(locales: LocalesMap<LocalizedData>) {
+function getAllKeys(
+	locales: LocalesMap,
+) {
 	const allStringKeys: StringKeysCollection = new Set();
 
 	for (const localeName in locales) {
@@ -25,14 +27,29 @@ export function getAllLocalizedStringKeys<LocalizedData>(locales: LocalesMap<Loc
 	return allStringKeys;
 }
 
-export const warnOnUnusedLocalizedStringKeys = (
-	unusedStringKeys: StringKeysCollection,
+export const warnOnUnsuedKeys = (
 	compilation: Compilation,
+	locales: LocalesMap,
 ) => {
-	if (unusedStringKeys.size > 0) {
-		for (const unusedStringKey of unusedStringKeys) {
-			const error = new WebpackError(`[${name}] Unused string key "${unusedStringKey}"`);
-			compilation.warnings.push(error);
-		}
-	}
+	const unusedKeys = getAllKeys(locales);
+
+	/**
+	 * Using something like compiler.done happens
+	 * too late after the stats are reported in watch mode
+	 */
+	compilation.hooks.afterSeal.tap(
+		name,
+		() => {
+			if (unusedKeys.size === 0) {
+				return;
+			}
+
+			for (const unusedStringKey of unusedKeys) {
+				const error = new WebpackError(`[${name}] Unused string key "${unusedStringKey}"`);
+				compilation.warnings.push(error);
+			}
+		},
+	);
+
+	return unusedKeys;
 };
