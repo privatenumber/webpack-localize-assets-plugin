@@ -20,6 +20,8 @@ export const getLocalizedString = (
 	stringKeyHit: StringKeyHit,
 	localeName: string,
 ): string => {
+
+	// TODO: Inline this call after moving logic to this file from index.ts
 	return callLocalizeCompiler(
 		localizeCompiler,
 		{

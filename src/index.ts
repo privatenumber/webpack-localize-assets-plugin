@@ -13,7 +13,7 @@ import {
 	fileNameTemplatePlaceholder,
 	getMarkedFunctionPlaceholder,
 } from './multi-locale.js';
-import { stringifyAst } from './utils/stringify-ast.js';
+import { stringifyAstNode } from './utils/stringify-ast-node';
 import { getLocalizedString } from './single-locale.js';
 import {
 	onLocalizerCall,
@@ -31,7 +31,8 @@ function defaultLocalizeCompilerFunction(
 	const [key] = localizerArguments;
 
 	if (localizerArguments.length > 1) {
-		let code = stringifyAst(this.callNode);
+		let code = stringifyAstNode(this.callNode);
+
 		if (code.length > 80) {
 			code = `${code.slice(0, 80)}…`;
 		}
@@ -57,13 +58,13 @@ class LocalizeAssetsPlugin {
 	}
 
 	apply(compiler: WP5.Compiler) {
-		const { options } = this;
+		const { options, localizeCompiler } = this;
 
 		compiler.hooks.thisCompilation.tap(
 			name,
 			(compilation, { normalModuleFactory }) => {
 				const locales = loadLocaleData(compiler, options.locales);
-				const functionNames = Object.keys(this.localizeCompiler);
+				const functionNames = Object.keys(localizeCompiler);
 				const trackUsedKeys = (
 					options.warnOnUnusedString
 						? warnOnUnsuedKeys(compilation, locales.data)
@@ -83,7 +84,7 @@ class LocalizeAssetsPlugin {
 								trackUsedKeys?.delete(stringKeyHit.key);
 
 								return getLocalizedString(
-									this.localizeCompiler,
+									localizeCompiler,
 									locales,
 									stringKeyHit,
 									localeName,
@@ -94,7 +95,10 @@ class LocalizeAssetsPlugin {
 
 					onAssetPath(
 						compilation,
-						interpolateLocaleToFileName(compilation, localeName),
+						interpolateLocaleToFileName(
+							compilation,
+							localeName,
+						),
 					);
 				} else {
 					onLocalizerCall(
@@ -121,7 +125,6 @@ class LocalizeAssetsPlugin {
 					 * The placeholder is a unique enough string to guarantee that we're not accidentally
 					 * replacing `[locale]` if it happens to be in the source JS.
 					 */
-
 					onAssetPath(
 						compilation,
 						interpolateLocaleToFileName(
@@ -139,7 +142,7 @@ class LocalizeAssetsPlugin {
 							locales,
 							options.sourceMapForLocales || locales.names,
 							trackUsedKeys,
-							this.localizeCompiler,
+							localizeCompiler,
 						),
 					);
 

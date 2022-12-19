@@ -25,8 +25,10 @@ export const interpolateLocaleToFileName = (
 		filePath: string | ((data: any) => string),
 		data: any,
 	) => {
-		// Only for WP4. In WP5, the function is already called.
-		// WP4: https://github.com/webpack/webpack/blob/758269e/lib/TemplatedPathPlugin.js#L84
+		/**
+		 * Only for WP4. In WP5, the function is already called.
+		 * WP4: https://github.com/webpack/webpack/blob/758269e/lib/TemplatedPathPlugin.js#L84
+		 */
 		if (typeof filePath === 'function') {
 			filePath = filePath(data);
 		}

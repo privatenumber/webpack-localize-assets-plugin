@@ -19,53 +19,13 @@ import {
 } from './types-internal.js';
 import type { StringKeysCollection } from './utils/warn-on-unused-keys.js';
 import { callLocalizeCompiler } from './utils/call-localize-compiler.js';
-import { stringifyAst } from './utils/stringify-ast.js';
+import { stringifyAstNode } from './utils/stringify-ast-node.js';
 import type { LocaleData } from './utils/load-locale-data.js';
 import type { StringKeyHit } from './utils/on-localizer-call.js';
+import { findSubstringRanges, findSubstringLocations, type Range } from './utils/strings.js';
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
-
-type Range = {
-	start: number;
-	end?: number;
-};
-
-function findSubstringRanges(
-	string: string,
-	substring: string,
-) {
-	const ranges: Range[] = [];
-	let range: Range | null = null;
-	let index = string.indexOf(substring);
-
-	while (index > -1) {
-		if (!range) {
-			range = { start: index };
-		} else {
-			range.end = index + substring.length;
-			ranges.push(range);
-			range = null;
-		}
-
-		index = string.indexOf(substring, index + 1);
-	}
-
-	return ranges;
-}
-
-function findSubstringLocations(
-	string: string,
-	substring: string,
-): number[] {
-	const indices: number[] = [];
-	let index = string.indexOf(substring);
-	while (index > -1) {
-		indices.push(index);
-		index = string.indexOf(substring, index + 1);
-	}
-	return indices;
-}
 
 export type PlaceholderLocation = {
 	range: Range;
@@ -89,7 +49,7 @@ const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-p
  * placeholder with calls to localizeCompiler
  * 3. Repeat for each locale
  */
- export const getMarkedFunctionPlaceholder = (
+export const getMarkedFunctionPlaceholder = (
 	locales: LocaleData,
 	{ module, key, callExpressionNode }: StringKeyHit,
 ) : string => {
@@ -113,7 +73,9 @@ const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-p
 		throw new Error('Expected Identifier');
 	}
 
-	return `${placeholderFunctionName}(${stringifyAst(callExpressionNode)})+${placeholderFunctionName}`;
+	const callExpression = stringifyAstNode(callExpressionNode);
+
+	return `${placeholderFunctionName}(${callExpression})+${placeholderFunctionName}`;
 };
 
 function getOriginalCall(node: Expression): SimpleCallExpression {
