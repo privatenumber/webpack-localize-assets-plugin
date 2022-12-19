@@ -23,10 +23,10 @@
 		"dist"
 	],
 	"main": "./dist/index.cjs",
-	"types": "./dist/plugin-type.d.ts",
+	"types": "./dist/index.d.ts",
 	"imports": {
 		"#webpack-localize-assets-plugin": {
-			"types": "./src/plugin-type.d.ts",
+			"types": "./src/index.d.ts",
 			"development": "./src/index.ts",
 			"default": "./dist/index.cjs"
 		},
