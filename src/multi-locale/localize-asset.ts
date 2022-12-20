@@ -44,7 +44,6 @@ export const localizeAsset = (
 	const isDevtoolEval = devtool && devtool.includes('eval');
 
 	for (let { code, location } of placeholderLocations) {
-
 		/**
 		 * When devtools: 'eval', the entire module is wrapped in an eval("")
 		 * so double quotes are escaped. For example: __(\\"hello-key\\")

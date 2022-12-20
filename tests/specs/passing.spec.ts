@@ -8,7 +8,7 @@ import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import type { Compilation } from 'webpack5';
 import { configureWebpack } from '../utils/configure-webpack';
-import { localesSingle, localesMulti, specialKey } from '../utils/localization-data';
+import { localesSingle, localesMulti } from '../utils/localization-data';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
 export default testSuite(({ describe }, isWebpack5?: boolean) => {
@@ -18,7 +18,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 				{
 					'/src/index.js': `export default [${
 						Object.keys(localesSingle.en)
-							.map((key) => '__(' + JSON.stringify(key) + ')')
+							.map(key => `__(${JSON.stringify(key)})`)
 							.join(',')
 					}]`,
 				},
@@ -46,7 +46,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 				{
 					'/src/index.js': `export default [${
 						Object.keys(localesMulti.en)
-							.map((key) => '__(' + JSON.stringify(key) + ')')
+							.map(key => `__(${JSON.stringify(key)})`)
 							.join(',')
 					}]`,
 				},

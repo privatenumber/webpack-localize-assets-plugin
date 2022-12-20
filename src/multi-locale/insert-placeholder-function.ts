@@ -53,7 +53,7 @@ export const locatePlaceholders = (assetCode: string) => {
 		const start = placeholderIndices.shift()!;
 		const end = placeholderIndices.shift()!;
 
-		let code = assetCode.slice(
+		const code = assetCode.slice(
 			(
 				start
 				+ placeholderFunctionName.length

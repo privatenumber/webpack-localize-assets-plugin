@@ -3,7 +3,7 @@ export const localesEmpty = Object.freeze({});
 const stringWithDoubleQuotes = '"double " quotes"';
 const stringWithSingleQuotes = "'single ' quotes'";
 
-export const specialKey = '"\' \\ \\\\"';
+const specialKey = '"\' \\ \\\\"';
 
 export const localesSingle = Object.freeze({
 	en: {
