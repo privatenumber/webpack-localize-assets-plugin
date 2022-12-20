@@ -1,12 +1,11 @@
 import assert from 'assert';
-import {
-	LocaleName,
-	Compilation,
-} from '../types-internal.js';
+import { Compilation } from '../types-internal.js';
 
-export const interpolateLocaleToFileName = (
+const localePlaceholderPattern = /\[locale\]/g;
+
+export const replaceLocaleInAssetName = (
 	compilation: Compilation,
-	replaceWith: LocaleName,
+	replaceWith: string,
 	requireLocaleInFilename?: boolean,
 ) => {
 	const { filename, chunkFilename } = compilation.outputOptions;
@@ -33,7 +32,7 @@ export const interpolateLocaleToFileName = (
 			filePath = filePath(data);
 		}
 
-		filePath = filePath.replace(/\[locale\]/g, replaceWith);
+		filePath = filePath.replace(localePlaceholderPattern, replaceWith);
 
 		return filePath;
 	};

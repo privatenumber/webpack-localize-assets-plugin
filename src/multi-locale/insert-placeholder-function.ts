@@ -44,13 +44,13 @@ export const insertPlaceholderFunction = (
 	return `${placeholderFunctionName}(${callExpression},${placeholderFunctionName})`;
 };
 
-export type Range = {
+export type Location = {
 	start: number;
 	end: number;
 };
 
 export type PlaceholderLocation = {
-	range: Range;
+	location: Location;
 	code: string;
 	escapeDoubleQuotes: boolean;
 };
@@ -93,8 +93,7 @@ export const locatePlaceholders = (assetCode: string) => {
 		}
 
 		locations.push({
-			// TODO rename to replaceLocation
-			range: { start, end: end + placeholderFunctionName.length + 1 },
+			location: { start, end: end + placeholderFunctionName.length + 1 },
 			code,
 			escapeDoubleQuotes,
 		});

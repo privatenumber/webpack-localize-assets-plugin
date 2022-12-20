@@ -1,133 +1,24 @@
-import MagicString from 'magic-string';
-import { RawSource, SourceMapSource, SourceAndMapResult } from 'webpack-sources';
-import WebpackError from 'webpack/lib/WebpackError.js';
-import { RawSourceMap } from 'source-map';
-import { parseExpressionAt } from 'acorn';
-import type {
-	Literal,
-	SimpleCallExpression,
-} from 'estree';
+import { SourceAndMapResult } from 'webpack-sources';
 import { deleteAsset } from '../utils/webpack.js';
 import { sha256 } from '../utils/sha256.js';
 import {
 	Compilation,
-	LocalesMap,
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
 } from '../types-internal.js';
 import type { StringKeysCollection } from '../utils/warn-on-unused-keys.js';
-import { callLocalizeCompiler } from '../utils/call-localize-compiler.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
 import { findSubstringLocations } from '../utils/strings.js';
-import { locatePlaceholders, type Range, type PlaceholderLocation } from './insert-placeholder-function.js';
+import { locatePlaceholders, type Location } from './insert-placeholder-function.js';
+import { localizeAsset } from './localize-asset.js';
+import { fileNameTemplatePlaceholder, fileNameTemplatePlaceholderPattern } from './asset-name.js';
 
-type ContentHash = string;
-type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
-
-export const fileNameTemplatePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
-
-const fileNameTemplatePlaceholderPattern = new RegExp(fileNameTemplatePlaceholder.replace(/[[\]]/g, '\\$&'), 'g');
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-const parseCallExpression = (code: string) => parseExpressionAt(
-	code,
-	0,
-	{ ecmaVersion: 'latest' },
-) as unknown as SimpleCallExpression;
-
-const localizeAsset = (
-	locales: LocalesMap,
-	locale: LocaleName,
-	assetName: string,
-	placeholderLocations: PlaceholderLocation[],
-	fileNamePlaceholderLocations: number[],
-	contentHashReplacements: [Range, string][],
-	source: string,
-	map: RawSourceMap | null | false,
-	compilation: Compilation,
-	localizeCompiler: LocalizeCompiler,
-	trackStringKeys: StringKeysCollection | undefined,
-) => {
-	const localeData = locales[locale];
-	const magicStringInstance = new MagicString(source);
-
-	// Localize strings
-	for (const { code, range, escapeDoubleQuotes } of placeholderLocations) {
-		const callNode = parseCallExpression(code);
-		const stringKey = (callNode.arguments[0] as Literal).value as string;
-		let localizedCode = callLocalizeCompiler(
-			localizeCompiler,
-			{
-				callNode,
-				resolveKey: (key = stringKey) => localeData[key],
-				emitWarning: (message) => {
-					const hasWarning = compilation.warnings.find(warning => warning.message === message);
-					if (!hasWarning) {
-						compilation.warnings.push(new WebpackError(message));
-					}
-				},
-				emitError: (message) => {
-					const hasError = compilation.errors.find(error => error.message === message);
-					if (!hasError) {
-						compilation.errors.push(new WebpackError(message));
-					}
-				},
-			},
-			locale,
-		);
-
-		if (escapeDoubleQuotes) {
-			localizedCode = JSON.stringify(localizedCode).slice(1, -1);
-		}
-
-		magicStringInstance.overwrite(
-			range.start,
-			range.end!,
-			localizedCode,
-		);
-
-		// For Webpack 5 cache hits
-		trackStringKeys?.delete(stringKey);
-	}
-
-	// Localize chunk requests
-	for (const location of fileNamePlaceholderLocations) {
-		magicStringInstance.overwrite(
-			location,
-			location + fileNameTemplatePlaceholder.length,
-			locale,
-		);
-	}
-
-	for (const [range, replacement] of contentHashReplacements) {
-		magicStringInstance.overwrite(
-			range.start,
-			range.end!,
-			replacement,
-		);
-	}
-
-	const localizedCode = magicStringInstance.toString();
-
-	if (map) {
-		const newSourceMap = magicStringInstance.generateMap({
-			source: assetName,
-			includeContent: true,
-		});
-
-		return new SourceMapSource(
-			localizedCode,
-			assetName,
-			newSourceMap,
-			source,
-			map,
-			true,
-		);
-	}
-	return new RawSource(localizedCode);
-};
+type ContentHash = string;
+type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
 
 export const generateLocalizedAssets = async (
 	compilation: Compilation,
@@ -178,16 +69,16 @@ export const generateLocalizedAssets = async (
 					.map(loc => [
 						{ start: loc, end: loc + hash.length },
 						hashesByLocale,
-					] as [Range, Map<LocaleName, string>]));
+					] as [Location, Map<LocaleName, string>]));
 
 			await Promise.all(locales.names.map(async (locale) => {
 				const contentHashReplacements = contentHashLocations.map(([range, hashesByLocale]) => [
 					range,
 					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 					hashesByLocale.get(locale)!,
-				] as [Range, string]);
+				] as [Location, string]);
 
-				let newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+				let localizedAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
 
 				// object spread breaks types
 				// eslint-disable-next-line prefer-object-spread
@@ -205,22 +96,22 @@ export const generateLocalizedAssets = async (
 						for (const chash of contenthash) {
 							const newContentHash = contentHashMap.get(chash)?.get(locale) ?? chash;
 							newContentHashes.push(newContentHash);
-							newAssetName = newAssetName.replace(chash, newContentHash);
+							localizedAssetName = localizedAssetName.replace(chash, newContentHash);
 						}
 						newInfo.contenthash = newContentHashes;
 					} else {
 						const newContentHash = contentHashMap.get(contenthash)?.get(locale) ?? contenthash;
-						newAssetName = newAssetName.replace(contenthash, newContentHash);
+						localizedAssetName = localizedAssetName.replace(contenthash, newContentHash);
 						newInfo.contenthash = newContentHash;
 					}
 				}
 
-				localizedAssetNames.push(newAssetName);
+				localizedAssetNames.push(localizedAssetName);
 
 				const localizedSource = localizeAsset(
-					locales.data,
+					locales.data[locale],
 					locale,
-					newAssetName,
+					localizedAssetName,
 					placeholderLocations,
 					fileNamePlaceholderLocations,
 					contentHashReplacements,
@@ -233,16 +124,17 @@ export const generateLocalizedAssets = async (
 
 				// @ts-expect-error Outdated @type
 				compilation.emitAsset(
-					newAssetName,
+					localizedAssetName,
 					localizedSource,
 					newInfo,
 				);
 			}));
 		} else {
-			let localesToIterate = locales.names;
-			if (isSourceMap.test(asset.name) && sourceMapForLocales) {
-				localesToIterate = sourceMapForLocales;
-			}
+			const localesToIterate = (
+				isSourceMap.test(asset.name) && sourceMapForLocales
+					? sourceMapForLocales
+					: locales.names
+			);
 
 			await Promise.all(localesToIterate.map(async (locale) => {
 				const newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);

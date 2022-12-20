@@ -10,7 +10,7 @@ import {
 	onLocalizerCall,
 	onStringKey,
 } from './utils/on-localizer-call.js';
-import { interpolateLocaleToFileName } from './utils/localize-filename.js';
+import { replaceLocaleInAssetName } from './utils/localize-filename.js';
 import type {
 	Options,
 	LocalizeCompiler,
@@ -54,7 +54,7 @@ export const handleSingleLocaleLocalization = (
 
 	onAssetPath(
 		compilation,
-		interpolateLocaleToFileName(
+		replaceLocaleInAssetName(
 			compilation,
 			localeName,
 		),

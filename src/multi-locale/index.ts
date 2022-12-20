@@ -10,10 +10,11 @@ import {
 	onStringKey,
 } from '../utils/on-localizer-call.js';
 import { onAssetPath, onOptimizeAssets } from '../utils/webpack.js';
-import { interpolateLocaleToFileName } from '../utils/localize-filename.js';
+import { replaceLocaleInAssetName } from '../utils/localize-filename.js';
 import { name } from '../../package.json';
 import { insertPlaceholderFunction } from './insert-placeholder-function.js';
-import { generateLocalizedAssets, fileNameTemplatePlaceholder } from './generate-localized-assets.js';
+import { generateLocalizedAssets } from './generate-localized-assets.js';
+import { fileNameTemplatePlaceholder } from './asset-name.js';
 
 export const handleMultiLocaleLocalization = (
 	compilation: WP5.Compilation,
@@ -50,7 +51,7 @@ export const handleMultiLocaleLocalization = (
 	 */
 	onAssetPath(
 		compilation,
-		interpolateLocaleToFileName(
+		replaceLocaleInAssetName(
 			compilation,
 			fileNameTemplatePlaceholder,
 			true,
