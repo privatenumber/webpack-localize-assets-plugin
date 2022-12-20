@@ -13,4 +13,17 @@ export const findSubstringLocations = (
 	return indices;
 };
 
-// TODO replaceAll function
+export const replaceAll = (
+	string: string,
+	searchValue: string,
+	replaceValue: string,
+) => {
+	const locations = findSubstringLocations(string, searchValue);
+
+	for (let i = locations.length - 1; i >= 0; i -= 1) {
+		const location = locations[i];
+		string = string.slice(0, location) + replaceValue + string.slice(location + searchValue.length);
+	}
+
+	return string;
+};

@@ -1,7 +1,6 @@
 import assert from 'assert';
 import { Compilation } from '../types-internal.js';
-
-const localePlaceholderPattern = /\[locale\]/g;
+import { replaceAll } from './strings';
 
 export const replaceLocaleInAssetName = (
 	compilation: Compilation,
@@ -32,7 +31,7 @@ export const replaceLocaleInAssetName = (
 			filePath = filePath(data);
 		}
 
-		filePath = filePath.replace(localePlaceholderPattern, replaceWith);
+		filePath = replaceAll(filePath, '[locale]', replaceWith);
 
 		return filePath;
 	};
