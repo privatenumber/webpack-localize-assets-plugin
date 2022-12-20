@@ -2,8 +2,10 @@ import { stringifyAstNode } from '../utils/stringify-ast-node.js';
 import type { StringKeyHit } from '../utils/on-localizer-call.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
 import { sha256 } from '../utils/sha256.js';
+import { findSubstringLocations } from '../utils/strings.js';
+import { name } from '../../package.json';
 
-export const placeholderFunctionName = `localizeAssetsPlugin${sha256('localize-assets-plugin-placeholder').slice(0, 8)}`;
+export const placeholderFunctionName = `_placeholder${sha256(name).slice(0, 8)}`;
 
 /**
  * For Multiple locales
@@ -39,9 +41,64 @@ export const insertPlaceholderFunction = (
 
 	const callExpression = stringifyAstNode(callNode);
 
-	// TODO I wonder if `placeholderFunctionName` can be passed in as the second argument?
-	const code =  `${placeholderFunctionName}(${callExpression},${placeholderFunctionName})`;
+	return `${placeholderFunctionName}(${callExpression},${placeholderFunctionName})`;
+};
 
-	// console.log({code});
-	return code;
+export type Range = {
+	start: number;
+	end: number;
+};
+
+export type PlaceholderLocation = {
+	range: Range;
+	code: string;
+	escapeDoubleQuotes: boolean;
+};
+
+const escapedDoubleQuotesPattern = /\\"/g;
+
+export const locatePlaceholders = (assetCode: string) => {
+	const placeholderIndices = findSubstringLocations(assetCode, placeholderFunctionName);
+	const locations: PlaceholderLocation[] = [];
+
+	while (placeholderIndices.length > 0) {
+		const start = placeholderIndices.shift()!;
+		const end = placeholderIndices.shift()!;
+
+		let code = assetCode.slice(
+			(
+				start
+				+ placeholderFunctionName.length
+				+ 1 // Opening bracket
+			),
+			(
+				end
+				- 1	// , operator
+			),
+		);
+
+		const escapeDoubleQuotes = escapedDoubleQuotesPattern.test(code);
+
+		if (escapeDoubleQuotes) {
+			/**
+			 * TODO: Check if devtools is eval instead
+			 *
+			 * When devtools: 'eval', the entire module is wrapped in an eval("")
+			 * so double quotes are escaped. For example: __(\\"hello-key\\")
+			 *
+			 * The double quotes need to be unescaped for it to be parsable
+			 */
+
+			code = code.replace(escapedDoubleQuotesPattern, '"');
+		}
+
+		locations.push({
+			// TODO rename to replaceLocation
+			range: { start, end: end + placeholderFunctionName.length + 1 },
+			code,
+			escapeDoubleQuotes,
+		});
+	}
+
+	return locations;
 };

@@ -4,7 +4,6 @@ import WebpackError from 'webpack/lib/WebpackError.js';
 import { RawSourceMap } from 'source-map';
 import { parseExpressionAt } from 'acorn';
 import type {
-	Expression,
 	Literal,
 	SimpleCallExpression,
 } from 'estree';
@@ -20,16 +19,8 @@ import {
 import type { StringKeysCollection } from '../utils/warn-on-unused-keys.js';
 import { callLocalizeCompiler } from '../utils/call-localize-compiler.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
-import { findSubstringRanges, findSubstringLocations, type Range } from '../utils/strings.js';
-import {
-	placeholderFunctionName,
-} from './insert-placeholder-function.js';
-
-export type PlaceholderLocation = {
-	range: Range;
-	node: SimpleCallExpression;
-	escapeDoubleQuotes: boolean;
-};
+import { findSubstringLocations } from '../utils/strings.js';
+import { locatePlaceholders, type Range, type PlaceholderLocation } from './insert-placeholder-function.js';
 
 type ContentHash = string;
 type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
@@ -40,48 +31,11 @@ const fileNameTemplatePlaceholderPattern = new RegExp(fileNameTemplatePlaceholde
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-
-const locatePlaceholders = (sourceString: string) => {
-	const placeholderRanges = findSubstringRanges(sourceString, placeholderFunctionName);
-	const placeholderLocations: PlaceholderLocation[] = [];
-
-	for (const placeholderRange of placeholderRanges) {
-
-		// TODO maybe move this parsing logic to ./insert-placeholder-function.ts
-
-		// Account for closing )
-		placeholderRange.end! += 1;
-
-		let code = sourceString.slice(placeholderRange.start, placeholderRange.end);
-		code = code.slice(placeholderFunctionName.length + 1, -placeholderFunctionName.length - 2);
-
-
-
-		const escapedDoubleQuotesPattern = /\\"/g;
-		const escapeDoubleQuotes = escapedDoubleQuotesPattern.test(code);
-
-		if (escapeDoubleQuotes) {
-			/**
-			 * When devtools: 'eval', the entire module is wrapped in an eval("")
-			 * so double quotes are escaped. For example: __(\\"hello-key\\")
-			 *
-			 * The double quotes need to be unescaped for it to be parsable
-			 */
-
-			code = code.replace(escapedDoubleQuotesPattern, '"');
-		}
-
-		const node = parseExpressionAt(code, 0, { ecmaVersion: 'latest' }) as Expression;
-
-		placeholderLocations.push({
-			node: node as SimpleCallExpression,
-			range: placeholderRange,
-			escapeDoubleQuotes,
-		});
-	}
-
-	return placeholderLocations;
-};
+const parseCallExpression = (code: string) => parseExpressionAt(
+	code,
+	0,
+	{ ecmaVersion: 'latest' },
+) as unknown as SimpleCallExpression;
 
 const localizeAsset = (
 	locales: LocalesMap,
@@ -100,12 +54,13 @@ const localizeAsset = (
 	const magicStringInstance = new MagicString(source);
 
 	// Localize strings
-	for (const { node, range, escapeDoubleQuotes } of placeholderLocations) {
-		const stringKey = (node.arguments[0] as Literal).value as string;
+	for (const { code, range, escapeDoubleQuotes } of placeholderLocations) {
+		const callNode = parseCallExpression(code);
+		const stringKey = (callNode.arguments[0] as Literal).value as string;
 		let localizedCode = callLocalizeCompiler(
 			localizeCompiler,
 			{
-				callNode: node,
+				callNode,
 				resolveKey: (key = stringKey) => localeData[key],
 				emitWarning: (message) => {
 					const hasWarning = compilation.warnings.find(warning => warning.message === message);

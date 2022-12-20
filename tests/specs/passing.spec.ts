@@ -1,3 +1,4 @@
+import fs from 'fs/promises';
 import { testSuite, expect } from 'manten';
 import { build, watch } from 'webpack-test-utils';
 import TerserPlugin from 'terser-webpack-plugin';
@@ -465,6 +466,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 				'/src/index.js': 'export default __("hello-key");',
 			};
 			const cacheDirectory = tempy.directory();
+
 			const configure = (config: webpack.Configuration) => {
 				configureWebpack(config);
 
@@ -495,6 +497,8 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 
 			const indexEnB = builtB.require('/dist/index.en.js');
 			expect(indexEnB).toBe(indexEnA);
+
+			await fs.rm(cacheDirectory, { recursive: true, force: true });
 		});
 
 		test('warnOnUnusedString works with Webpack 5 cache', async () => {
