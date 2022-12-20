@@ -63,6 +63,19 @@ export const deleteAsset = (
 	}
 };
 
+export const pushUniqueError = <T extends Error>(
+	array: T[],
+	element: T,
+) => {
+	const exists = array.find(
+		elementB => elementB.message === element.message,
+	);
+
+	if (!exists) {
+		array.push(element);
+	}
+};
+
 export const reportModuleWarning = (
 	module: Module,
 	warning: WebpackError,
@@ -70,7 +83,10 @@ export const reportModuleWarning = (
 	if ('addWarning' in module) {
 		module.addWarning(warning);
 	} else {
-		module.warnings.push(warning);
+		pushUniqueError(
+			module.warnings,
+			warning,
+		);
 	}
 };
 
@@ -81,7 +97,10 @@ export const reportModuleError = (
 	if ('addError' in module) {
 		module.addError(error);
 	} else {
-		module.errors.push(error);
+		pushUniqueError(
+			module.errors,
+			error,
+		);
 	}
 };
 

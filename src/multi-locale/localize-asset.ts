@@ -7,6 +7,7 @@ import type {
 	Literal,
 	SimpleCallExpression,
 } from 'estree';
+import { pushUniqueError } from '../utils/webpack.js';
 import { callLocalizeCompiler } from '../utils/call-localize-compiler.js';
 import type {
 	Compilation,
@@ -47,19 +48,17 @@ export const localizeAsset = (
 			{
 				callNode,
 				resolveKey: (key = stringKey) => localeData[key],
-
-				// TODO deduplicate logic across threse two and reportModuleWarning/Error
 				emitWarning: (message) => {
-					const hasWarning = compilation.warnings.find(warning => warning.message === message);
-					if (!hasWarning) {
-						compilation.warnings.push(new WebpackError(message));
-					}
+					pushUniqueError(
+						compilation.warnings,
+						new WebpackError(message),
+					);
 				},
 				emitError: (message) => {
-					const hasError = compilation.errors.find(error => error.message === message);
-					if (!hasError) {
-						compilation.errors.push(new WebpackError(message));
-					}
+					pushUniqueError(
+						compilation.errors,
+						new WebpackError(message),
+					);
 				},
 			},
 			locale,

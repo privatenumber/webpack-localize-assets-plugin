@@ -30,15 +30,6 @@ export const insertPlaceholderFunction = (
 		);
 	}
 
-	/**
-	 * TODO
-	 * Shouldn't this be moved to the onLocalizerCall hook?
-	 * Maybe it should only be applied to multiple locales?
-	 */
-	if (callNode.callee.type !== 'Identifier') {
-		throw new Error('Expected Identifier');
-	}
-
 	const callExpression = stringifyAstNode(callNode);
 
 	return `${placeholderFunctionName}(${callExpression},${placeholderFunctionName})`;

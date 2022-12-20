@@ -43,8 +43,14 @@ export const handleSingleLocaleLocalization = (
 					{
 						callNode,
 						resolveKey: (stringKey = key) => locales.data[localeName][stringKey],
-						emitWarning: message => reportModuleWarning(module, new WebpackError(message)),
-						emitError: message => reportModuleError(module, new WebpackError(message)),
+						emitWarning: message => reportModuleWarning(
+							module,
+							new WebpackError(message),
+						),
+						emitError: message => reportModuleError(
+							module,
+							new WebpackError(message),
+						),
 					},
 					localeName,
 				);
