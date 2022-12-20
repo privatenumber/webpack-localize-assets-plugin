@@ -14,7 +14,7 @@ import { replaceLocaleInAssetName } from '../utils/localize-filename.js';
 import { name } from '../../package.json';
 import { insertPlaceholderFunction } from './insert-placeholder-function.js';
 import { generateLocalizedAssets } from './generate-localized-assets.js';
-import { fileNameTemplatePlaceholder } from './asset-name.js';
+import { assetNamePlaceholder } from './asset-name.js';
 
 export const handleMultiLocaleLocalization = (
 	compilation: WP5.Compilation,
@@ -53,7 +53,7 @@ export const handleMultiLocaleLocalization = (
 		compilation,
 		replaceLocaleInAssetName(
 			compilation,
-			fileNameTemplatePlaceholder,
+			assetNamePlaceholder,
 			true,
 		),
 	);

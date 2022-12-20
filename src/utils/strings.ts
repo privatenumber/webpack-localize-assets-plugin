@@ -12,3 +12,5 @@ export const findSubstringLocations = (
 
 	return indices;
 };
+
+// TODO replaceAll function

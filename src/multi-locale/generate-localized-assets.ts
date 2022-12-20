@@ -12,7 +12,10 @@ import type { LocaleData } from '../utils/load-locale-data.js';
 import { findSubstringLocations } from '../utils/strings.js';
 import { locatePlaceholders, type Location } from './insert-placeholder-function.js';
 import { localizeAsset } from './localize-asset.js';
-import { fileNameTemplatePlaceholder, fileNameTemplatePlaceholderPattern } from './asset-name.js';
+import {
+	assetNamePlaceholder,
+	insertToAssetName,
+} from './asset-name.js';
 
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
@@ -27,11 +30,11 @@ export const generateLocalizedAssets = async (
 	trackStringKeys: StringKeysCollection | undefined,
 	localizeCompiler: LocalizeCompiler,
 ) => {
-	const assetsWithInfo = (compilation as WP5.Compilation).getAssets()
-		.filter(asset => asset.name.includes(fileNameTemplatePlaceholder));
+	const assetsToLocalize = (compilation as WP5.Compilation).getAssets()
+		.filter(asset => asset.name.includes(assetNamePlaceholder));
 
 	const contentHashMap: ContentHashMap = new Map(
-		assetsWithInfo
+		assetsToLocalize
 			.flatMap((asset) => {
 				// Add locale to hash for RealContentHashPlugin plugin
 				const { contenthash } = asset.info;
@@ -53,7 +56,7 @@ export const generateLocalizedAssets = async (
 			}),
 	);
 
-	await Promise.all(assetsWithInfo.map(async (asset) => {
+	await Promise.all(assetsToLocalize.map(async (asset) => {
 		const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
 		const localizedAssetNames: string[] = [];
 
@@ -62,7 +65,7 @@ export const generateLocalizedAssets = async (
 			const placeholderLocations = locatePlaceholders(sourceString);
 			const fileNamePlaceholderLocations = findSubstringLocations(
 				sourceString,
-				fileNameTemplatePlaceholder,
+				assetNamePlaceholder,
 			);
 			const contentHashLocations = [...contentHashMap.entries()]
 				.flatMap(([hash, hashesByLocale]) => findSubstringLocations(sourceString, hash)
@@ -78,7 +81,7 @@ export const generateLocalizedAssets = async (
 					hashesByLocale.get(locale)!,
 				] as [Location, string]);
 
-				let localizedAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+				let localizedAssetName = insertToAssetName(asset.name, locale);
 
 				// object spread breaks types
 				// eslint-disable-next-line prefer-object-spread
@@ -137,7 +140,7 @@ export const generateLocalizedAssets = async (
 			);
 
 			await Promise.all(localesToIterate.map(async (locale) => {
-				const newAssetName = asset.name.replace(fileNameTemplatePlaceholderPattern, locale);
+				const newAssetName = insertToAssetName(asset.name, locale);
 				localizedAssetNames.push(newAssetName);
 
 				// @ts-expect-error Outdated @type

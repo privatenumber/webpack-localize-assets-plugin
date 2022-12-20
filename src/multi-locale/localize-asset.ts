@@ -15,7 +15,7 @@ import type {
 	LocaleStrings,
 } from '../types-internal.js';
 import type { StringKeysCollection } from '../utils/warn-on-unused-keys.js';
-import { fileNameTemplatePlaceholder } from './asset-name';
+import { assetNamePlaceholder } from './asset-name';
 import type { Location, PlaceholderLocation } from './insert-placeholder-function.js';
 
 const parseCallExpression = (code: string) => parseExpressionAt(
@@ -83,7 +83,7 @@ export const localizeAsset = (
 	for (const location of fileNamePlaceholderLocations) {
 		magicStringInstance.overwrite(
 			location,
-			location + fileNameTemplatePlaceholder.length,
+			location + assetNamePlaceholder.length,
 			locale,
 		);
 	}
