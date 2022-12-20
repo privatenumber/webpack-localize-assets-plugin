@@ -8,7 +8,7 @@ import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import type { Compilation } from 'webpack5';
 import { configureWebpack } from '../utils/configure-webpack';
-import { localesSingle, localesMulti } from '../utils/localization-data';
+import { localesSingle, localesMulti, specialKey } from '../utils/localization-data';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
 export default testSuite(({ describe }, isWebpack5?: boolean) => {
@@ -16,7 +16,11 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 		test('single locale', async () => {
 			const built = await build(
 				{
-					'/src/index.js': 'export default __("hello-key");',
+					'/src/index.js': `export default [${
+						Object.keys(localesSingle.en)
+							.map((key) => '__(' + JSON.stringify(key) + ')')
+							.join(',')
+					}]`,
 				},
 				(config) => {
 					config.plugins!.push(
@@ -31,7 +35,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			expect(Object.keys(assets).length).toBe(1);
 
 			const enBuild = built.require('/dist/index.js');
-			expect(enBuild).toBe(localesMulti.en['hello-key']);
+			expect(enBuild).toEqual(Object.values(localesMulti.en));
 
 			const statsOutput = built.stats.toString();
 			expect(statsOutput).toMatch(/index\.js/);
@@ -40,7 +44,11 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 		test('multi locale', async () => {
 			const built = await build(
 				{
-					'/src/index.js': 'export default __("hello-key");',
+					'/src/index.js': `export default [${
+						Object.keys(localesMulti.en)
+							.map((key) => '__(' + JSON.stringify(key) + ')')
+							.join(',')
+					}]`,
 				},
 				(config) => {
 					configureWebpack(config);
@@ -57,13 +65,13 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			expect(Object.keys(assets).length).toBe(3);
 
 			const enBuild = built.require('/dist/index.en.js');
-			expect(enBuild).toBe(localesMulti.en['hello-key']);
+			expect(enBuild).toEqual(Object.values(localesMulti.en));
 
 			const esBuild = built.require('/dist/index.es.js');
-			expect(esBuild).toBe(localesMulti.es['hello-key']);
+			expect(esBuild).toEqual(Object.values(localesMulti.es));
 
 			const jaBuild = built.require('/dist/index.ja.js');
-			expect(jaBuild).toBe(localesMulti.ja['hello-key']);
+			expect(jaBuild).toEqual(Object.values(localesMulti.ja));
 
 			const statsOutput = built.stats.toString();
 			expect(statsOutput).toMatch(/index\.en\.js/);
@@ -303,8 +311,8 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 							'__("hello-key")',
 							'__("stringWithDoubleQuotes")',
 							'__("stringWithSingleQuotes")',
-							// "__('stringWithDoubleQuotes')",
-							// "__('stringWithSingleQuotes')",
+							"__('stringWithDoubleQuotes')",
+							"__('stringWithSingleQuotes')",
 						].join(',')
 					}];`,
 				},
@@ -329,8 +337,8 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 				localesMulti.en['hello-key'],
 				localesMulti.en.stringWithDoubleQuotes,
 				localesMulti.en.stringWithSingleQuotes,
-				// localesMulti.en.stringWithDoubleQuotes,
-				// localesMulti.en.stringWithSingleQuotes,
+				localesMulti.en.stringWithDoubleQuotes,
+				localesMulti.en.stringWithSingleQuotes,
 			]);
 		});
 
@@ -401,10 +409,13 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			);
 
 			expect(built.stats.hasWarnings()).toBe(true);
-			expect(built.stats.compilation.warnings.length).toBe(3);
-			expect(built.stats.compilation.warnings[0].message).toMatch('Unused string key "hello-key"');
-			expect(built.stats.compilation.warnings[1].message).toMatch('Unused string key "stringWithDoubleQuotes"');
-			expect(built.stats.compilation.warnings[2].message).toMatch('Unused string key "stringWithSingleQuotes"');
+
+			const keys = Object.keys(localesMulti.en);
+			expect(built.stats.compilation.warnings.length).toBe(keys.length);
+
+			for (let i = 1; i < keys.length; i += 1) {
+				expect(built.stats.compilation.warnings[i].message).toMatch(`Unused string key "${keys[i]}"`);
+			}
 		});
 
 		test('works with WebpackManifestPlugin', async () => {
@@ -526,10 +537,14 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 				configure,
 			);
 
+			const keys = Object.keys(localesMulti.en).filter(key => key !== 'hello-key');
+
 			const { warnings: warningsA } = builtA.stats.compilation;
-			expect(warningsA.length).toBe(2);
-			expect(warningsA[0].message).toMatch('Unused string key "stringWithDoubleQuotes"');
-			expect(warningsA[1].message).toMatch('Unused string key "stringWithSingleQuotes"');
+			expect(warningsA.length).toBe(keys.length);
+
+			for (let i = 0; i < keys.length; i += 1) {
+				expect(warningsA[i].message).toMatch(`Unused string key "${keys[i]}"`);
+			}
 
 			const builtB = await build(
 				volume,
@@ -537,9 +552,10 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			);
 
 			const { warnings: warningsB } = builtB.stats.compilation;
-			expect(warningsB.length).toBe(2);
-			expect(warningsB[0].message).toMatch('Unused string key "stringWithDoubleQuotes"');
-			expect(warningsA[1].message).toMatch('Unused string key "stringWithSingleQuotes"');
+			expect(warningsA.length).toBe(keys.length);
+			for (let i = 0; i < keys.length; i += 1) {
+				expect(warningsB[i].message).toMatch(`Unused string key "${keys[i]}"`);
+			}
 		});
 
 		test('dynamically load relative locale json path', async () => {
@@ -627,8 +643,11 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			);
 
 			const { warnings } = built.stats.compilation;
-			expect(warnings.length).toBe(1);
-			expect(warnings[0].message).toMatch('Unused string key "hello-key"');
+			const keys = Object.keys(localesSingle.en);
+			expect(warnings.length).toBe(keys.length);
+			for (let i = 0; i < keys.length; i += 1) {
+				expect(warnings[i].message).toMatch(`Unused string key "${keys[i]}"`);
+			}
 
 			const buildStatsUsed = await build(
 				{
@@ -649,7 +668,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 				},
 			);
 
-			expect(buildStatsUsed.stats.compilation.warnings.length).toBe(0);
+			expect(buildStatsUsed.stats.compilation.warnings.length).toBe(keys.length - 1);
 		});
 
 		test('function filename with Wepback placeholder', async () => {

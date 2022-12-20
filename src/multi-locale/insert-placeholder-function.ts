@@ -43,10 +43,7 @@ export type Location = {
 export type PlaceholderLocation = {
 	location: Location;
 	code: string;
-	escapeDoubleQuotes: boolean;
 };
-
-const escapedDoubleQuotesPattern = /\\"/g;
 
 export const locatePlaceholders = (assetCode: string) => {
 	const placeholderIndices = findSubstringLocations(assetCode, placeholderFunctionName);
@@ -68,25 +65,9 @@ export const locatePlaceholders = (assetCode: string) => {
 			),
 		);
 
-		const escapeDoubleQuotes = escapedDoubleQuotesPattern.test(code);
-
-		if (escapeDoubleQuotes) {
-			/**
-			 * TODO: Check if devtools is eval instead
-			 *
-			 * When devtools: 'eval', the entire module is wrapped in an eval("")
-			 * so double quotes are escaped. For example: __(\\"hello-key\\")
-			 *
-			 * The double quotes need to be unescaped for it to be parsable
-			 */
-
-			code = code.replace(escapedDoubleQuotesPattern, '"');
-		}
-
 		locations.push({
 			location: { start, end: end + placeholderFunctionName.length + 1 },
 			code,
-			escapeDoubleQuotes,
 		});
 	}
 

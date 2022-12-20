@@ -24,7 +24,7 @@ function defaultLocalizeCompilerFunction(
 		let code = stringifyAstNode(this.callNode);
 
 		if (code.length > 80) {
-			code = `${code.slice(0, 80)}…`;
+			code = code.slice(0, 80) + '…';
 		}
 		this.emitWarning(`[${name}] Ignoring confusing usage of localization function: ${code})`);
 		return key;

@@ -10,6 +10,7 @@ import type {
 import { pushUniqueError } from '../utils/webpack.js';
 import { callLocalizeCompiler } from '../utils/call-localize-compiler.js';
 import type {
+	WP5,
 	Compilation,
 	LocaleName,
 	LocalizeCompiler,
@@ -39,8 +40,21 @@ export const localizeAsset = (
 	trackStringKeys?: StringKeysCollection,
 ) => {
 	const magicStringInstance = new MagicString(source);
+	const { devtool } = (compilation as WP5.Compilation).options;
+	const isDevtoolEval = devtool && devtool.includes('eval');
 
-	for (const { code, location, escapeDoubleQuotes } of placeholderLocations) {
+	for (let { code, location } of placeholderLocations) {
+
+		/**
+		 * When devtools: 'eval', the entire module is wrapped in an eval("")
+		 * so double quotes are escaped. For example: __(\\"hello-key\\")
+		 *
+		 * The double quotes need to be unescaped for it to be parsable
+		 */
+		if (isDevtoolEval) {
+			code = code.replace(/\\(.)/g, '$1');
+		}
+
 		const callNode = parseCallExpression(code);
 		const stringKey = (callNode.arguments[0] as Literal).value as string;
 		let localizedCode = callLocalizeCompiler(
@@ -64,7 +78,8 @@ export const localizeAsset = (
 			locale,
 		);
 
-		if (escapeDoubleQuotes) {
+		if (isDevtoolEval) {
+			// Re-escape before putting it back into eval("")
 			localizedCode = JSON.stringify(localizedCode).slice(1, -1);
 		}
 
