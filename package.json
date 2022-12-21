@@ -42,7 +42,7 @@
 	"scripts": {
 		"prepare": "simple-git-hooks",
 		"lint": "eslint .",
-		"build": "pkgroll --minify",
+		"build": "pkgroll --target node12.20 --minify",
 		"type-check": "tsc --noEmit",
 		"dev": "tsx watch --loader alias-imports -C development -C webpack5 tests",
 		"test": "pnpm test:wp4 && pnpm test:wp5",
