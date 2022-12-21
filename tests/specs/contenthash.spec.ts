@@ -52,8 +52,37 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			expect(assetFilenameA).not.toBe(assetFilenameB);
 		});
 
+		test('async chunks', async () => {
+			const built = await build(
+				{
+					'/src/index.js': 'export default import("./async-import").then(module => module.default);',
+					'/src/async-import.js': 'export default import("./async-import2").then(module => module.default);',
+					'/src/async-import2.js': 'export default __("hello-key");',
+				},
+				(config) => {
+					config.output!.filename = '[name].[contenthash].[locale].js';
+
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesMulti,
+						}),
+					);
+				},
+			);
+
+			const assets = Object.keys(built.stats.compilation.assets);
+			const indexAsset = assets.find(a => a.includes('index') && a.includes('.en.js'));
+
+			expect(await built.require(`/dist/${indexAsset}`)).toBe(localesMulti.en['hello-key']);
+		});
+
+		/**
+		 * Updating contenthash only works with Webpack 5 because of `realContentHash`
+		 * https://webpack.js.org/configuration/optimization/#optimizationrealcontenthash
+		 *
+		 * Without it, Webpack doesn't recalculate the hash after minification/optimization
+		 */
 		if (isWebpack5) {
-			// remove skip after implementing hashing w/o realcontenthash
 			test('multi locale', async () => {
 				const volume = {
 					'/src/index.js': 'export default __("hello-key");',
@@ -103,30 +132,6 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 
 				expect(assetFilenameA).not.toBe(assetFilenameB);
 				expect(assetsB[1]).toBe(assetsA[1]);
-			});
-
-			test('async chunks', async () => {
-				const built = await build(
-					{
-						'/src/index.js': 'export default import("./async-import").then(module => module.default);',
-						'/src/async-import.js': 'export default import("./async-import2").then(module => module.default);',
-						'/src/async-import2.js': 'export default __("hello-key");',
-					},
-					(config) => {
-						config.output!.filename = '[name].[contenthash].[locale].js';
-
-						config.plugins!.push(
-							new WebpackLocalizeAssetsPlugin({
-								locales: localesMulti,
-							}),
-						);
-					},
-				);
-
-				const assets = Object.keys(built.stats.compilation.assets);
-				const indexAsset = assets.find(a => a.includes('index') && a.includes('.en.js'));
-
-				expect(await built.require(`/dist/${indexAsset}`)).toBe(localesMulti.en['hello-key']);
 			});
 		}
 	});
