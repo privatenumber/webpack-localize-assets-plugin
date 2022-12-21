@@ -2,40 +2,39 @@ import { SourceAndMapResult, RawSource, SourceMapSource } from 'webpack-sources'
 import MagicString from 'magic-string';
 import { RawSourceMap } from 'source-map';
 import { deleteAsset } from '../utils/webpack.js';
-import { sha256 } from '../utils/sha256.js';
 import {
 	Compilation,
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
-	Location,
 } from '../types-internal.js';
 import type { StringKeysCollection } from '../utils/warn-on-unused-keys.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
-import { findSubstringLocations } from '../utils/strings.js';
-import { createLocalizedStringInserter } from './placeholder-function.js';
+import { createLocalizedStringInserter } from './localizer-function.js';
 import {
-	createLocalizedAssetNameInserter,
 	assetNamePlaceholder,
-	insertLocalizedAssetNameWithoutSourcemap,
+	createLocalizedAssetNameInserter,
+	localizeAssetName,
 } from './asset-name.js';
+import { createHashManager } from './content-hash.js';
 
-type Transformer = (
-	magicStringInstance: MagicString,
-) => void;
+type SourceBase = {
+	name: string;
+	code: string;
+};
 
-const transformAsset = (
-	source: {
-		name: string;
-		code: string;
-	},
-	transformations: Transformer[],
+const transformAsset = <Source extends SourceBase>(
+	source: Source,
+	transformations: ((
+		magicStringInstance: MagicString,
+		source: Source,
+	) => void)[],
 	map?: RawSourceMap | null | false,
 ) => {
 	const magicStringInstance = new MagicString(source.code);
 
 	for (const transformer of transformations) {
-		transformer(magicStringInstance);
+		transformer(magicStringInstance, source);
 	}
 
 	const transformedCode = magicStringInstance.toString();
@@ -62,9 +61,6 @@ const transformAsset = (
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-type ContentHash = string;
-type ContentHashMap = Map<ContentHash, Map<LocaleName, ContentHash>>;
-
 export const generateLocalizedAssets = async (
 	compilation: Compilation,
 	locales: LocaleData,
@@ -72,129 +68,69 @@ export const generateLocalizedAssets = async (
 	trackStringKeys: StringKeysCollection | undefined,
 	localizeCompiler: LocalizeCompiler,
 ) => {
-	const assetsToLocalize = (compilation as WP5.Compilation).getAssets()
-		.filter(asset => asset.name.includes(assetNamePlaceholder));
+	const assets = (compilation as WP5.Compilation)
+		.getAssets()
+		.filter(
+			asset => asset.name.includes(assetNamePlaceholder),
+		);
 
-	// Derive new hashes from the original hashes and the locale
-	const contentHashMap: ContentHashMap = new Map(
-		assetsToLocalize
-			.flatMap((asset) => {
-				// Add locale to hash for RealContentHashPlugin plugin
-				const { contenthash } = asset.info;
-				if (!contenthash) {
-					return [];
-				}
-
-				const contentHashArray = Array.isArray(contenthash)
-					? contenthash
-					: [contenthash];
-
-				return contentHashArray.map(chash => [
-					chash,
-					new Map(locales.names.map(locale => [
-						locale,
-						sha256(chash + locale).slice(0, chash.length),
-					])),
-				]);
-			}),
+	const hashManager = createHashManager(
+		assets,
+		locales,
 	);
 
-	await Promise.all(assetsToLocalize.map(async (asset) => {
+	await Promise.all(assets.map(async (asset) => {
 		const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
 		const localizedAssetNames: string[] = [];
 
 		if (isJsFile.test(asset.name)) {
-			const sourceString = source.toString();
-
+			const code = source.toString();
 			const insertLocalizedStrings = createLocalizedStringInserter(
-				sourceString,
+				code,
 				compilation,
 				localizeCompiler,
 				locales,
 				trackStringKeys,
 			);
+			const insertLocalizedAssetName = createLocalizedAssetNameInserter(code);
+			const insertLocalizedContentHash = hashManager.getHashLocations(code);
 
-			const insertLocalizedAssetName = createLocalizedAssetNameInserter(sourceString);
+			for (const locale of locales.names) {
+				let localizedAssetName = localizeAssetName(asset.name, locale);
 
-			// Find references to content hash to replace with localized content hash
-			const contentHashLocations = [...contentHashMap.entries()]
-				.flatMap(
-					([hash, hashesByLocale]) => (
-						findSubstringLocations(sourceString, hash)
-							.map(
-								loc => [
-									{ start: loc, end: loc + hash.length },
-									hashesByLocale,
-								] as [Location, Map<LocaleName, string>],
-							)
-					),
-				);
-
-			await Promise.all(locales.names.map(async (locale) => {
-				const contentHashReplacements = contentHashLocations.map(([range, hashesByLocale]) => [
-					range,
-					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-					hashesByLocale.get(locale)!,
-				] as [Location, string]);
-
-				let localizedAssetName = insertLocalizedAssetNameWithoutSourcemap(asset.name, locale);
-
-				// object spread breaks types
-				// eslint-disable-next-line prefer-object-spread
-				const newInfo = Object.assign(
-					{},
-					asset.info,
-					{ locale },
-				);
+				const newInfo = {
+					...asset.info,
+					locale,
+				};
 
 				// Add locale to hash for RealContentHashPlugin plugin
-				if (newInfo.contenthash) {
-					const { contenthash } = newInfo;
-					if (Array.isArray(contenthash)) {
-						const newContentHashes = [];
-						for (const chash of contenthash) {
-							const newContentHash = contentHashMap.get(chash)?.get(locale) ?? chash;
-							newContentHashes.push(newContentHash);
-							localizedAssetName = localizedAssetName.replace(chash, newContentHash);
-						}
-						newInfo.contenthash = newContentHashes;
-					} else {
-						const newContentHash = contentHashMap.get(contenthash)?.get(locale) ?? contenthash;
-						localizedAssetName = localizedAssetName.replace(contenthash, newContentHash);
-						newInfo.contenthash = newContentHash;
-					}
-				}
+				localizedAssetName = hashManager.insertLocalizedContentHash(
+					localizedAssetName,
+					newInfo,
+					locale,
+				);
 
 				localizedAssetNames.push(localizedAssetName);
-
-				const localizedSource = transformAsset(
-					{
-						name: localizedAssetName,
-						code: sourceString,
-					},
-					[
-						insertLocalizedStrings(locale),
-						insertLocalizedAssetName(locale),
-						(ms) => {
-							for (const [range, replacement] of contentHashReplacements) {
-								ms.overwrite(
-									range.start,
-									range.end,
-									replacement,
-								);
-							}
-						},
-					],
-					map,
-				);
 
 				// @ts-expect-error Outdated @type
 				compilation.emitAsset(
 					localizedAssetName,
-					localizedSource,
+					transformAsset(
+						{
+							name: localizedAssetName,
+							code,
+							locale,
+						},
+						[
+							insertLocalizedStrings,
+							insertLocalizedAssetName,
+							insertLocalizedContentHash,
+						],
+						map,
+					),
 					newInfo,
 				);
-			}));
+			}
 		} else {
 			const localesToIterate = (
 				isSourceMap.test(asset.name) && sourceMapForLocales
@@ -202,8 +138,8 @@ export const generateLocalizedAssets = async (
 					: locales.names
 			);
 
-			await Promise.all(localesToIterate.map(async (locale) => {
-				const newAssetName = insertLocalizedAssetNameWithoutSourcemap(asset.name, locale);
+			for (const locale of localesToIterate) {
+				const newAssetName = localizeAssetName(asset.name, locale);
 				localizedAssetNames.push(newAssetName);
 
 				// @ts-expect-error Outdated @type
@@ -212,7 +148,7 @@ export const generateLocalizedAssets = async (
 					asset.source,
 					asset.info,
 				);
-			}));
+			}
 		}
 
 		// Delete original unlocalized asset

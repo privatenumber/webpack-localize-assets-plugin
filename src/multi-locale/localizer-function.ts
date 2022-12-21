@@ -109,60 +109,60 @@ export const createLocalizedStringInserter = (
 	const isDevtoolEval = devtool && devtool.includes('eval');
 	const placeholderLocations = locatePlaceholderFunctions(assetCode);
 
-	return (locale: string) => {
+	return (
+		ms: MagicString,
+		{ locale }: { locale: string },
+	) => {
 		const localeData = locales.data[locale];
+		for (const placeholder of placeholderLocations) {
+			let { code } = placeholder;
 
-		return (ms: MagicString) => {
-			for (const placeholder of placeholderLocations) {
-				let { code } = placeholder;
-
-				/**
-				 * When devtools: 'eval', the entire module is wrapped in an eval("")
-				 * so double quotes are escaped. For example: __(\\"hello-key\\")
-				 *
-				 * The double quotes need to be unescaped for it to be parsable
-				 */
-				if (isDevtoolEval) {
-					code = unescape(code);
-				}
-
-				const callNode = parseCallExpression(code);
-				const stringKey = (callNode.arguments[0] as Literal).value as string;
-				let localizedString = callLocalizeCompiler(
-					localizeCompiler,
-					{
-						callNode,
-						resolveKey: (key = stringKey) => localeData[key],
-						emitWarning: (message) => {
-							pushUniqueError(
-								compilation.warnings,
-								new WebpackError(message),
-							);
-						},
-						emitError: (message) => {
-							pushUniqueError(
-								compilation.errors,
-								new WebpackError(message),
-							);
-						},
-					},
-					locale,
-				);
-
-				if (isDevtoolEval) {
-					// Re-escape before putting it back into eval("")
-					localizedString = escape(localizedString);
-				}
-
-				ms.overwrite(
-					placeholder.location.start,
-					placeholder.location.end,
-					localizedString,
-				);
-
-				// For Webpack 5 cache hits
-				trackStringKeys?.delete(stringKey);
+			/**
+			 * When devtools: 'eval', the entire module is wrapped in an eval("")
+			 * so double quotes are escaped. For example: __(\\"hello-key\\")
+			 *
+			 * The double quotes need to be unescaped for it to be parsable
+			 */
+			if (isDevtoolEval) {
+				code = unescape(code);
 			}
-		};
+
+			const callNode = parseCallExpression(code);
+			const stringKey = (callNode.arguments[0] as Literal).value as string;
+			let localizedString = callLocalizeCompiler(
+				localizeCompiler,
+				{
+					callNode,
+					resolveKey: (key = stringKey) => localeData[key],
+					emitWarning: (message) => {
+						pushUniqueError(
+							compilation.warnings,
+							new WebpackError(message),
+						);
+					},
+					emitError: (message) => {
+						pushUniqueError(
+							compilation.errors,
+							new WebpackError(message),
+						);
+					},
+				},
+				locale,
+			);
+
+			if (isDevtoolEval) {
+				// Re-escape before putting it back into eval("")
+				localizedString = escape(localizedString);
+			}
+
+			ms.overwrite(
+				placeholder.location.start,
+				placeholder.location.end,
+				localizedString,
+			);
+
+			// For Webpack 5 cache hits
+			trackStringKeys?.delete(stringKey);
+		}
 	};
 };

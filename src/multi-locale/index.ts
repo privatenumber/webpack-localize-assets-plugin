@@ -12,7 +12,7 @@ import {
 import { onAssetPath, onOptimizeAssets } from '../utils/webpack.js';
 import { replaceLocaleInAssetName } from '../utils/localize-filename.js';
 import { name } from '../../package.json';
-import { insertPlaceholderFunction } from './placeholder-function.js';
+import { insertPlaceholderFunction } from './localizer-function.js';
 import { generateLocalizedAssets } from './generate-localized-assets.js';
 import { assetNamePlaceholder } from './asset-name.js';
 

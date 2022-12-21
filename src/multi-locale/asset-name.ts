@@ -4,13 +4,13 @@ import { replaceAll, findSubstringLocations } from '../utils/strings';
 
 export const assetNamePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
 
-export const insertLocalizedAssetNameWithoutSourcemap = (
+export const localizeAssetName = (
 	assetName: string,
-	replaceWith: string,
+	locale: string,
 ) => replaceAll(
 	assetName,
 	assetNamePlaceholder,
-	replaceWith,
+	locale,
 );
 
 export const createLocalizedAssetNameInserter = (
@@ -21,8 +21,10 @@ export const createLocalizedAssetNameInserter = (
 		assetNamePlaceholder,
 	);
 
-	return (locale: string) => (ms: MagicString) => {
-		// Localize chunk requests
+	return (
+		ms: MagicString,
+		{ locale }: { locale: string },
+	) => {
 		for (const location of fileNamePlaceholderLocations) {
 			ms.overwrite(
 				location,
