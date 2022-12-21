@@ -13,10 +13,11 @@ import {
 import type { StringKeysCollection } from '../utils/warn-on-unused-keys.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
 import { findSubstringLocations } from '../utils/strings.js';
-import { createPlaceholderReplacer } from './placeholder-function.js';
+import { createLocalizedStringInserter } from './placeholder-function.js';
 import {
+	createLocalizedAssetNameInserter,
 	assetNamePlaceholder,
-	insertToAssetName,
+	insertLocalizedAssetNameWithoutSourcemap,
 } from './asset-name.js';
 
 type Transformer = (
@@ -105,7 +106,7 @@ export const generateLocalizedAssets = async (
 		if (isJsFile.test(asset.name)) {
 			const sourceString = source.toString();
 
-			const replacePlaceholders = createPlaceholderReplacer(
+			const insertLocalizedStrings = createLocalizedStringInserter(
 				sourceString,
 				compilation,
 				localizeCompiler,
@@ -113,10 +114,7 @@ export const generateLocalizedAssets = async (
 				trackStringKeys,
 			);
 
-			const fileNamePlaceholderLocations = findSubstringLocations(
-				sourceString,
-				assetNamePlaceholder,
-			);
+			const insertLocalizedAssetName = createLocalizedAssetNameInserter(sourceString);
 
 			// Find references to content hash to replace with localized content hash
 			const contentHashLocations = [...contentHashMap.entries()]
@@ -139,7 +137,7 @@ export const generateLocalizedAssets = async (
 					hashesByLocale.get(locale)!,
 				] as [Location, string]);
 
-				let localizedAssetName = insertToAssetName(asset.name, locale);
+				let localizedAssetName = insertLocalizedAssetNameWithoutSourcemap(asset.name, locale);
 
 				// object spread breaks types
 				// eslint-disable-next-line prefer-object-spread
@@ -175,17 +173,8 @@ export const generateLocalizedAssets = async (
 						code: sourceString,
 					},
 					[
-						replacePlaceholders(locale),
-						(ms) => {
-							// Localize chunk requests
-							for (const location of fileNamePlaceholderLocations) {
-								ms.overwrite(
-									location,
-									location + assetNamePlaceholder.length,
-									locale,
-								);
-							}
-						},
+						insertLocalizedStrings(locale),
+						insertLocalizedAssetName(locale),
 						(ms) => {
 							for (const [range, replacement] of contentHashReplacements) {
 								ms.overwrite(
@@ -214,7 +203,7 @@ export const generateLocalizedAssets = async (
 			);
 
 			await Promise.all(localesToIterate.map(async (locale) => {
-				const newAssetName = insertToAssetName(asset.name, locale);
+				const newAssetName = insertLocalizedAssetNameWithoutSourcemap(asset.name, locale);
 				localizedAssetNames.push(newAssetName);
 
 				// @ts-expect-error Outdated @type

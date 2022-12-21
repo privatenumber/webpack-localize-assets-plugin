@@ -98,7 +98,7 @@ const parseCallExpression = (code: string) => parseExpressionAt(
 	{ ecmaVersion: 'latest' },
 ) as unknown as SimpleCallExpression;
 
-export const createPlaceholderReplacer = (
+export const createLocalizedStringInserter = (
 	assetCode: string,
 	compilation: Compilation,
 	localizeCompiler: LocalizeCompiler,
@@ -128,7 +128,7 @@ export const createPlaceholderReplacer = (
 
 				const callNode = parseCallExpression(code);
 				const stringKey = (callNode.arguments[0] as Literal).value as string;
-				let localizedCode = callLocalizeCompiler(
+				let localizedString = callLocalizeCompiler(
 					localizeCompiler,
 					{
 						callNode,
@@ -151,13 +151,13 @@ export const createPlaceholderReplacer = (
 
 				if (isDevtoolEval) {
 					// Re-escape before putting it back into eval("")
-					localizedCode = escape(localizedCode);
+					localizedString = escape(localizedString);
 				}
 
 				ms.overwrite(
 					placeholder.location.start,
 					placeholder.location.end,
-					localizedCode,
+					localizedString,
 				);
 
 				// For Webpack 5 cache hits
