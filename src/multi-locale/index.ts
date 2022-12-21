@@ -70,22 +70,18 @@ export const handleMultiLocaleLocalization = (
 		),
 	);
 
-	// TODO Maybe change compilation type above WP4 + WP5
-	// And type-guard the below WP5 code?
-
 	// Update chunkHash based on localized content
 	compilation.hooks.chunkHash.tap(
 		name,
 		(chunk, hash) => {
-			const modules = compilation.chunkGraph // WP5
+			const allModules = compilation.chunkGraph // WP5
 				? compilation.chunkGraph.getChunkModules(chunk)
 				: chunk.getModules();
 
-			const localizedModules = modules
+			const localizedModules = allModules
 				.map(module => module.buildInfo.localized)
 				.filter(Boolean);
 
-			// TODO: Probably needs to be sorted?
 			if (localizedModules.length > 0) {
 				hash.update(JSON.stringify(localizedModules));
 			}
