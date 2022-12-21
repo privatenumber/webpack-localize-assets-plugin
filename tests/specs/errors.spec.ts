@@ -339,15 +339,16 @@ export default testSuite(({ describe }) => {
 				let stats = await watching.build(true);
 
 				const { warnings } = stats.compilation;
-				expect(warnings.length).toBe(3);
-				expect(warnings[0].message).toMatch('Unused string key "hello-key"');
-				expect(warnings[1].message).toMatch('Unused string key "stringWithDoubleQuotes"');
-				expect(warnings[2].message).toMatch('Unused string key "stringWithSingleQuotes"');
+				const keys = Object.keys(localesMulti.en);
+				expect(warnings.length).toBe(keys.length);
+				for (let i = 0; i < keys.length; i += 1) {
+					expect(warnings[i].message).toMatch(`Unused string key "${keys[i]}"`);
+				}
 
-				watching.fs.writeFileSync('/src/index.js', 'export default [__("hello-key"), __("stringWithDoubleQuotes"), __("stringWithSingleQuotes")];');
+				watching.fs.writeFileSync('/src/index.js', 'export default __("hello-key");');
 
 				stats = await watching.build(true);
-				expect(stats.compilation.warnings.length).toBe(0);
+				expect(stats.compilation.warnings.length).toBe(keys.length - 1);
 
 				await watching.close();
 			});

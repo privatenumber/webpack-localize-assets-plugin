@@ -4,7 +4,7 @@ export type LocaleName = string;
 export type LocaleFilePath = string;
 export type LocalizedStringKey = string;
 export type LocaleStrings<LocalizedData> = Record<LocalizedStringKey, LocalizedData>;
-export type UnprocessedLocalesMap<LocalizedData> = Record<
+export type UnprocessedLocalesMap<LocalizedData = string> = Record<
 	LocaleName,
 	LocaleFilePath | LocaleStrings<LocalizedData>
 >;

@@ -1,30 +1,13 @@
 import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
-import type { SimpleCallExpression } from 'estree';
 import hasOwnProp from 'has-own-prop';
 import type {
 	LocaleName,
 	LocaleStrings,
 	Options,
-} from './types-options.js';
+} from './types-external.js';
 
-export * from './types-options.js';
-
-export type LocalesMap<LocalizedData> = Record<LocaleName, LocaleStrings<LocalizedData>>;
-export interface LocalizeCompilerContext<LocalizedData = string> {
-	readonly callNode: SimpleCallExpression;
-	resolveKey(stringKey?: string): LocalizedData;
-	emitWarning(message: string): void;
-	emitError(message: string): void;
-}
-
-export interface LocalizeCompiler<LocalizedData = string> {
-	[functionName: string]: (
-		this: LocalizeCompilerContext<LocalizedData>,
-		functionArgments: string[],
-		localeName: string,
-	) => string;
-}
+export * from './types-external.js';
 
 export function validateOptions<LocalizedData>(options: Options<LocalizedData>): void {
 	if (!options) {
@@ -56,3 +39,10 @@ export type Compiler = WP4.Compiler | WP5.Compiler;
 export type Compilation = WP5.Compilation | WP4.compilation.Compilation;
 export type NormalModuleFactory = Parameters<WP5.Compiler['newCompilation']>[0]['normalModuleFactory'];
 export type Module = WP4.compilation.Module | WP5.Module;
+
+export type LocalesMap<LocalizedData = string> = Record<LocaleName, LocaleStrings<LocalizedData>>;
+
+export type Location = {
+	start: number;
+	end: number;
+};

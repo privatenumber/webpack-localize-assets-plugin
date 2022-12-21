@@ -7,7 +7,7 @@ import {
 	WP5,
 	NormalModuleFactory,
 	Module,
-} from '../types.js';
+} from '../types-internal.js';
 import { name } from '../../package.json';
 
 export const isWebpack5 = (wp: Webpack) => {
@@ -63,6 +63,19 @@ export const deleteAsset = (
 	}
 };
 
+export const pushUniqueError = <T extends Error>(
+	array: T[],
+	element: T,
+) => {
+	const exists = array.find(
+		elementB => elementB.message === element.message,
+	);
+
+	if (!exists) {
+		array.push(element);
+	}
+};
+
 export const reportModuleWarning = (
 	module: Module,
 	warning: WebpackError,
@@ -70,7 +83,10 @@ export const reportModuleWarning = (
 	if ('addWarning' in module) {
 		module.addWarning(warning);
 	} else {
-		module.warnings.push(warning);
+		pushUniqueError(
+			module.warnings,
+			warning,
+		);
 	}
 };
 
@@ -81,29 +97,104 @@ export const reportModuleError = (
 	if ('addError' in module) {
 		module.addError(error);
 	} else {
-		module.errors.push(error);
+		pushUniqueError(
+			module.errors,
+			error,
+		);
 	}
 };
 
 export const onFunctionCall = (
 	normalModuleFactory: NormalModuleFactory,
-	functionName: string,
-	hook: (parser: WP5.javascript.JavascriptParser, node: SimpleCallExpression) => void,
+	functionNames: string[],
+	callback: (
+		functionName: string,
+		parser: WP5.javascript.JavascriptParser,
+		node: SimpleCallExpression,
+	) => void,
 ) => {
-	const handler = (parser: WP5.javascript.JavascriptParser) => {
-		parser.hooks.call.for(functionName).tap(
-			name,
-			node => hook(parser, node as SimpleCallExpression),
-		);
-	};
+	for (const functionName of functionNames) {
+		const handler = (parser: WP5.javascript.JavascriptParser) => {
+			parser.hooks.call
+				.for(functionName)
+				.tap(
+					name,
+					node => callback(
+						functionName,
+						parser,
+						node as SimpleCallExpression,
+					),
+				);
+		};
 
-	normalModuleFactory.hooks.parser
-		.for('javascript/auto')
-		.tap(name, handler);
-	normalModuleFactory.hooks.parser
-		.for('javascript/dynamic')
-		.tap(name, handler);
-	normalModuleFactory.hooks.parser
-		.for('javascript/esm')
-		.tap(name, handler);
+		normalModuleFactory.hooks.parser
+			.for('javascript/auto')
+			.tap(name, handler);
+		normalModuleFactory.hooks.parser
+			.for('javascript/dynamic')
+			.tap(name, handler);
+		normalModuleFactory.hooks.parser
+			.for('javascript/esm')
+			.tap(name, handler);
+	}
+};
+
+export const onAssetPath = (
+	compilation: Compilation,
+	callback: (
+		filePath: string | ((data: any) => string),
+		data: any,
+	) => string,
+) => {
+	if (isWebpack5Compilation(compilation)) {
+		compilation.hooks.assetPath.tap(
+			name,
+			callback,
+		);
+	} else {
+		// @ts-expect-error Missing assetPath hook from @type
+		compilation.mainTemplate.hooks.assetPath.tap(
+			name,
+			callback,
+		);
+	}
+};
+
+export const onOptimizeAssets = (
+	compilation: Compilation,
+	callback: () => void,
+) => {
+	if (isWebpack5Compilation(compilation)) {
+		/**
+		 * Important this this happens before PROCESS_ASSETS_STAGE_OPTIMIZE_HASH, which is where
+		 * RealContentHashPlugin re-hashes assets:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/optimize/RealContentHashPlugin.js#L140
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE happens after minification
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE) but before re-hashing
+		 * (PROCESS_ASSETS_STAGE_OPTIMIZE_HASH).
+		 *
+		 * PROCESS_ASSETS_STAGE_SUMMARIZE isn't actually used by Webpack, but there seemed
+		 * to be other plugins that were relying on it to summarize assets, so it makes sense
+		 * to run just before that.
+		 *
+		 * All "process assets" stages:
+		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
+		 */
+		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
+		compilation.hooks.processAssets.tap(
+			{
+				name,
+				stage: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
+				additionalAssets: true,
+			},
+			callback,
+		);
+	} else {
+		// Triggered after minification, which usually happens in optimizeChunkAssets
+		compilation.hooks.optimizeAssets.tap(
+			name,
+			callback,
+		);
+	}
 };
