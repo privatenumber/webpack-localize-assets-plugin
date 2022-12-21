@@ -22,20 +22,35 @@
 	"files": [
 		"dist"
 	],
-	"main": "dist/index.js",
-	"scripts": {
-		"lint": "eslint .",
-		"build": "tsc",
-		"typecheck": "tsc --noEmit",
-		"pretest": "npm run build",
-		"test": "npm run test:wp4 && npm run test:wp5",
-		"test:wp4": "jest",
-		"test:wp5": "WEBPACK=5 jest"
-	},
-	"husky": {
-		"hooks": {
-			"pre-commit": "npm run build && lint-staged && npm test"
+	"main": "./dist/index.cjs",
+	"types": "./dist/index.d.ts",
+	"imports": {
+		"#webpack-localize-assets-plugin": {
+			"types": "./src/index.d.ts",
+			"development": "./src/index.ts",
+			"default": "./dist/index.cjs"
+		},
+		"webpack": {
+			"webpack5": "webpack5",
+			"default": "webpack"
+		},
+		"webpack/*": {
+			"webpack5": "webpack5/*",
+			"default": "webpack/*"
 		}
+	},
+	"scripts": {
+		"prepare": "simple-git-hooks",
+		"lint": "eslint .",
+		"build": "pkgroll --target node12.20 --minify",
+		"type-check": "tsc --noEmit",
+		"dev": "tsx watch --loader alias-imports -C development -C webpack5 tests",
+		"test": "pnpm test:wp4 && pnpm test:wp5",
+		"test:wp4": "tsx --loader alias-imports tests",
+		"test:wp5": "tsx --loader alias-imports --conditions webpack5 tests"
+	},
+	"simple-git-hooks": {
+		"pre-commit": "pnpm build && pnpm lint-staged && pnpm test"
 	},
 	"lint-staged": {
 		"*.{js,ts}": "eslint"
@@ -46,34 +61,42 @@
 	"dependencies": {
 		"@types/estree": "^0.0.50",
 		"acorn": "^8.6.0",
-		"astring": "^1.8.1",
+		"astring": "^1.8.3",
 		"has-own-prop": "^2.0.0",
-		"magic-string": "^0.25.7",
+		"magic-string": "^0.27.0",
 		"source-map": "^0.7.3",
 		"webpack-sources": "^2.2.0"
 	},
 	"devDependencies": {
-		"@pvtnbr/eslint-config": "^0.6.1",
+		"@pvtnbr/eslint-config": "^0.33.0",
 		"@types/estree": "^0.0.50",
-		"@types/jest": "^27.0.3",
 		"@types/mini-css-extract-plugin": "^2.4.0",
 		"@types/webpack": "^4.41.32",
 		"@types/webpack-manifest-plugin": "^3.0.5",
+		"@types/webpack-sources": "^3.2.0",
+		"alias-imports": "^1.0.0",
 		"css-loader": "^5.2.4",
-		"es-jest": "^1.5.0",
-		"eslint": "^7.32.0",
-		"husky": "^4.3.8",
-		"jest": "^27.3.1",
+		"eslint": "^8.28.0",
 		"lint-staged": "^12.1.2",
+		"manten": "^0.6.0",
 		"mini-css-extract-plugin": "^1.6.0",
+		"pkgroll": "^1.5.0",
+		"simple-git-hooks": "^2.8.0",
 		"tempy": "^1.0.1",
-		"typescript": "^4.5.2",
+		"terser-webpack-plugin": "^5.3.6",
+		"tsx": "^3.12.1",
+		"typescript": "^4.9.3",
 		"webpack": "4.42.0",
 		"webpack-manifest-plugin": "^3.1.1",
-		"webpack-test-utils": "^1.1.0",
+		"webpack-test-utils": "^2.1.0",
 		"webpack5": "npm:webpack@5.10.1"
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr"
+	},
+	"pnpm": {
+		"patchedDependencies": {
+			"astring@1.8.3": "patches/astring@1.8.3.patch"
+		}
 	}
 }

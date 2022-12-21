@@ -2,29 +2,37 @@ name: Test
 
 on:
   push:
-    branches: [develop]
+    branches: develop
   pull_request:
-    branches: [master, develop]
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [12.x, 14.x]
-
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
-    - name: Install dependencies
-      run: npx ci
-    - name: Test
-      run: npm run test
+        node-version-file: '.nvmrc'
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2.2.2
+      with:
+        version: 7
+        run_install: true
+
     - name: Lint
-      run: npm run lint
+      run: pnpm lint
+
+    - name: Type check
+      run: pnpm type-check
+
+    - name: Build
+      run: pnpm build
+
+    - name: Test
+      run: pnpm test

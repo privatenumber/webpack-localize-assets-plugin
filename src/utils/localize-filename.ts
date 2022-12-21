@@ -1,18 +1,10 @@
 import assert from 'assert';
-import {
-	LocaleName,
-	WP5,
-} from '../types';
-import {
-	isWebpack5Compilation,
-} from './webpack';
+import { Compilation } from '../types-internal.js';
+import { replaceAll } from './strings';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { name } = require('../../package.json');
-
-export const interpolateLocaleToFileName = (
-	compilation: WP5.Compilation,
-	replaceWith: LocaleName,
+export const replaceLocaleInAssetName = (
+	compilation: Compilation,
+	replaceWith: string,
 	requireLocaleInFilename?: boolean,
 ) => {
 	const { filename, chunkFilename } = compilation.outputOptions;
@@ -27,31 +19,20 @@ export const interpolateLocaleToFileName = (
 		}
 	}
 
-	const interpolateHook = (
+	return (
 		filePath: string | ((data: any) => string),
 		data: any,
 	) => {
-		// Only for WP4. In WP5, the function is already called.
-		// WP4: https://github.com/webpack/webpack/blob/758269e/lib/TemplatedPathPlugin.js#L84
+		/**
+		 * Only for WP4. In WP5, the function is already called.
+		 * WP4: https://github.com/webpack/webpack/blob/758269e/lib/TemplatedPathPlugin.js#L84
+		 */
 		if (typeof filePath === 'function') {
 			filePath = filePath(data);
 		}
 
-		filePath = filePath.replace(/\[locale\]/g, replaceWith);
+		filePath = replaceAll(filePath, '[locale]', replaceWith);
 
 		return filePath;
 	};
-
-	if (isWebpack5Compilation(compilation)) {
-		compilation.hooks.assetPath.tap(
-			name,
-			interpolateHook,
-		);
-	} else {
-		// @ts-expect-error Missing assetPath hook from @type
-		compilation.mainTemplate.hooks.assetPath.tap(
-			name,
-			interpolateHook,
-		);
-	}
 };
