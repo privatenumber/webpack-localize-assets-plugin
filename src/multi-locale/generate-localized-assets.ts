@@ -61,7 +61,7 @@ const transformAsset = <Source extends SourceBase>(
 const isJsFile = /\.js$/;
 const isSourceMap = /\.js\.map$/;
 
-export const generateLocalizedAssets = async (
+export const generateLocalizedAssets = (
 	compilation: Compilation,
 	locales: LocaleData,
 	sourceMapForLocales: LocaleName[],
@@ -79,7 +79,7 @@ export const generateLocalizedAssets = async (
 		locales,
 	);
 
-	await Promise.all(assets.map(async (asset) => {
+	for (const asset of assets) {
 		const { source, map } = asset.source.sourceAndMap() as SourceAndMapResult;
 		const localizedAssetNames: string[] = [];
 
@@ -153,5 +153,5 @@ export const generateLocalizedAssets = async (
 
 		// Delete original unlocalized asset
 		deleteAsset(compilation, asset.name, localizedAssetNames);
-	}));
+	}
 };

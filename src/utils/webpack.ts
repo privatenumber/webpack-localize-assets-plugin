@@ -162,7 +162,7 @@ export const onAssetPath = (
 
 export const onOptimizeAssets = (
 	compilation: Compilation,
-	callback: () => Promise<void>,
+	callback: () => void,
 ) => {
 	if (isWebpack5Compilation(compilation)) {
 		/**
@@ -182,7 +182,7 @@ export const onOptimizeAssets = (
 		 * https://github.com/webpack/webpack/blob/f0298fe46f/lib/Compilation.js#L5125-L5204
 		 */
 		const Webpack5Compilation = compilation.constructor as typeof WP5.Compilation;
-		compilation.hooks.processAssets.tapPromise(
+		compilation.hooks.processAssets.tap(
 			{
 				name,
 				stage: Webpack5Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1,
@@ -192,7 +192,7 @@ export const onOptimizeAssets = (
 		);
 	} else {
 		// Triggered after minification, which usually happens in optimizeChunkAssets
-		compilation.hooks.optimizeAssets.tapPromise(
+		compilation.hooks.optimizeAssets.tap(
 			name,
 			callback,
 		);
