@@ -12,7 +12,7 @@ import {
 import { onAssetPath, onOptimizeAssets } from '../utils/webpack.js';
 import { replaceLocaleInAssetName } from '../utils/localize-filename.js';
 import { name } from '../../package.json';
-import { insertPlaceholderFunction } from './insert-placeholder-function.js';
+import { insertPlaceholderFunction } from './placeholder-function.js';
 import { generateLocalizedAssets } from './generate-localized-assets.js';
 import { assetNamePlaceholder } from './asset-name.js';
 
@@ -84,7 +84,6 @@ export const handleMultiLocaleLocalization = (
 			const localizedModules = modules
 				.map(module => module.buildInfo.localized)
 				.filter(Boolean);
-				// TODO is this necessary? Wouldn't it always be true based on multi-locale code
 
 			// TODO: Probably needs to be sorted?
 			if (localizedModules.length > 0) {

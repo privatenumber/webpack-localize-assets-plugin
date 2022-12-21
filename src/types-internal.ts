@@ -41,3 +41,8 @@ export type NormalModuleFactory = Parameters<WP5.Compiler['newCompilation']>[0][
 export type Module = WP4.compilation.Module | WP5.Module;
 
 export type LocalesMap<LocalizedData = string> = Record<LocaleName, LocaleStrings<LocalizedData>>;
+
+export type Location = {
+	start: number;
+	end: number;
+};
