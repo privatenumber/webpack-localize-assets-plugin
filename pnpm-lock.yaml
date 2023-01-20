@@ -39,9 +39,7 @@ dependencies:
   '@types/estree': 0.0.50
   acorn: 8.6.0
   astring: 1.8.3_hcy575fszvf2h6jcslxbs2omga
-  has-own-prop: 3.1.0
   magic-string: 0.27.0
-  source-map: 0.7.3
   webpack-sources: 2.2.0
 
 devDependencies:
@@ -53,11 +51,13 @@ devDependencies:
   alias-imports: 1.0.0
   css-loader: 5.2.4_webpack@4.42.0
   eslint: 8.32.0
+  has-own-prop: 3.1.0
   lint-staged: 13.1.0
   manten: 0.6.1
   mini-css-extract-plugin: 1.6.0_webpack@4.42.0
   pkgroll: 1.8.0_typescript@4.9.4
   simple-git-hooks: 2.8.1
+  source-map: 0.7.3
   tempy: 1.0.1
   terser-webpack-plugin: 5.3.6_webpack@4.42.0
   tsx: 3.12.2
@@ -3078,7 +3078,7 @@ packages:
   /has-own-prop/3.1.0:
     resolution: {integrity: sha512-SmePZSzKBvCRxpjiG9tCzlTPoXEgaKP4n5MqsYC1E7ys+D95vrZhrV3gFlPUHj1AtJDtO9KVHn4XRrtUqSfJ2w==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-    dev: false
+    dev: true
 
   /has-property-descriptors/1.0.0:
     resolution: {integrity: sha512-62DVLZGoiEBDHQyqG4w9xCuZ7eJEwNmJRWw2VY84Oedb7WFcA27fiEVe8oUQx9hAUJ4ekurquucTGwsyO1XGdQ==}
@@ -5306,6 +5306,7 @@ packages:
   /source-map/0.7.3:
     resolution: {integrity: sha512-CkCj6giN3S+n9qrYiBTX5gystlENnRW5jZeNLHpe6aue+SrHcG5VYwujhW9s4dY31mEGsxBDrHR6oI69fTXsaQ==}
     engines: {node: '>= 8'}
+    dev: true
 
   /sourcemap-codec/1.4.8:
     resolution: {integrity: sha512-9NykojV5Uih4lgo5So5dtw+f0JgJX30KCNI8gwhz2J9A15wD0Ml6tjHKwf6fTSa6fAdVBdZeNOs9eJ71qCk8vA==}

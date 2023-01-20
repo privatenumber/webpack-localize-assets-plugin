@@ -1,6 +1,6 @@
 import { SourceAndMapResult, RawSource, SourceMapSource } from 'webpack-sources';
 import MagicString from 'magic-string';
-import { RawSourceMap } from 'source-map';
+import type { RawSourceMap } from 'source-map';
 import { deleteAsset } from '../utils/webpack.js';
 import {
 	Compilation,
