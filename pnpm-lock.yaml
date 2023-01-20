@@ -1,9 +1,9 @@
 lockfileVersion: 5.4
 
 patchedDependencies:
-  astring@1.8.3:
-    hash: hcy575fszvf2h6jcslxbs2omga
-    path: patches/astring@1.8.3.patch
+  astring@1.8.4:
+    hash: vm4vvif2xhq2qzswqzindfy2di
+    path: patches/astring@1.8.4.patch
 
 specifiers:
   '@pvtnbr/eslint-config': ^0.33.0
@@ -14,7 +14,7 @@ specifiers:
   '@types/webpack-sources': ^3.2.0
   acorn: ^8.6.0
   alias-imports: ^1.0.0
-  astring: ^1.8.3
+  astring: ^1.8.4
   css-loader: ^5.2.4
   eslint: ^8.32.0
   has-own-prop: ^3.1.0
@@ -38,7 +38,7 @@ specifiers:
 dependencies:
   '@types/estree': 0.0.50
   acorn: 8.6.0
-  astring: 1.8.3_hcy575fszvf2h6jcslxbs2omga
+  astring: 1.8.4_vm4vvif2xhq2qzswqzindfy2di
   magic-string: 0.27.0
   webpack-sources: 2.2.0
 
@@ -1154,8 +1154,8 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /astring/1.8.3_hcy575fszvf2h6jcslxbs2omga:
-    resolution: {integrity: sha512-sRpyiNrx2dEYIMmUXprS8nlpRg2Drs8m9ElX9vVEXaCB4XEAJhKfs7IcX0IwShjuOAjLR6wzIrgoptz1n19i1A==}
+  /astring/1.8.4_vm4vvif2xhq2qzswqzindfy2di:
+    resolution: {integrity: sha512-97a+l2LBU3Op3bBQEff79i/E4jMD2ZLFD8rHx9B6mXyB2uQwhJQYfiDqUwtfjF4QA1F2qs//N6Cw8LetMbQjcw==}
     hasBin: true
     dev: false
     patched: true
