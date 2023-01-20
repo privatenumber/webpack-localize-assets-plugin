@@ -17,7 +17,7 @@ specifiers:
   astring: ^1.8.3
   css-loader: ^5.2.4
   eslint: ^8.32.0
-  has-own-prop: ^2.0.0
+  has-own-prop: ^3.1.0
   lint-staged: ^13.1.0
   magic-string: ^0.27.0
   manten: ^0.6.1
@@ -39,7 +39,7 @@ dependencies:
   '@types/estree': 0.0.50
   acorn: 8.6.0
   astring: 1.8.3_hcy575fszvf2h6jcslxbs2omga
-  has-own-prop: 2.0.0
+  has-own-prop: 3.1.0
   magic-string: 0.27.0
   source-map: 0.7.3
   webpack-sources: 2.2.0
@@ -3075,9 +3075,9 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /has-own-prop/2.0.0:
-    resolution: {integrity: sha512-Pq0h+hvsVm6dDEa8x82GnLSYHOzNDt7f0ddFa3FqcQlgzEiptPqL+XrOJNavjOzSYiYWIrgeVYYgGlLmnxwilQ==}
-    engines: {node: '>=8'}
+  /has-own-prop/3.1.0:
+    resolution: {integrity: sha512-SmePZSzKBvCRxpjiG9tCzlTPoXEgaKP4n5MqsYC1E7ys+D95vrZhrV3gFlPUHj1AtJDtO9KVHn4XRrtUqSfJ2w==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
     dev: false
 
   /has-property-descriptors/1.0.0:

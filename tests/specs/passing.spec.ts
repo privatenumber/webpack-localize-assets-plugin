@@ -7,8 +7,8 @@ import webpack from 'webpack';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import type { Compilation } from 'webpack5';
-import { configureWebpack } from '../utils/configure-webpack';
-import { localesSingle, localesMulti } from '../utils/localization-data';
+import { configureWebpack } from '../utils/configure-webpack.js';
+import { localesSingle, localesMulti } from '../utils/localization-data.js';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
 export default testSuite(({ describe }, isWebpack5?: boolean) => {

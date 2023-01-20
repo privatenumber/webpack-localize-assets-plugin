@@ -1,7 +1,7 @@
 import { testSuite, expect } from 'manten';
 import { build } from 'webpack-test-utils';
-import { localesSingle, localesMulti } from '../utils/localization-data';
-import { configureWebpack } from '../utils/configure-webpack';
+import { localesSingle, localesMulti } from '../utils/localization-data.js';
+import { configureWebpack } from '../utils/configure-webpack.js';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
 export default testSuite(({ describe }) => {
