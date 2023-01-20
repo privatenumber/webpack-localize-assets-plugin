@@ -60,7 +60,7 @@
 		"webpack": "^4.42.0 || ^5.10.0"
 	},
 	"dependencies": {
-		"@types/estree": "^0.0.50",
+		"@types/estree": "^1.0.0",
 		"acorn": "^8.8.1",
 		"astring": "^1.8.4",
 		"magic-string": "^0.27.0",
@@ -68,7 +68,6 @@
 	},
 	"devDependencies": {
 		"@pvtnbr/eslint-config": "^0.33.0",
-		"@types/estree": "^0.0.50",
 		"@types/mini-css-extract-plugin": "^2.4.0",
 		"@types/webpack": "^4.41.32",
 		"@types/webpack-manifest-plugin": "^3.0.5",
