@@ -12,7 +12,7 @@ specifiers:
   '@types/webpack': ^4.41.32
   '@types/webpack-manifest-plugin': ^3.0.5
   '@types/webpack-sources': ^3.2.0
-  acorn: ^8.6.0
+  acorn: ^8.8.1
   alias-imports: ^1.0.0
   astring: ^1.8.4
   css-loader: ^5.2.4
@@ -37,7 +37,7 @@ specifiers:
 
 dependencies:
   '@types/estree': 0.0.50
-  acorn: 8.6.0
+  acorn: 8.8.1
   astring: 1.8.4_vm4vvif2xhq2qzswqzindfy2di
   magic-string: 0.27.0
   webpack-sources: 2.2.0
@@ -946,17 +946,10 @@ packages:
     hasBin: true
     dev: true
 
-  /acorn/8.6.0:
-    resolution: {integrity: sha512-U1riIR+lBSNi3IbxtaHOIKdH8sLFv3NYfNv8sg7ZsNhcfl4HF2++BfqqrNAxoCLQW1iiylOj76ecnaUxz+z9yw==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
-    dev: false
-
   /acorn/8.8.1:
     resolution: {integrity: sha512-7zFpHzhnqYKrkYdUjF1HI1bzd0VygEGX8lFk4k5zVMqHEoES+P+7TKI+EvLO9WVMJ8eekdO0aDEK044xTXwPPA==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-    dev: true
 
   /aggregate-error/3.1.0:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}

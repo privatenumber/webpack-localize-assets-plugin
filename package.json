@@ -61,7 +61,7 @@
 	},
 	"dependencies": {
 		"@types/estree": "^0.0.50",
-		"acorn": "^8.6.0",
+		"acorn": "^8.8.1",
 		"astring": "^1.8.4",
 		"magic-string": "^0.27.0",
 		"webpack-sources": "^2.2.0"
