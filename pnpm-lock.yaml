@@ -22,7 +22,7 @@ specifiers:
   magic-string: ^0.27.0
   manten: ^0.6.1
   mini-css-extract-plugin: ^1.6.0
-  pkgroll: ^1.8.0
+  pkgroll: ^1.8.1
   simple-git-hooks: ^2.8.1
   source-map: ^0.7.3
   tempy: ^1.0.1
@@ -55,7 +55,7 @@ devDependencies:
   lint-staged: 13.1.0
   manten: 0.6.1
   mini-css-extract-plugin: 1.6.0_webpack@4.42.0
-  pkgroll: 1.8.0_typescript@4.9.4
+  pkgroll: 1.8.1_typescript@4.9.4
   simple-git-hooks: 2.8.1
   source-map: 0.7.3
   tempy: 1.0.1
@@ -951,6 +951,12 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  /acorn/8.8.2:
+    resolution: {integrity: sha512-xjIYgE8HBrkpd/sJqOGNspf8uHG+NOHGOw6a/Urj8taM2EXfdNAH2oFcPeIFfsv3+kz/mJrS5VuMqbNLjCa2vw==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+    dev: true
+
   /aggregate-error/3.1.0:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
     engines: {node: '>=8'}
@@ -1320,7 +1326,7 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
     dependencies:
-      caniuse-lite: 1.0.30001446
+      caniuse-lite: 1.0.30001447
       electron-to-chromium: 1.4.284
       node-releases: 2.0.8
       update-browserslist-db: 1.0.10_browserslist@4.21.4
@@ -1403,8 +1409,8 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /caniuse-lite/1.0.30001446:
-    resolution: {integrity: sha512-fEoga4PrImGcwUUGEol/PoFCSBnSkA9drgdkxXkJLsUBOnJ8rs3zDv6ApqYXGQFOyMPsjh79naWhF4DAxbF8rw==}
+  /caniuse-lite/1.0.30001447:
+    resolution: {integrity: sha512-bdKU1BQDPeEXe9A39xJnGtY0uRq/z5osrnXUw0TcK+EYno45Y+U7QU9HhHEyzvMDffpYadFXi3idnSNkcwLkTw==}
     dev: true
 
   /chalk/2.4.2:
@@ -4582,8 +4588,8 @@ packages:
       find-up: 5.0.0
     dev: true
 
-  /pkgroll/1.8.0_typescript@4.9.4:
-    resolution: {integrity: sha512-udmzTqrlFcUxHG+KU+bYZqb1Z/2LFFRGwLg4EuOCe6t52dIFJYrWE7iAqY3/sU9EmwDQqIVoLbxX5NKj1d1h6Q==}
+  /pkgroll/1.8.1_typescript@4.9.4:
+    resolution: {integrity: sha512-IZfG5PPznmdNlERURR4fwDfx11S5HXrbtlQ2K3S7j47EI3pF1NI0teqtY+Pq11tWXogxSiYrRsp3lboEKaCx2g==}
     hasBin: true
     peerDependencies:
       typescript: ^4.1
@@ -5620,7 +5626,7 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
     dependencies:
-      acorn: 8.8.1
+      acorn: 8.8.2
       commander: 2.20.3
       source-map: 0.6.1
       source-map-support: 0.5.21
@@ -6059,7 +6065,7 @@ packages:
       '@webassemblyjs/helper-module-context': 1.9.1
       '@webassemblyjs/wasm-edit': 1.9.1
       '@webassemblyjs/wasm-parser': 1.9.1
-      acorn: 8.8.1
+      acorn: 8.8.2
       browserslist: 4.21.4
       chrome-trace-event: 1.0.3
       enhanced-resolve: 5.12.0
