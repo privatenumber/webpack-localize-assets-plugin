@@ -48,7 +48,8 @@
 		"dev": "tsx watch --loader alias-imports -C development -C webpack5 tests",
 		"test": "pnpm test:wp4 && pnpm test:wp5",
 		"test:wp4": "tsx --loader alias-imports tests",
-		"test:wp5": "tsx --loader alias-imports --conditions webpack5 tests"
+		"test:wp5": "tsx --loader alias-imports --conditions webpack5 tests",
+		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm build && pnpm lint-staged && pnpm test"
@@ -73,6 +74,7 @@
 		"@types/webpack-manifest-plugin": "^3.0.5",
 		"@types/webpack-sources": "^3.2.0",
 		"alias-imports": "^1.0.0",
+		"clean-pkg-json": "^1.2.0",
 		"css-loader": "^5.2.4",
 		"eslint": "^8.32.0",
 		"has-own-prop": "^3.1.0",
