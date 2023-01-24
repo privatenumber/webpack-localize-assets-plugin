@@ -15,6 +15,7 @@ specifiers:
   acorn: ^8.8.2
   alias-imports: ^1.0.0
   astring: ^1.8.4
+  clean-pkg-json: ^1.2.0
   css-loader: ^5.2.4
   eslint: ^8.32.0
   has-own-prop: ^3.1.0
@@ -49,6 +50,7 @@ devDependencies:
   '@types/webpack-manifest-plugin': 3.0.5
   '@types/webpack-sources': 3.2.0
   alias-imports: 1.0.0
+  clean-pkg-json: 1.2.0
   css-loader: 5.2.4_webpack@4.42.0
   eslint: 8.32.0
   has-own-prop: 3.1.0
@@ -1509,6 +1511,11 @@ packages:
       define-property: 0.2.5
       isobject: 3.0.1
       static-extend: 0.1.2
+    dev: true
+
+  /clean-pkg-json/1.2.0:
+    resolution: {integrity: sha512-QHBWWOtpSCv5nfMFKwyxn4WMvkYE0msxj5xiqejYGqYepWVrK7O/om1Vn6nSl/WPtYn8ge9YmSCbTi1Hp8k+Hg==}
+    hasBin: true
     dev: true
 
   /clean-regexp/1.0.0:
