@@ -1,4 +1,4 @@
-import type MagicString from 'magic-string';
+import MagicString from 'magic-string';
 import WebpackError from 'webpack/lib/WebpackError.js';
 import { parseExpressionAt } from 'acorn';
 import type {
@@ -13,7 +13,7 @@ import { findSubstringLocations } from '../utils/strings.js';
 import { name } from '../../package.json';
 import type {
 	Location, Compilation, WP5, LocalizeCompiler,
-} from '../types-internal';
+} from '../types-internal.js';
 import { pushUniqueError } from '../utils/webpack.js';
 import { callLocalizeCompiler } from '../utils/call-localize-compiler.js';
 
@@ -110,7 +110,7 @@ export const createLocalizedStringInserter = (
 	const placeholderLocations = locatePlaceholderFunctions(assetCode);
 
 	return (
-		ms: MagicString,
+		ms: MagicString.default,
 		{ locale }: { locale: string },
 	) => {
 		const localeData = locales.data[locale];

@@ -1,6 +1,6 @@
 import { SourceAndMapResult, RawSource, SourceMapSource } from 'webpack-sources';
 import MagicString from 'magic-string';
-import { RawSourceMap } from 'source-map';
+import type { RawSourceMap } from 'source-map';
 import { deleteAsset } from '../utils/webpack.js';
 import {
 	Compilation,
@@ -26,12 +26,13 @@ type SourceBase = {
 const transformAsset = <Source extends SourceBase>(
 	source: Source,
 	transformations: ((
-		magicStringInstance: MagicString,
+		magicStringInstance: MagicString.default,
 		source: Source,
 	) => void)[],
 	map?: RawSourceMap | null | false,
 ) => {
-	const magicStringInstance = new MagicString(source.code);
+	// @ts-expect-error incorrect MagicString types
+	const magicStringInstance = new MagicString(source.code) as MagicString.default;
 
 	for (const transformer of transformations) {
 		transformer(magicStringInstance, source);
