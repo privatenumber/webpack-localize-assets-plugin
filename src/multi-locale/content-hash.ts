@@ -60,6 +60,10 @@ export const createHashManager = (
 			const contentHashLocations = contentHashes.map(
 				hash => [hash, findSubstringLocations(sourceString, hash)] as const,
 			);
+			// indicate nothing to do here
+			if (contentHashLocations.length === 0) {
+				return undefined;
+			}
 
 			return (
 				ms: MagicString.default,
