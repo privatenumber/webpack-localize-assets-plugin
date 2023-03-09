@@ -1,9 +1,9 @@
-name: Publish Node.js Package (While main package being updated)
+name: Temp Publish Node.js (shoryukyzan/hot-module-reload)
 
 on:
   push:
     branches:
-      - "master"
+      - "shoryukyzan/hot-module-reload"
 
 jobs:
   release:
