@@ -3,7 +3,7 @@ name: Publish Node.js Package (While main package being updated)
 on:
   push:
     branches:
-      - master
+      - "master"
 
 jobs:
   release:
