@@ -20,7 +20,7 @@
 		"email": "hiroki.osame@gmail.com"
 	},
 	"publishConfig": {
-		"registry": "https://npm.pkg.github.com/"
+		"@shoryukyzan:registry": "https://npm.pkg.github.com/"
 	},
 	"type": "module",
 	"files": [
