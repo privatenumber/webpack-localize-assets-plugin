@@ -6,23 +6,28 @@ on:
       - "shoryukyzan/hot-module-reload"
 
 jobs:
-  publish-gpr:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version-file: ".nvmrc"
           registry-url: https://npm.pkg.github.com/
           scope: "@shoryukyzan"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2.2.2
         with:
           version: 7
           run_install: true
+
       - name: Build
         run: pnpm build
-      - run: git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com" && git config --global user.name "$GITHUB_ACTOR"
+
       - name: Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
