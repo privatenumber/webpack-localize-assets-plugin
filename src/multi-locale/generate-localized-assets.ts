@@ -111,7 +111,6 @@ export const generateLocalizedAssets = (
 				&& !insertLocalizedStrings
 				&& !insertLocalizedAssetName
 				&& !insertLocalizedContentHash) {
-				console.log(`XXX already processed or nothing to do ${asset.name}`); // XXX
 				continue;
 			}
 
@@ -120,7 +119,6 @@ export const generateLocalizedAssets = (
 				// TODO ideally would be nice to write a new file that loads the
 				// 	appropriate one based on client-side code
 				if (isWP5 && locale !== (hmrLocale ?? 'en-US') && asset.info.hotModuleReplacement) {
-					console.log(`XXX skipping non-english/non-hmrlocale locale parsing ${locale} ${asset.name}`); // XXX
 					continue;
 				}
 
@@ -161,7 +159,6 @@ export const generateLocalizedAssets = (
 						newAsset,
 						newInfo,
 					);
-					console.log('XXX updating localized asset!', localizedAssetName); // XXX
 				} else {
 					// push to list for later deletion
 					localizedAssetNames.push(localizedAssetName);
@@ -171,7 +168,6 @@ export const generateLocalizedAssets = (
 						newAsset,
 						newInfo,
 					);
-					console.log('XXX emitting localized asset!', localizedAssetName); // XXX
 				}
 			}
 		} else {
