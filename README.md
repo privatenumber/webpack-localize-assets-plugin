@@ -1,3 +1,10 @@
+# To install this fork:
+
+```
+npm i -S 'ShoryuKyzan/webpack-localize-assets-plugin#npm/shoryukyzan/hot-module-reload'
+```
+This is based on version 1.5.4 of the upstream.
+
 # webpack-localize-assets-plugin <a href="https://npm.im/webpack-localize-assets-plugin"><img src="https://badgen.net/npm/v/webpack-localize-assets-plugin"></a> <a href="https://npm.im/webpack-localize-assets-plugin"><img src="https://badgen.net/npm/dm/webpack-localize-assets-plugin"></a> <a href="https://packagephobia.now.sh/result?p=webpack-localize-assets-plugin"><img src="https://packagephobia.now.sh/badge?p=webpack-localize-assets-plugin"></a>
 
 Localize your Webpack bundle with multiple locales.
