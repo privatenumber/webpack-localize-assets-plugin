@@ -7,6 +7,7 @@ import {
 	onAssetPath,
 } from './utils/webpack.js';
 import {
+	onLocaleUsage,
 	onLocalizerCall,
 	onStringKey,
 } from './utils/on-localizer-call.js';
@@ -25,6 +26,7 @@ export const handleSingleLocaleLocalization = (
 	locales: LocaleData,
 	localizeCompiler: LocalizeCompiler,
 	functionNames: string[],
+	localeVariable: string,
 	trackUsedKeys?: Set<string>,
 ) => {
 	const [localeName] = locales.names;
@@ -32,6 +34,7 @@ export const handleSingleLocaleLocalization = (
 	onLocalizerCall(
 		normalModuleFactory,
 		functionNames,
+		localeVariable,
 		onStringKey(
 			locales,
 			options,
@@ -55,6 +58,10 @@ export const handleSingleLocaleLocalization = (
 					localeName,
 				);
 			},
+		),
+		onLocaleUsage(
+			locales,
+			() => JSON.stringify(localeName),
 		),
 	);
 

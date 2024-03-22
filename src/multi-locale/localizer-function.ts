@@ -6,7 +6,7 @@ import type {
 	SimpleCallExpression,
 } from 'estree';
 import { stringifyAstNode } from '../utils/stringify-ast-node.js';
-import type { StringKeyHit } from '../utils/on-localizer-call.js';
+import type { StringKeyHit, VariableHit } from '../utils/on-localizer-call.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
 import { sha256 } from '../utils/sha256.js';
 import { findSubstringLocations } from '../utils/strings.js';
@@ -17,7 +17,8 @@ import type {
 import { pushUniqueError } from '../utils/webpack.js';
 import { callLocalizeCompiler } from '../utils/call-localize-compiler.js';
 
-const placeholderFunctionName = `_placeholder${sha256(name).slice(0, 8)}`;
+const placeholderFunctionName = `_placeholder_function${sha256(name).slice(0, 8)}`;
+const placeholderLocaleName = `_placeholder_name${sha256(name).slice(0, 8)}`;
 
 /**
  * For Multiple locales
@@ -45,6 +46,18 @@ export const insertPlaceholderFunction = (
 	const callExpression = stringifyAstNode(callNode);
 
 	return `${placeholderFunctionName}(${callExpression},${placeholderFunctionName})`;
+};
+
+export const insertPlaceholderName = (
+	locales: LocaleData,
+	{ module }: VariableHit,
+) : string => {
+	// Track used keys for hash
+	if (!module.buildInfo.localized) {
+		module.buildInfo.localized = {};
+	}
+
+	return placeholderLocaleName;
 };
 
 type PlaceholderLocation = {
@@ -84,6 +97,25 @@ const locatePlaceholderFunctions = (
 					+ 1 // closing bracket
 				),
 			},
+		});
+	}
+
+	return locations;
+};
+
+const locatePlaceholderLocales = (
+	assetCode: string,
+) => {
+	const placeholderIndices = findSubstringLocations(assetCode, placeholderLocaleName);
+
+	const locations: Location[] = [];
+
+	while (placeholderIndices.length > 0) {
+		const start = placeholderIndices.shift()!;
+
+		locations.push({
+			start,
+			end: start + placeholderLocaleName.length,
 		});
 	}
 
@@ -163,6 +195,25 @@ export const createLocalizedStringInserter = (
 
 			// For Webpack 5 cache hits
 			trackStringKeys?.delete(stringKey);
+		}
+	};
+};
+
+export const createLocaleInserter = (
+	assetCode: string,
+) => {
+	const placeholderLocations = locatePlaceholderLocales(assetCode);
+
+	return (
+		ms: MagicString.default,
+		{ locale }: { locale: string },
+	) => {
+		for (const placeholder of placeholderLocations) {
+			ms.overwrite(
+				placeholder.start,
+				placeholder.end,
+				JSON.stringify(locale),
+			);
 		}
 	};
 };

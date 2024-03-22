@@ -10,7 +10,7 @@ import {
 } from '../types-internal.js';
 import type { StringKeysCollection } from '../utils/warn-on-unused-keys.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
-import { createLocalizedStringInserter } from './localizer-function.js';
+import { createLocaleInserter, createLocalizedStringInserter } from './localizer-function.js';
 import {
 	assetNamePlaceholder,
 	createLocalizedAssetNameInserter,
@@ -93,6 +93,9 @@ export const generateLocalizedAssets = (
 				locales,
 				trackStringKeys,
 			);
+			const insertLocale = createLocaleInserter(
+				code,
+			);
 			const insertLocalizedAssetName = createLocalizedAssetNameInserter(code);
 			const insertLocalizedContentHash = hashManager.getHashLocations(code);
 
@@ -124,6 +127,7 @@ export const generateLocalizedAssets = (
 						},
 						[
 							insertLocalizedStrings,
+							insertLocale,
 							insertLocalizedAssetName,
 							insertLocalizedContentHash,
 						],

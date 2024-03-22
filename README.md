@@ -123,6 +123,8 @@ new LocalizeAssetsPlugin({
 })
 ```
 
+To get the locale at runtime, you can use the `__locale` variable. This will be automatically replaced with locale.
+
 #### functionName
 Type: `string`
 
@@ -133,6 +135,18 @@ The function name to use to detect localization string keys.
 ```js
 const message = __('helloWorld') // => 'Hello world!'
 ```
+
+#### localeVariable
+Type: `string`
+
+Default: `__locale`
+
+The name of the variable to use to replace the locale of the asset with.
+
+```js
+const locale = __locale // => 'en'
+```
+
 #### throwOnMissing
 Type: `boolean`
 
