@@ -1,5 +1,5 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
-import type { SimpleCallExpression } from 'estree';
+import type { SimpleCallExpression, Identifier } from 'estree';
 import { name } from '../../package.json';
 import {
 	WP5,
@@ -10,6 +10,7 @@ import {
 	toConstantDependency,
 	reportModuleWarning,
 	onFunctionCall,
+	onExpression,
 } from './webpack.js';
 import type { LocaleData } from './load-locale-data.js';
 import { localizedStringKeyValidator } from './localized-string-key-validator.js';
@@ -20,12 +21,20 @@ export type StringKeyHit = {
 	module: WP5.NormalModule;
 };
 
+export type VariableHit = {
+	callNode: Identifier;
+	module: WP5.NormalModule;
+};
+
 type onLocalizerCallCallback = (stringKeyHit: StringKeyHit) => string | undefined;
+type onLocaleNameCallback = (variableHit: VariableHit) => string | undefined;
 
 export const onLocalizerCall = (
 	normalModuleFactory: NormalModuleFactory,
 	functionNames: string[],
-	callback: onLocalizerCallCallback,
+	localeVariable: string,
+	localizerCallback: onLocalizerCallCallback,
+	localNameCallback: onLocaleNameCallback,
 ) => {
 	onFunctionCall(
 		normalModuleFactory,
@@ -50,7 +59,7 @@ export const onLocalizerCall = (
 				return;
 			}
 
-			const replacement = callback({
+			const replacement = localizerCallback({
 				key: firstArgument.value,
 				callNode,
 				module,
@@ -60,6 +69,21 @@ export const onLocalizerCall = (
 				toConstantDependency(parser, replacement)(callNode);
 				return true;
 			}
+		},
+	);
+	onExpression(
+		normalModuleFactory,
+		localeVariable,
+		(parser, callNode) => {
+			const { module } = parser.state;
+
+			const replacement = localNameCallback({
+				callNode,
+				module,
+			});
+
+			toConstantDependency(parser, replacement)(callNode);
+			return true;
 		},
 	);
 };
@@ -84,4 +108,15 @@ export const onStringKey = (
 
 		return callback(stringKeyHit);
 	};
+};
+
+export const onLocaleUsage = (
+	locales: LocaleData,
+	callback: onLocaleNameCallback,
+): onLocaleNameCallback => (variableHit) => {
+	for (const fileDependency of locales.paths) {
+		variableHit.module.buildInfo.fileDependencies.add(fileDependency);
+	}
+
+	return callback(variableHit);
 };
