@@ -59,5 +59,26 @@ export default testSuite(({ describe }) => {
 			expect(statsOutput).toMatch(/index\.es\.js/);
 			expect(statsOutput).toMatch(/index\.ja\.js/);
 		});
+
+		test('with different name', async () => {
+			const built = await build(
+				{
+					'/src/index.js': 'export default __localeName;',
+				},
+				(config) => {
+					configureWebpack(config);
+
+					config.plugins!.push(
+						new WebpackLocalizeAssetsPlugin({
+							locales: localesSingle,
+							localeVariable: '__localeName',
+						}),
+					);
+				},
+			);
+
+			const enBuild = built.require('/dist/index.en.js');
+			expect(enBuild).toBe('en');
+		});
 	});
 });
