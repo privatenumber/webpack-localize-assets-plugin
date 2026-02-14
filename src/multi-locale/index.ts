@@ -6,13 +6,14 @@ import type {
 } from '../types-internal.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
 import {
+	onLocaleUsage,
 	onLocalizerCall,
 	onStringKey,
 } from '../utils/on-localizer-call.js';
 import { onAssetPath, onOptimizeAssets } from '../utils/webpack.js';
 import { replaceLocaleInAssetName } from '../utils/localize-filename.js';
 import { name } from '../../package.json';
-import { insertPlaceholderFunction } from './localizer-function.js';
+import { insertPlaceholderFunction, insertPlaceholderName } from './localizer-function.js';
 import { generateLocalizedAssets } from './generate-localized-assets.js';
 import { assetNamePlaceholder } from './asset-name.js';
 
@@ -23,11 +24,13 @@ export const handleMultiLocaleLocalization = (
 	locales: LocaleData,
 	localizeCompiler: LocalizeCompiler,
 	functionNames: string[],
+	localeVariable: string,
 	trackUsedKeys?: Set<string>,
 ) => {
 	onLocalizerCall(
 		normalModuleFactory,
 		functionNames,
+		localeVariable,
 		onStringKey(
 			locales,
 			options,
@@ -35,6 +38,10 @@ export const handleMultiLocaleLocalization = (
 				locales,
 				stringKeyHit,
 			),
+		),
+		onLocaleUsage(
+			locales,
+			variableHit => insertPlaceholderName(locales, variableHit),
 		),
 	);
 

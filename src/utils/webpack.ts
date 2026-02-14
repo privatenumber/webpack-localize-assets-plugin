@@ -1,6 +1,6 @@
 import webpack from 'webpack';
 import type WebpackError from 'webpack/lib/WebpackError.js';
-import type { SimpleCallExpression } from 'estree';
+import type { Identifier, SimpleCallExpression } from 'estree';
 import {
 	Webpack,
 	Compilation,
@@ -137,6 +137,37 @@ export const onFunctionCall = (
 			.for('javascript/esm')
 			.tap(name, handler);
 	}
+};
+
+export const onExpression = (
+	normalModuleFactory: NormalModuleFactory,
+	expressionName: string,
+	callback: (
+		parser: WP5.javascript.JavascriptParser,
+		node: Identifier,
+	) => void,
+) => {
+	const handler = (parser: WP5.javascript.JavascriptParser) => {
+		parser.hooks.expression
+			.for(expressionName)
+			.tap(
+				name,
+				node => callback(
+					parser,
+					node as Identifier,
+				),
+			);
+	};
+
+	normalModuleFactory.hooks.parser
+		.for('javascript/auto')
+		.tap(name, handler);
+	normalModuleFactory.hooks.parser
+		.for('javascript/dynamic')
+		.tap(name, handler);
+	normalModuleFactory.hooks.parser
+		.for('javascript/esm')
+		.tap(name, handler);
 };
 
 export const onAssetPath = (

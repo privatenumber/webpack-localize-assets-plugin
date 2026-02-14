@@ -12,6 +12,7 @@ export type UnprocessedLocalesMap<LocalizedData = string> = Record<
 export type Options<LocalizedData = string> = {
 	locales: UnprocessedLocalesMap<LocalizedData>;
 	functionName?: string;
+	localeVariable?: string;
 	throwOnMissing?: boolean;
 	sourceMapForLocales?: string[];
 	warnOnUnusedString?: boolean;
