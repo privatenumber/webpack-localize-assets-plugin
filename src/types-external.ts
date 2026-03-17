@@ -15,6 +15,11 @@ export type Options<LocalizedData = string> = {
 	throwOnMissing?: boolean;
 	sourceMapForLocales?: string[];
 	warnOnUnusedString?: boolean;
+	/**
+	 * Locale to use when making processing hot module
+	 * replacements (Webpack 5 only at the moment).
+	 */
+	hmrLocale?: string;
 } & LocalizeCompilerOption<LocalizedData>;
 
 type LocalizeCompilerOption<LocalizedData>

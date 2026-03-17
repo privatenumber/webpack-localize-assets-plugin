@@ -58,6 +58,11 @@ const locatePlaceholderFunctions = (
 	const placeholderIndices = findSubstringLocations(assetCode, placeholderFunctionName);
 	const locations: PlaceholderLocation[] = [];
 
+	// indicate nothing to do here
+	if (placeholderIndices.length === 0) {
+		return undefined;
+	}
+
 	while (placeholderIndices.length > 0) {
 		const start = placeholderIndices.shift()!;
 		const end = placeholderIndices.shift()!;
@@ -109,11 +114,17 @@ export const createLocalizedStringInserter = (
 	const isDevtoolEval = devtool && devtool.includes('eval');
 	const placeholderLocations = locatePlaceholderFunctions(assetCode);
 
+	// indicate nothing to do here
+	if (!placeholderLocations || placeholderLocations.length === 0) {
+		return undefined;
+	}
+
 	return (
 		ms: MagicString.default,
 		{ locale }: { locale: string },
 	) => {
 		const localeData = locales.data[locale];
+		// XXX this will be a 0 loop here
 		for (const placeholder of placeholderLocations) {
 			let { code } = placeholder;
 

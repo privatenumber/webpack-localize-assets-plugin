@@ -20,6 +20,10 @@ export const createLocalizedAssetNameInserter = (
 		sourceString,
 		assetNamePlaceholder,
 	);
+		// indicate nothing to do here
+	if (fileNamePlaceholderLocations.length === 0) {
+		return undefined;
+	}
 
 	return (
 		ms: MagicString.default,

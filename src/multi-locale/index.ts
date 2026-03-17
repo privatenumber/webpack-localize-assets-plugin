@@ -67,6 +67,7 @@ export const handleMultiLocaleLocalization = (
 			options.sourceMapForLocales || locales.names,
 			trackUsedKeys,
 			localizeCompiler,
+			options.hmrLocale,
 		),
 	);
 
