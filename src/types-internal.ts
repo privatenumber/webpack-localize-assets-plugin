@@ -9,7 +9,7 @@ import type {
 
 export * from './types-external.js';
 
-export function validateOptions<LocalizedData>(options: Options<LocalizedData>): void {
+export const validateOptions = <LocalizedData>(options: Options<LocalizedData>): void => {
 	if (!options) {
 		throw new Error('Options are required');
 	}
@@ -31,7 +31,7 @@ export function validateOptions<LocalizedData>(options: Options<LocalizedData>):
 			throw new Error('Can\'t use localizeCompiler and also specify functionName');
 		}
 	}
-}
+};
 
 export { WP4, WP5 };
 export type Webpack = typeof WP4 | typeof WP5;

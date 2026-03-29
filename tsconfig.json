@@ -1,13 +1,13 @@
 {
 	"compilerOptions": {
-		"module": "Node16",
-		"isolatedModules": true,
-		"esModuleInterop": true,
-		"strict": true,
-		"skipLibCheck": true,
-		"resolveJsonModule": true,
 
 		// Node 12
-		"target": "ES2019"
+		"target": "ES2019",
+		"module": "Node16",
+		"resolveJsonModule": true,
+		"strict": true,
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		"skipLibCheck": true,
 	},
 }

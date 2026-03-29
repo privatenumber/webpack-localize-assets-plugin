@@ -3,13 +3,13 @@ import { testSuite, expect } from 'manten';
 import { build, watch } from 'webpack-test-utils';
 import TerserPlugin from 'terser-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import webpack from 'webpack';
+import type webpack from 'webpack';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import type { Compilation } from 'webpack5';
+import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin';
 import { configureWebpack } from '../utils/configure-webpack.js';
 import { localesSingle, localesMulti } from '../utils/localization-data.js';
-import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
 export default testSuite(({ describe }, isWebpack5?: boolean) => {
 	describe('passing', ({ test }) => {
@@ -180,8 +180,10 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
+
 						new MiniCssExtractPlugin({
 							filename: '[name].[locale].css',
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
 						}) as any,
 					);
 				},
@@ -214,6 +216,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
 						}),
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
 						new MiniCssExtractPlugin() as any,
 					);
 				},
@@ -228,6 +231,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			const FakeMinifier = {
 				name: 'FakeMinfier',
 
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				apply(compiler: any) {
 					compiler.hooks.compilation.tap(FakeMinifier.name, (compilation: Compilation) => {
 						const checkAssets = () => {
@@ -440,6 +444,7 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 					});
 
 					config.plugins!.push(
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
 						new MiniCssExtractPlugin() as any,
 						new WebpackLocalizeAssetsPlugin({
 							locales: localesMulti,
@@ -509,7 +514,10 @@ export default testSuite(({ describe }, isWebpack5?: boolean) => {
 			const indexEnB = builtB.require('/dist/index.en.js');
 			expect(indexEnB).toBe(indexEnA);
 
-			await fs.rm(cacheDirectory, { recursive: true, force: true });
+			await fs.rm(cacheDirectory, {
+				recursive: true,
+				force: true,
+			});
 		});
 
 		test('warnOnUnusedString works with Webpack 5 cache', async () => {

@@ -9,9 +9,9 @@ import { name } from '../../package.json';
 
 export type StringKeysCollection = Set<LocalizedStringKey>;
 
-function getAllKeys(
+const getAllKeys = (
 	locales: LocalesMap,
-) {
+) => {
 	const allStringKeys: StringKeysCollection = new Set();
 
 	for (const localeName in locales) {
@@ -25,7 +25,7 @@ function getAllKeys(
 	}
 
 	return allStringKeys;
-}
+};
 
 export const warnOnUnusedKeys = (
 	compilation: Compilation,

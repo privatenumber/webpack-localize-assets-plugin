@@ -1,7 +1,7 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import type { SimpleCallExpression } from 'estree';
 import { name } from '../../package.json';
-import {
+import type {
 	WP5,
 	NormalModuleFactory,
 	Options,

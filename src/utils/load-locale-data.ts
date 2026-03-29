@@ -1,5 +1,5 @@
 import path from 'path';
-import { readFileSync } from 'fs';
+import type { readFileSync } from 'fs';
 import hasOwnProp from 'has-own-prop';
 import type {
 	Compiler,
@@ -27,10 +27,10 @@ export type LocaleData = {
 	paths: Set<LocaleFilePath>;
 };
 
-export function loadLocaleData(
+export const loadLocaleData = (
 	{ inputFileSystem }: Compiler,
 	unprocessedLocales: UnprocessedLocalesMap,
-): LocaleData {
+): LocaleData => {
 	const data: LocalesMap = {};
 	const paths = new Set<LocaleFilePath>();
 
@@ -54,4 +54,4 @@ export function loadLocaleData(
 		data,
 		paths,
 	};
-}
+};

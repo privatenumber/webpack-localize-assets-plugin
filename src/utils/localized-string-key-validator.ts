@@ -2,15 +2,15 @@ import WebpackError from 'webpack/lib/WebpackError.js';
 import hasOwnProp from 'has-own-prop';
 import type { NormalModule } from 'webpack5';
 import type { Expression } from 'estree';
-import { LocalizedStringKey } from '../types-internal.js';
+import type { LocalizedStringKey } from '../types-internal.js';
 import { name } from '../../package.json';
 import { reportModuleWarning } from './webpack.js';
 import type { LocaleData } from './load-locale-data.js';
 
-export function localizedStringKeyValidator(
+export const localizedStringKeyValidator = (
 	locales: LocaleData,
 	throwOnMissing?: boolean,
-) {
+) => {
 	const validatedKeys = new Set<LocalizedStringKey>();
 
 	return (
@@ -47,4 +47,4 @@ export function localizedStringKeyValidator(
 			}
 		}
 	};
-}
+};

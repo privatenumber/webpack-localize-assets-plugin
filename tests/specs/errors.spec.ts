@@ -1,8 +1,8 @@
 import { testSuite, expect } from 'manten';
 import { build, watch } from 'webpack-test-utils';
+import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin';
 import { localesEmpty, localesSingle, localesMulti } from '../utils/localization-data.js';
 import { configureWebpack } from '../utils/configure-webpack.js';
-import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin'; // eslint-disable-line import/no-unresolved
 
 export default testSuite(({ describe }) => {
 	describe('error-cases', ({ test, describe }) => {
@@ -75,7 +75,7 @@ export default testSuite(({ describe }) => {
 								functionName: 'bar',
 								locales: localesSingle,
 								localizeCompiler: {
-									foo() { return ''; },
+									foo: () => '',
 								},
 							}),
 						);

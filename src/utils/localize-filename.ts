@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { Compilation } from '../types-internal.js';
+import type { Compilation } from '../types-internal.js';
 import { replaceAll } from './strings.js';
 
 export const replaceLocaleInAssetName = (
@@ -11,17 +11,18 @@ export const replaceLocaleInAssetName = (
 
 	if (requireLocaleInFilename) {
 		if (typeof filename === 'string') {
-			assert(filename.includes('[locale]'), 'output.filename must include [locale]');
+			assert.ok(filename.includes('[locale]'), 'output.filename must include [locale]');
 		}
 
 		if (typeof chunkFilename === 'string') {
-			assert(chunkFilename.includes('[locale]'), 'output.chunkFilename must include [locale]');
+			assert.ok(chunkFilename.includes('[locale]'), 'output.chunkFilename must include [locale]');
 		}
 	}
 
 	return (
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		filePath: string | ((data: any) => string),
-		data: any,
+		data: any, // eslint-disable-line @typescript-eslint/no-explicit-any
 	) => {
 		/**
 		 * Only for WP4. In WP5, the function is already called.

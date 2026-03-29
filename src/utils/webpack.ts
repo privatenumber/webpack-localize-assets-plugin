@@ -1,7 +1,7 @@
 import webpack from 'webpack';
 import type WebpackError from 'webpack/lib/WebpackError.js';
 import type { SimpleCallExpression } from 'estree';
-import {
+import type {
 	Webpack,
 	Compilation,
 	WP5,
@@ -21,8 +21,8 @@ export const isWebpack5Compilation = (
 
 export const { toConstantDependency } = (
 	isWebpack5(webpack)
-		? require('webpack/lib/javascript/JavascriptParserHelpers') // eslint-disable-line node/global-require,import/no-unresolved
-		: require('webpack/lib/ParserHelpers') // eslint-disable-line node/global-require
+		? require('webpack/lib/javascript/JavascriptParserHelpers') // eslint-disable-line @typescript-eslint/no-require-imports,import-x/no-unresolved
+		: require('webpack/lib/ParserHelpers') // eslint-disable-line @typescript-eslint/no-require-imports
 );
 
 export const deleteAsset = (
@@ -56,7 +56,7 @@ export const deleteAsset = (
 		 */
 		for (const chunk of compilation.chunks) {
 			const hasAsset = chunk.files.indexOf(assetName);
-			if (hasAsset > -1) {
+			if (hasAsset !== -1) {
 				chunk.files.splice(hasAsset, 1, ...newAssetNames);
 			}
 		}
@@ -142,8 +142,9 @@ export const onFunctionCall = (
 export const onAssetPath = (
 	compilation: Compilation,
 	callback: (
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		filePath: string | ((data: any) => string),
-		data: any,
+		data: any, // eslint-disable-line @typescript-eslint/no-explicit-any
 	) => string,
 ) => {
 	if (isWebpack5Compilation(compilation)) {

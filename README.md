@@ -160,7 +160,7 @@ type LocalizeCompiler = {
     [functionName: string]: (
         this: LocalizeCompilerContext,
         localizerArguments: string[],
-        localeName: string,
+        localeName: string
     ) => string
 }
 ```

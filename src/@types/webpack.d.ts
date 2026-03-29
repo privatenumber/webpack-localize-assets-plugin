@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module 'webpack/lib/WebpackError.js' {
 	class WebpackError extends Error {
-		constructor (message?: string);
+		constructor(message?: string);
 
 		details: any;
 
@@ -20,3 +21,4 @@ declare module 'webpack/lib/WebpackError.js' {
 	}
 	export default WebpackError;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */

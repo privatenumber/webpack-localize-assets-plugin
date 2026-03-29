@@ -1,10 +1,10 @@
 import { name } from '../package.json';
 import {
-	Options,
+	type Options,
 	validateOptions,
-	LocalizeCompiler,
-	WP5,
-	LocalizeCompilerContext,
+	type LocalizeCompiler,
+	type WP5,
+	type LocalizeCompilerContext,
 } from './types-internal.js';
 import { loadLocaleData } from './utils/load-locale-data.js';
 import { stringifyAstNode } from './utils/stringify-ast-node.js';

@@ -1,4 +1,4 @@
-import MagicString from 'magic-string';
+import type MagicString from 'magic-string';
 import WebpackError from 'webpack/lib/WebpackError.js';
 import { parseExpressionAt } from 'acorn';
 import type {
@@ -90,7 +90,7 @@ const locatePlaceholderFunctions = (
 	return locations;
 };
 
-const unescape = (string: string) => string.replace(/\\(.)/g, '$1');
+const unescape = (string: string) => string.replaceAll(/\\(.)/g, '$1');
 const escape = (string: string) => JSON.stringify(string).slice(1, -1);
 const parseCallExpression = (code: string) => parseExpressionAt(
 	code,

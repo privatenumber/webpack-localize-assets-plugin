@@ -2,7 +2,7 @@ import type MagicString from 'magic-string';
 import { findSubstringLocations, replaceAll } from '../utils/strings.js';
 import { sha256 } from '../utils/sha256.js';
 import type { LocaleData } from '../utils/load-locale-data.js';
-import { WP5 } from '../types-internal.js';
+import type { WP5 } from '../types-internal.js';
 
 type Asset = ReturnType<WP5.Compilation['getAsset']>;
 
