@@ -24,9 +24,6 @@ importers:
         specifier: ^2.2.0
         version: 2.3.1
     devDependencies:
-      '@types/mini-css-extract-plugin':
-        specifier: ^2.4.0
-        version: 2.5.1(webpack@4.42.0)
       '@types/webpack':
         specifier: ^4.41.32
         version: 4.41.40
@@ -705,10 +702,6 @@ packages:
 
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
-
-  '@types/mini-css-extract-plugin@2.5.1':
-    resolution: {integrity: sha512-evjjtJttaUexgg3au9ZJFy76tV9mySwX3a4Jl82BuormBYluWLRt0xk2urWrhOdPgDWzulRFyotwYOJTmkSgKw==}
-    deprecated: This is a stub types definition. mini-css-extract-plugin provides its own type definitions, so you do not need this installed.
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
@@ -4714,12 +4707,6 @@ snapshots:
   '@types/mdast@4.0.4':
     dependencies:
       '@types/unist': 2.0.11
-
-  '@types/mini-css-extract-plugin@2.5.1(webpack@4.42.0)':
-    dependencies:
-      mini-css-extract-plugin: 1.6.2(webpack@4.42.0)
-    transitivePeerDependencies:
-      - webpack
 
   '@types/ms@2.1.0': {}
 

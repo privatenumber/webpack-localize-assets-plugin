@@ -22,3 +22,5 @@ declare module 'webpack/lib/WebpackError.js' {
 	export default WebpackError;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
+
+declare module 'mini-css-extract-plugin';

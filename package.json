@@ -69,7 +69,6 @@
 		"webpack": "^4.42.0 || ^5.10.0"
 	},
 	"devDependencies": {
-		"@types/mini-css-extract-plugin": "^2.4.0",
 		"@types/webpack": "^4.41.32",
 		"@types/webpack-manifest-plugin": "^3.0.5",
 		"@types/webpack-sources": "^3.2.0",
