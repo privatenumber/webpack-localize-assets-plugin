@@ -96,9 +96,5 @@
 	"eslintConfig": {
 		"extends": "@pvtnbr"
 	},
-	"pnpm": {
-		"patchedDependencies": {
-			"astring@1.8.4": "patches/astring@1.8.4.patch"
-		}
-	}
+	"packageManager": "pnpm@10.20.0"
 }
