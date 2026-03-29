@@ -17,7 +17,7 @@ const removeWebpack5Cache = async () => {
 	}
 };
 
-describe(`Webpack ${webpack.version}`, async ({ runTestSuite }) => {
+await describe(`Webpack ${webpack.version}`, async ({ runTestSuite }) => {
 	const isWebpack5 = webpack.version?.startsWith('5.');
 
 	await removeWebpack5Cache();
@@ -28,3 +28,6 @@ describe(`Webpack ${webpack.version}`, async ({ runTestSuite }) => {
 	runTestSuite(import('./specs/chunkhash.spec.js'));
 	runTestSuite(import('./specs/contenthash.spec.js'), isWebpack5);
 });
+
+// Force exit — webpack leaves open handles that prevent natural process exit
+process.exit();
