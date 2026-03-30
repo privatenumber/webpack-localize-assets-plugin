@@ -20,11 +20,13 @@ export const isWebpack5Compilation = (
 	compilation: Compilation,
 ): compilation is WP5.Compilation => ('processAssets' in compilation.hooks);
 
-export const { toConstantDependency } = (
-	isWebpack5(webpack)
-		? require('webpack/lib/javascript/JavascriptParserHelpers') // eslint-disable-line @typescript-eslint/no-require-imports,import-x/no-unresolved
-		: require('webpack/lib/ParserHelpers') // eslint-disable-line @typescript-eslint/no-require-imports
-);
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const dynamicRequire: NodeRequire = require;
+const parserHelpersPath = isWebpack5(webpack)
+	? 'webpack/lib/javascript/JavascriptParserHelpers'
+	: 'webpack/lib/ParserHelpers';
+
+export const { toConstantDependency } = dynamicRequire(parserHelpersPath);
 
 export const deleteAsset = (
 	compilation: Compilation,

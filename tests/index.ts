@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
 import { describe } from 'manten';
 import webpack from 'webpack';
+import { passingTests } from './specs/passing.spec.ts';
+import { contenthashTests } from './specs/contenthash.spec.ts';
 
 const webpack5CachePath = './node_modules/.cache/webpack';
 const removeWebpack5Cache = async () => {
@@ -17,16 +19,16 @@ const removeWebpack5Cache = async () => {
 	}
 };
 
-await describe(`Webpack ${webpack.version}`, async ({ runTestSuite }) => {
-	const isWebpack5 = webpack.version?.startsWith('5.');
+const isWebpack5 = webpack.version?.startsWith('5.');
 
+await describe(`Webpack ${webpack.version}`, async () => {
 	await removeWebpack5Cache();
 
-	runTestSuite(import('./specs/errors.spec.ts'));
-	runTestSuite(import('./specs/passing.spec.ts'), isWebpack5);
-	runTestSuite(import('./specs/localize-compiler.spec.ts'));
-	runTestSuite(import('./specs/chunkhash.spec.ts'));
-	runTestSuite(import('./specs/contenthash.spec.ts'), isWebpack5);
+	await import('./specs/errors.spec.ts');
+	passingTests(isWebpack5);
+	await import('./specs/localize-compiler.spec.ts');
+	await import('./specs/chunkhash.spec.ts');
+	contenthashTests(isWebpack5);
 });
 
 // Force exit — webpack leaves open handles that prevent natural process exit
