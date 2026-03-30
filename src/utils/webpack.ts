@@ -8,8 +8,7 @@ import type {
 	NormalModuleFactory,
 	Module,
 } from '../types-internal.ts';
-
-const name = 'webpack-localize-assets-plugin';
+import { name } from '../plugin-name.ts';
 
 export const isWebpack5 = (wp: Webpack) => {
 	const [major] = wp.version ? wp.version.split('.') : [];
@@ -20,7 +19,6 @@ export const isWebpack5Compilation = (
 	compilation: Compilation,
 ): compilation is WP5.Compilation => ('processAssets' in compilation.hooks);
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const dynamicRequire: NodeRequire = require;
 const parserHelpersPath = isWebpack5(webpack)
 	? 'webpack/lib/javascript/JavascriptParserHelpers'

@@ -11,11 +11,10 @@ import {
 } from '../utils/on-localizer-call.ts';
 import { onAssetPath, onOptimizeAssets } from '../utils/webpack.ts';
 import { replaceLocaleInAssetName } from '../utils/localize-filename.ts';
+import { name } from '../plugin-name.ts';
 import { insertPlaceholderFunction } from './localizer-function.ts';
 import { generateLocalizedAssets } from './generate-localized-assets.ts';
 import { assetNamePlaceholder } from './asset-name.ts';
-
-const name = 'webpack-localize-assets-plugin';
 
 export const handleMultiLocaleLocalization = (
 	compilation: WP5.Compilation,

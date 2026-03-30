@@ -1,6 +1,5 @@
 import path from 'path';
 import type { readFileSync } from 'fs';
-import hasOwnProp from 'has-own-prop';
 import type {
 	Compiler,
 	UnprocessedLocalesMap,
@@ -8,6 +7,7 @@ import type {
 	LocalesMap,
 	LocaleFilePath,
 } from '../types-internal.ts';
+import { hasOwn } from './has-own.ts';
 
 type FSLike = {
 	readFileSync: typeof readFileSync;
@@ -35,7 +35,7 @@ export const loadLocaleData = (
 	const paths = new Set<LocaleFilePath>();
 
 	for (const localeName in unprocessedLocales) {
-		if (!hasOwnProp(unprocessedLocales, localeName)) {
+		if (!hasOwn(unprocessedLocales, localeName)) {
 			continue;
 		}
 

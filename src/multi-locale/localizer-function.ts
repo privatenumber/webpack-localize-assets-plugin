@@ -15,8 +15,7 @@ import type {
 } from '../types-internal.ts';
 import { pushUniqueError } from '../utils/webpack.ts';
 import { callLocalizeCompiler } from '../utils/call-localize-compiler.ts';
-
-const name = 'webpack-localize-assets-plugin';
+import { name } from '../plugin-name.ts';
 
 const placeholderFunctionName = `_placeholder${sha256(name).slice(0, 8)}`;
 

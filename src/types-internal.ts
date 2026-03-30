@@ -1,6 +1,6 @@
 import type WP4 from 'webpack';
 import type WP5 from 'webpack5';
-import hasOwnProp from 'has-own-prop';
+import { hasOwn } from './utils/has-own.ts';
 import type {
 	LocaleName,
 	LocaleStrings,
@@ -20,7 +20,7 @@ export const validateOptions = <LocalizedData>(options: Options<LocalizedData>):
 		throw new Error('locales must contain at least one locale');
 	}
 	if (options.sourceMapForLocales
-		&& options.sourceMapForLocales.some(locale => !hasOwnProp(options.locales, locale))) {
+		&& options.sourceMapForLocales.some(locale => !hasOwn(options.locales, locale))) {
 		throw new Error('sourceMapForLocales must contain valid locales');
 	}
 	if (options.localizeCompiler) {

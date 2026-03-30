@@ -5,6 +5,7 @@ import type {
 	NormalModuleFactory,
 	Options,
 } from '../types-internal.ts';
+import { name } from '../plugin-name.ts';
 import {
 	toConstantDependency,
 	reportModuleWarning,
@@ -12,8 +13,6 @@ import {
 } from './webpack.ts';
 import type { LocaleData } from './load-locale-data.ts';
 import { localizedStringKeyValidator } from './localized-string-key-validator.ts';
-
-const name = 'webpack-localize-assets-plugin';
 
 export type StringKeyHit = {
 	key: string;

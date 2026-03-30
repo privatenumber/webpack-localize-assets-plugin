@@ -450,8 +450,11 @@ export const passingTests = (isWebpack5?: boolean) => describe('passing', () => 
 					}),
 					...localeNames.map(locale => new WebpackManifestPlugin({
 						fileName: `manifest.${locale}.json`,
-						// eslint-disable-next-line unicorn/prefer-regexp-test
-						filter: file => !file.isAsset && (!hasLocale.test(file.path) || !!file.path.match(`.${locale}.`)),
+						filter: (file: {
+							isAsset: boolean;
+							path: string;
+							// eslint-disable-next-line unicorn/prefer-regexp-test
+						}) => !file.isAsset && (!hasLocale.test(file.path) || !!file.path.match(`.${locale}.`)),
 					})),
 				);
 			},

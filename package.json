@@ -62,13 +62,11 @@
 		"webpack": "^4.42.0 || ^5.10.0"
 	},
 	"devDependencies": {
-		"@types/webpack": "^4.41.32",
-		"@types/webpack-manifest-plugin": "^3.0.5",
+		"@types/webpack": "^4.41.40",
 		"@types/webpack-sources": "^3.2.0",
 		"alias-imports": "^1.0.0",
 		"clean-pkg-json": "^1.2.0",
 		"css-loader": "^5.2.4",
-		"has-own-prop": "^3.1.0",
 		"lintroll": "^1.30.0",
 		"manten": "^2.0.0",
 		"mini-css-extract-plugin": "^1.6.0",

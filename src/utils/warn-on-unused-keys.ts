@@ -1,12 +1,11 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
-import hasOwnProp from 'has-own-prop';
 import type {
 	Compilation,
 	LocalesMap,
 	LocalizedStringKey,
 } from '../types-internal.ts';
-
-const name = 'webpack-localize-assets-plugin';
+import { name } from '../plugin-name.ts';
+import { hasOwn } from './has-own.ts';
 
 export type StringKeysCollection = Set<LocalizedStringKey>;
 
@@ -16,9 +15,9 @@ const getAllKeys = (
 	const allStringKeys: StringKeysCollection = new Set();
 
 	for (const localeName in locales) {
-		if (hasOwnProp(locales, localeName)) {
+		if (hasOwn(locales, localeName)) {
 			for (const stringKey in locales[localeName]) {
-				if (hasOwnProp(locales[localeName], stringKey)) {
+				if (hasOwn(locales[localeName], stringKey)) {
 					allStringKeys.add(stringKey);
 				}
 			}

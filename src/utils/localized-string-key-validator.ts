@@ -1,12 +1,11 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
-import hasOwnProp from 'has-own-prop';
 import type { NormalModule } from 'webpack5';
 import type { Expression } from 'estree';
 import type { LocalizedStringKey } from '../types-internal.ts';
+import { name } from '../plugin-name.ts';
 import { reportModuleWarning } from './webpack.ts';
 import type { LocaleData } from './load-locale-data.ts';
-
-const name = 'webpack-localize-assets-plugin';
+import { hasOwn } from './has-own.ts';
 
 export const localizedStringKeyValidator = (
 	locales: LocaleData,
@@ -26,7 +25,7 @@ export const localizedStringKeyValidator = (
 		validatedKeys.add(stringKey);
 
 		const keyMissingFromLocales = locales.names.filter(
-			localeName => !hasOwnProp(locales.data[localeName], stringKey),
+			localeName => !hasOwn(locales.data[localeName], stringKey),
 		);
 		const isMissingFromLocales = keyMissingFromLocales.length > 0;
 
@@ -37,15 +36,10 @@ export const localizedStringKeyValidator = (
 		const location = node.loc!.start;
 		const error = new WebpackError(`[${name}] Missing localization for key "${stringKey}" used in ${module.resource}:${location.line}:${location.column} from locales: ${keyMissingFromLocales.join(', ')}`);
 
-		if (error) {
-			if (throwOnMissing) {
-				throw error;
-			} else {
-				reportModuleWarning(
-					module,
-					error,
-				);
-			}
+		if (throwOnMissing) {
+			throw error;
 		}
+
+		reportModuleWarning(module, error);
 	};
 };

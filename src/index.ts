@@ -10,8 +10,7 @@ import { stringifyAstNode } from './utils/stringify-ast-node.ts';
 import { handleSingleLocaleLocalization } from './single-locale.ts';
 import { handleMultiLocaleLocalization } from './multi-locale/index.ts';
 import { warnOnUnusedKeys } from './utils/warn-on-unused-keys.ts';
-
-const name = 'webpack-localize-assets-plugin';
+import { name } from './plugin-name.ts';
 
 const defaultLocalizerName = '__';
 

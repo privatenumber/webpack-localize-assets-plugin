@@ -25,11 +25,8 @@ importers:
         version: 2.3.1
     devDependencies:
       '@types/webpack':
-        specifier: ^4.41.32
+        specifier: ^4.41.40
         version: 4.41.40
-      '@types/webpack-manifest-plugin':
-        specifier: ^3.0.5
-        version: 3.0.8
       '@types/webpack-sources':
         specifier: ^3.2.0
         version: 3.2.3
@@ -42,9 +39,6 @@ importers:
       css-loader:
         specifier: ^5.2.4
         version: 5.2.7(webpack@4.42.0)
-      has-own-prop:
-        specifier: ^3.1.0
-        version: 3.1.0
       lintroll:
         specifier: ^1.30.0
         version: 1.30.0(@types/estree@1.0.8)(@typescript-eslint/utils@8.57.2(eslint@9.39.4)(typescript@6.0.2))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.57.2(eslint@9.39.4)(typescript@6.0.2))(eslint@9.39.4))(jsonc-eslint-parser@2.4.2)(typescript@6.0.2)
@@ -872,9 +866,6 @@ packages:
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
-
-  '@types/webpack-manifest-plugin@3.0.8':
-    resolution: {integrity: sha512-1ztErWqtkAXZWs0DvnprxpDsgBnpf3aG66sxJaW+atv9TlzOVa0JcxiaqzthIVKD7EMLd1EHKyQTzNemm6IVZA==}
 
   '@types/webpack-sources@3.2.3':
     resolution: {integrity: sha512-4nZOdMwSPHZ4pTEZzSp0AsTM4K7Qmu40UKW4tJDiOVs20UzYF9l+qUe4s0ftfN0pin06n+5cWWDJXH+sbhAiDw==}
@@ -2335,10 +2326,6 @@ packages:
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
-
-  has-own-prop@3.1.0:
-    resolution: {integrity: sha512-SmePZSzKBvCRxpjiG9tCzlTPoXEgaKP4n5MqsYC1E7ys+D95vrZhrV3gFlPUHj1AtJDtO9KVHn4XRrtUqSfJ2w==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   has-property-descriptors@1.0.2:
     resolution: {integrity: sha512-55JNKuIW+vq4Ke1BjOTjM2YctQIvCT7GFzHwmfZPGo5wnrgkid0YQtnAleFSqumZm4az3n2BS+erby5ipJdgrg==}
@@ -4811,11 +4798,6 @@ snapshots:
 
   '@types/unist@3.0.3': {}
 
-  '@types/webpack-manifest-plugin@3.0.8':
-    dependencies:
-      '@types/tapable': 1.0.12
-      '@types/webpack': 4.41.40
-
   '@types/webpack-sources@3.2.3':
     dependencies:
       '@types/node': 25.5.0
@@ -6721,8 +6703,6 @@ snapshots:
   has-bigints@1.1.0: {}
 
   has-flag@4.0.0: {}
-
-  has-own-prop@3.1.0: {}
 
   has-property-descriptors@1.0.2:
     dependencies:
