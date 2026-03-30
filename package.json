@@ -42,7 +42,6 @@
 	},
 	"packageManager": "pnpm@10.20.0",
 	"scripts": {
-		"prepare": "simple-git-hooks",
 		"lint": "lintroll --cache --git",
 		"build": "pkgroll --target node12.20 --minify",
 		"type-check": "tsc --noEmit",
@@ -51,12 +50,6 @@
 		"test:wp4": "node --import alias-imports tests/index.ts",
 		"test:wp5": "node --import alias-imports --conditions webpack5 tests/index.ts",
 		"prepack": "pnpm build && clean-pkg-json"
-	},
-	"simple-git-hooks": {
-		"pre-commit": "pnpm build && pnpm lint-staged && pnpm test"
-	},
-	"lint-staged": {
-		"*.{js,ts}": "lintroll"
 	},
 	"dependencies": {
 		"@types/estree": "^1.0.0",
@@ -76,12 +69,10 @@
 		"clean-pkg-json": "^1.2.0",
 		"css-loader": "^5.2.4",
 		"has-own-prop": "^3.1.0",
-		"lint-staged": "^13.1.0",
 		"lintroll": "^1.30.0",
 		"manten": "^0.6.1",
 		"mini-css-extract-plugin": "^1.6.0",
 		"pkgroll": "^1.8.1",
-		"simple-git-hooks": "^2.8.1",
 		"source-map": "^0.7.3",
 		"tempy": "^1.0.1",
 		"terser-webpack-plugin": "^5.3.6",
