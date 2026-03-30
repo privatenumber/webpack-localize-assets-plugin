@@ -111,7 +111,7 @@ export const createLocalizedStringInserter = (
 	const placeholderLocations = locatePlaceholderFunctions(assetCode);
 
 	return (
-		ms: MagicString.default,
+		ms: MagicString,
 		{ locale }: { locale: string },
 	) => {
 		const localeData = locales.data[locale];

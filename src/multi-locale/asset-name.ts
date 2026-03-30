@@ -22,7 +22,7 @@ export const createLocalizedAssetNameInserter = (
 	);
 
 	return (
-		ms: MagicString.default,
+		ms: MagicString,
 		{ locale }: { locale: string },
 	) => {
 		for (const location of fileNamePlaceholderLocations) {

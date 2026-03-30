@@ -62,7 +62,7 @@ export const createHashManager = (
 			);
 
 			return (
-				ms: MagicString.default,
+				ms: MagicString,
 				{ locale }: { locale: string },
 			) => {
 				for (const [hash, locations] of contentHashLocations) {

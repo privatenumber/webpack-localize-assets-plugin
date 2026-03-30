@@ -26,13 +26,12 @@ type SourceBase = {
 const transformAsset = <Source extends SourceBase>(
 	source: Source,
 	transformations: ((
-		magicStringInstance: MagicString.default,
+		magicStringInstance: MagicString,
 		source: Source,
 	) => void)[],
 	map?: RawSourceMap | null | false,
 ) => {
-	// @ts-expect-error incorrect MagicString types
-	const magicStringInstance = new MagicString(source.code) as MagicString.default;
+	const magicStringInstance = new MagicString(source.code);
 
 	for (const transformer of transformations) {
 		transformer(magicStringInstance, source);
