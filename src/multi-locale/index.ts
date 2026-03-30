@@ -3,18 +3,19 @@ import type {
 	WP5,
 	LocalizeCompiler,
 	Options,
-} from '../types-internal.js';
-import type { LocaleData } from '../utils/load-locale-data.js';
+} from '../types-internal.ts';
+import type { LocaleData } from '../utils/load-locale-data.ts';
 import {
 	onLocalizerCall,
 	onStringKey,
-} from '../utils/on-localizer-call.js';
-import { onAssetPath, onOptimizeAssets } from '../utils/webpack.js';
-import { replaceLocaleInAssetName } from '../utils/localize-filename.js';
-import { name } from '../../package.json';
-import { insertPlaceholderFunction } from './localizer-function.js';
-import { generateLocalizedAssets } from './generate-localized-assets.js';
-import { assetNamePlaceholder } from './asset-name.js';
+} from '../utils/on-localizer-call.ts';
+import { onAssetPath, onOptimizeAssets } from '../utils/webpack.ts';
+import { replaceLocaleInAssetName } from '../utils/localize-filename.ts';
+import { insertPlaceholderFunction } from './localizer-function.ts';
+import { generateLocalizedAssets } from './generate-localized-assets.ts';
+import { assetNamePlaceholder } from './asset-name.ts';
+
+const name = 'webpack-localize-assets-plugin';
 
 export const handleMultiLocaleLocalization = (
 	compilation: WP5.Compilation,

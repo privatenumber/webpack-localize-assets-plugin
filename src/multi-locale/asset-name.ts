@@ -1,6 +1,6 @@
 import type MagicString from 'magic-string';
-import { sha256 } from '../utils/sha256.js';
-import { replaceAll, findSubstringLocations } from '../utils/strings.js';
+import { sha256 } from '../utils/sha256.ts';
+import { replaceAll, findSubstringLocations } from '../utils/strings.ts';
 
 export const assetNamePlaceholder = `[locale:${sha256('locale-placeholder').slice(0, 8)}]`;
 

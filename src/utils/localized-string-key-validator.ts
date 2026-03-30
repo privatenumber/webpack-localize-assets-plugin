@@ -2,10 +2,11 @@ import WebpackError from 'webpack/lib/WebpackError.js';
 import hasOwnProp from 'has-own-prop';
 import type { NormalModule } from 'webpack5';
 import type { Expression } from 'estree';
-import type { LocalizedStringKey } from '../types-internal.js';
-import { name } from '../../package.json';
-import { reportModuleWarning } from './webpack.js';
-import type { LocaleData } from './load-locale-data.js';
+import type { LocalizedStringKey } from '../types-internal.ts';
+import { reportModuleWarning } from './webpack.ts';
+import type { LocaleData } from './load-locale-data.ts';
+
+const name = 'webpack-localize-assets-plugin';
 
 export const localizedStringKeyValidator = (
 	locales: LocaleData,

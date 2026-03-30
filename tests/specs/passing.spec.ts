@@ -8,8 +8,8 @@ import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import tempy from 'tempy';
 import type { Compilation } from 'webpack5';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin';
-import { configureWebpack } from '../utils/configure-webpack.js';
-import { localesSingle, localesMulti } from '../utils/localization-data.js';
+import { configureWebpack } from '../utils/configure-webpack.ts';
+import { localesSingle, localesMulti } from '../utils/localization-data.ts';
 
 export default testSuite(({ describe }, isWebpack5?: boolean) => {
 	describe('passing', ({ test }) => {

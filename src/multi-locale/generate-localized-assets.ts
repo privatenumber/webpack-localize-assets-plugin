@@ -1,22 +1,22 @@
 import { type SourceAndMapResult, RawSource, SourceMapSource } from 'webpack-sources';
 import MagicString from 'magic-string';
 import type { RawSourceMap } from 'source-map';
-import { deleteAsset } from '../utils/webpack.js';
+import { deleteAsset } from '../utils/webpack.ts';
 import type {
 	Compilation,
 	LocaleName,
 	WP5,
 	LocalizeCompiler,
-} from '../types-internal.js';
-import type { StringKeysCollection } from '../utils/warn-on-unused-keys.js';
-import type { LocaleData } from '../utils/load-locale-data.js';
-import { createLocalizedStringInserter } from './localizer-function.js';
+} from '../types-internal.ts';
+import type { StringKeysCollection } from '../utils/warn-on-unused-keys.ts';
+import type { LocaleData } from '../utils/load-locale-data.ts';
+import { createLocalizedStringInserter } from './localizer-function.ts';
 import {
 	assetNamePlaceholder,
 	createLocalizedAssetNameInserter,
 	localizeAssetName,
-} from './asset-name.js';
-import { createHashManager } from './content-hash.js';
+} from './asset-name.ts';
+import { createHashManager } from './content-hash.ts';
 
 type SourceBase = {
 	name: string;

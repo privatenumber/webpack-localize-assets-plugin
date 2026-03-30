@@ -22,11 +22,11 @@ await describe(`Webpack ${webpack.version}`, async ({ runTestSuite }) => {
 
 	await removeWebpack5Cache();
 
-	runTestSuite(import('./specs/errors.spec.js'));
-	runTestSuite(import('./specs/passing.spec.js'), isWebpack5);
-	runTestSuite(import('./specs/localize-compiler.spec.js'));
-	runTestSuite(import('./specs/chunkhash.spec.js'));
-	runTestSuite(import('./specs/contenthash.spec.js'), isWebpack5);
+	runTestSuite(import('./specs/errors.spec.ts'));
+	runTestSuite(import('./specs/passing.spec.ts'), isWebpack5);
+	runTestSuite(import('./specs/localize-compiler.spec.ts'));
+	runTestSuite(import('./specs/chunkhash.spec.ts'));
+	runTestSuite(import('./specs/contenthash.spec.ts'), isWebpack5);
 });
 
 // Force exit — webpack leaves open handles that prevent natural process exit

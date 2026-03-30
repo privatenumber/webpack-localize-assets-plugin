@@ -1,6 +1,6 @@
 import assert from 'assert';
-import type { Compilation } from '../types-internal.js';
-import { replaceAll } from './strings.js';
+import type { Compilation } from '../types-internal.ts';
+import { replaceAll } from './strings.ts';
 
 export const replaceLocaleInAssetName = (
 	compilation: Compilation,

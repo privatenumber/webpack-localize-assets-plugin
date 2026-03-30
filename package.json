@@ -46,10 +46,10 @@
 		"lint": "lintroll --cache --git",
 		"build": "pkgroll --target node12.20 --minify",
 		"type-check": "tsc --noEmit",
-		"dev": "tsx watch --loader alias-imports -C development -C webpack5 tests",
+		"dev": "node --watch --import alias-imports -C development -C webpack5 tests/index.ts",
 		"test": "pnpm test:wp4 && pnpm test:wp5",
-		"test:wp4": "node --import tsx --import alias-imports tests/index.ts",
-		"test:wp5": "node --import tsx --import alias-imports --conditions webpack5 tests/index.ts",
+		"test:wp4": "node --import alias-imports tests/index.ts",
+		"test:wp5": "node --import alias-imports --conditions webpack5 tests/index.ts",
 		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"simple-git-hooks": {
@@ -85,8 +85,7 @@
 		"source-map": "^0.7.3",
 		"tempy": "^1.0.1",
 		"terser-webpack-plugin": "^5.3.6",
-		"tsx": "^3.12.2",
-		"typescript": "^4.9.4",
+		"typescript": "^6.0.2",
 		"webpack": "4.42.0",
 		"webpack-manifest-plugin": "^3.1.1",
 		"webpack-test-utils": "^2.1.0",

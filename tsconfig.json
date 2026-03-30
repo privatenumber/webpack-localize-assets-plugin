@@ -1,13 +1,12 @@
 {
 	"compilerOptions": {
-
-		// Node 12
-		"target": "ES2019",
-		"module": "Node16",
-		"resolveJsonModule": true,
+		"target": "esnext",
+		"module": "nodenext",
+		"allowImportingTsExtensions": true,
+		"erasableSyntaxOnly": true,
 		"strict": true,
-		"esModuleInterop": true,
-		"isolatedModules": true,
+		"noEmit": true,
+		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
 	},
 }

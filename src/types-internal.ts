@@ -5,9 +5,9 @@ import type {
 	LocaleName,
 	LocaleStrings,
 	Options,
-} from './types-external.js';
+} from './types-external.ts';
 
-export * from './types-external.js';
+export * from './types-external.ts';
 
 export const validateOptions = <LocalizedData>(options: Options<LocalizedData>): void => {
 	if (!options) {
@@ -33,7 +33,7 @@ export const validateOptions = <LocalizedData>(options: Options<LocalizedData>):
 	}
 };
 
-export { WP4, WP5 };
+export type { WP4, WP5 };
 export type Webpack = typeof WP4 | typeof WP5;
 export type Compiler = WP4.Compiler | WP5.Compiler;
 export type Compilation = WP5.Compilation | WP4.compilation.Compilation;

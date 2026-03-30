@@ -5,17 +5,18 @@ import type {
 	Literal,
 	SimpleCallExpression,
 } from 'estree';
-import { stringifyAstNode } from '../utils/stringify-ast-node.js';
-import type { StringKeyHit } from '../utils/on-localizer-call.js';
-import type { LocaleData } from '../utils/load-locale-data.js';
-import { sha256 } from '../utils/sha256.js';
-import { findSubstringLocations } from '../utils/strings.js';
-import { name } from '../../package.json';
+import { stringifyAstNode } from '../utils/stringify-ast-node.ts';
+import type { StringKeyHit } from '../utils/on-localizer-call.ts';
+import type { LocaleData } from '../utils/load-locale-data.ts';
+import { sha256 } from '../utils/sha256.ts';
+import { findSubstringLocations } from '../utils/strings.ts';
 import type {
 	Location, Compilation, WP5, LocalizeCompiler,
-} from '../types-internal.js';
-import { pushUniqueError } from '../utils/webpack.js';
-import { callLocalizeCompiler } from '../utils/call-localize-compiler.js';
+} from '../types-internal.ts';
+import { pushUniqueError } from '../utils/webpack.ts';
+import { callLocalizeCompiler } from '../utils/call-localize-compiler.ts';
+
+const name = 'webpack-localize-assets-plugin';
 
 const placeholderFunctionName = `_placeholder${sha256(name).slice(0, 8)}`;
 

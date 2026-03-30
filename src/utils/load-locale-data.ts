@@ -7,7 +7,7 @@ import type {
 	LocaleName,
 	LocalesMap,
 	LocaleFilePath,
-} from '../types-internal.js';
+} from '../types-internal.ts';
 
 type FSLike = {
 	readFileSync: typeof readFileSync;

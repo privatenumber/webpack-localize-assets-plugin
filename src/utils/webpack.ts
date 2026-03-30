@@ -7,8 +7,9 @@ import type {
 	WP5,
 	NormalModuleFactory,
 	Module,
-} from '../types-internal.js';
-import { name } from '../../package.json';
+} from '../types-internal.ts';
+
+const name = 'webpack-localize-assets-plugin';
 
 export const isWebpack5 = (wp: Webpack) => {
 	const [major] = wp.version ? wp.version.split('.') : [];

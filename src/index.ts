@@ -1,16 +1,17 @@
-import { name } from '../package.json';
 import {
 	type Options,
 	validateOptions,
 	type LocalizeCompiler,
 	type WP5,
 	type LocalizeCompilerContext,
-} from './types-internal.js';
-import { loadLocaleData } from './utils/load-locale-data.js';
-import { stringifyAstNode } from './utils/stringify-ast-node.js';
-import { handleSingleLocaleLocalization } from './single-locale.js';
-import { handleMultiLocaleLocalization } from './multi-locale/index.js';
-import { warnOnUnusedKeys } from './utils/warn-on-unused-keys.js';
+} from './types-internal.ts';
+import { loadLocaleData } from './utils/load-locale-data.ts';
+import { stringifyAstNode } from './utils/stringify-ast-node.ts';
+import { handleSingleLocaleLocalization } from './single-locale.ts';
+import { handleMultiLocaleLocalization } from './multi-locale/index.ts';
+import { warnOnUnusedKeys } from './utils/warn-on-unused-keys.ts';
+
+const name = 'webpack-localize-assets-plugin';
 
 const defaultLocalizerName = '__';
 

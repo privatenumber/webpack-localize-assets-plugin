@@ -1,8 +1,8 @@
 import { testSuite, expect } from 'manten';
 import { build } from 'webpack-test-utils';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin';
-import { localesSingle, localesMulti } from '../utils/localization-data.js';
-import { configureWebpack } from '../utils/configure-webpack.js';
+import { localesSingle, localesMulti } from '../utils/localization-data.ts';
+import { configureWebpack } from '../utils/configure-webpack.ts';
 
 export default testSuite(({ describe }) => {
 	describe('chunkhash', ({ test }) => {

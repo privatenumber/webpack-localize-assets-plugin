@@ -1,7 +1,7 @@
 import { testSuite, expect } from 'manten';
 import { build } from 'webpack-test-utils';
 import WebpackLocalizeAssetsPlugin from '#webpack-localize-assets-plugin';
-import { localesSingle, localesMulti } from '../utils/localization-data.js';
+import { localesSingle, localesMulti } from '../utils/localization-data.ts';
 
 export default testSuite(({ describe }, isWebpack5?: boolean) => {
 	describe('contenthash', ({ test }) => {

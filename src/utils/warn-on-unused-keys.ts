@@ -4,8 +4,9 @@ import type {
 	Compilation,
 	LocalesMap,
 	LocalizedStringKey,
-} from '../types-internal.js';
-import { name } from '../../package.json';
+} from '../types-internal.ts';
+
+const name = 'webpack-localize-assets-plugin';
 
 export type StringKeysCollection = Set<LocalizedStringKey>;
 

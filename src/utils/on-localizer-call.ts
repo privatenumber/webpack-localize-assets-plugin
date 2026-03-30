@@ -1,18 +1,19 @@
 import WebpackError from 'webpack/lib/WebpackError.js';
 import type { SimpleCallExpression } from 'estree';
-import { name } from '../../package.json';
 import type {
 	WP5,
 	NormalModuleFactory,
 	Options,
-} from '../types-internal.js';
+} from '../types-internal.ts';
 import {
 	toConstantDependency,
 	reportModuleWarning,
 	onFunctionCall,
-} from './webpack.js';
-import type { LocaleData } from './load-locale-data.js';
-import { localizedStringKeyValidator } from './localized-string-key-validator.js';
+} from './webpack.ts';
+import type { LocaleData } from './load-locale-data.ts';
+import { localizedStringKeyValidator } from './localized-string-key-validator.ts';
+
+const name = 'webpack-localize-assets-plugin';
 
 export type StringKeyHit = {
 	key: string;

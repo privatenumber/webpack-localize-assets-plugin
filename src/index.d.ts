@@ -1,4 +1,4 @@
-import type { Options } from './types-external.js';
+import type { Options } from './types-external.ts';
 
 export default class LocalizeAssetsPlugin<LocalizedData = string> {
 	constructor(options: Options<LocalizedData>);
