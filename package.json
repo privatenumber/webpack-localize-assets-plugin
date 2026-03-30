@@ -48,8 +48,8 @@
 		"type-check": "tsc --noEmit",
 		"dev": "tsx watch --loader alias-imports -C development -C webpack5 tests",
 		"test": "pnpm test:wp4 && pnpm test:wp5",
-		"test:wp4": "tsx --loader alias-imports tests",
-		"test:wp5": "tsx --loader alias-imports --conditions webpack5 tests",
+		"test:wp4": "node --import tsx --import alias-imports tests/index.ts",
+		"test:wp5": "node --import tsx --import alias-imports --conditions webpack5 tests/index.ts",
 		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"simple-git-hooks": {
